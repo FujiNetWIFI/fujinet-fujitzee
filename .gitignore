@@ -1,7 +1,36 @@
-obj
-fujitzee.apl
-fujitzee.xex
-fujitzee.prg
+# IDE files or customization
+.vscode/
+Makefile.options
 
+# Build artifacts
+build/
+dist/
+obj/
+
+# Emulator configs
+altirra-debug.ini
+atari800-debug.cfg
+AppleWin.log
+
+# OS specific
+.DS_Store
+
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+
+# Download-on-demand dependencies
+*.jar
+*.dsk
+fujinet-lib/
+
+# Generated files
+*.apl
+*.xex
+*.prg
+
+# Project specific ignores
 gen/gencharset
 gen/charset
