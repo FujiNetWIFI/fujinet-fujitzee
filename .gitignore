@@ -25,11 +25,13 @@ AppleWin.log
 *.jar
 *.dsk
 fujinet-lib/
+_libs
 
 # Generated files
 *.apl
 *.xex
 *.prg
+*.map
 
 # Project specific ignores
 gen/gencharset
