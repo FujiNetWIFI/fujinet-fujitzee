@@ -193,6 +193,7 @@ void showWelcomeScreen() {
 void tableActionJoinServer() {
   // Reset the game state
   clearRenderState();
+  state.waitingOnEndGameContinue = false;
   
   strcat(query, "&player=");
   strcat(query, playerName);
@@ -308,8 +309,6 @@ void showTableSelectionScreen() {
   }
   
   centerText(17, "connecting to server");
-  
-  
   progressAnim(19);
   
   tableActionJoinServer();

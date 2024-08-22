@@ -86,6 +86,8 @@ typedef struct {
   
   bool playerMadeMove;
   bool promptChanged;
+  bool countdownStarted;
+  bool waitingOnEndGameContinue;
 } GameState;
 
 typedef struct {

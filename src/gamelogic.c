@@ -40,8 +40,33 @@ void renderBoardNamesMessages() {
   static Player *player; 
   static int16_t score;
   
+  // If player is waiting on end game screen, auto-ready up if the game is starting
+    
   // Redraw the entire board on a new game
   redraw = state.round < state.prevRound;
+
+  if (state.waitingOnEndGameContinue) {
+    if (state.round == 1) {
+      state.waitingOnEndGameContinue =false;
+      // Force a redraw since the player waited on the end game screen until start
+      redraw = true;
+      clearRenderState();
+
+    } else {
+      centerTextWide(HEIGHT-3,state.prompt);
+      if (!state.countdownStarted && state.prompt[0]== 's') {
+          soundMyTurn();
+          if (state.players[0].scores[0] < 1) {
+            sendMove("ready");
+          }
+          
+          state.countdownStarted = true;
+        } else if (state.prompt[0]!= 's') {
+          state.countdownStarted = false;
+        }
+      return;
+    }
+  }
   
   // Draw board if we haven't drawn it yet, or a new game
   if (redraw) {
@@ -103,6 +128,12 @@ void renderBoardNamesMessages() {
     if (state.round==0 && state.promptChanged) {
         centerTextWide(HEIGHT-3,state.prompt);
         state.promptChanged = false;
+      if (!state.countdownStarted && state.prompt[0]== 's') {
+        soundMyTurn();
+        state.countdownStarted = true;
+      } else if (state.prompt[0]!= 's') {
+        state.countdownStarted = false;
+      }
     }
 
     // Show players that are ready to start
@@ -186,19 +217,21 @@ void renderBoardNamesMessages() {
     // Handle end of game
     if (state.round == 99) { 
 
-      // Clear active chips
+      // Clear active indicators
       drawTextVert(0,1,"      ");
       centerText(HEIGHT-3, state.prompt);
       soundGameDone();
 
-      pause(state.moveTime*60);
-      centerTextAlt(HEIGHT-1,"press TRIGGER/SPACE for new game");
+      pause(30);
+      centerTextAlt(HEIGHT-1,"press TRIGGER/SPACE to continue");
+      state.waitingOnEndGameContinue = true;
+
       clearCommonInput();
-      while (!input.trigger) {
-        readCommonInput();
-        waitvsync();
-      }
-      drawSpace(0,HEIGHT-5,200);
+      // while (!input.trigger) {
+      //   readCommonInput();
+      //   waitvsync();
+      // }
+      // drawSpace(0,HEIGHT-5,200);
      
     } else {
       pause(30);
@@ -226,6 +259,11 @@ void handleAnimation() {
   static int16_t score;
 
   waitvsync();  
+  
+  // Don't touch anything until player continues
+  if (state.waitingOnEndGameContinue)
+    return;
+
   isThisPlayer = !state.viewing && state.activePlayer==0;
 
   // Setup the player input details if this is a new roll
@@ -295,7 +333,13 @@ void handleAnimation() {
 void processInput() {
   readCommonInput();
 
-  if (!state.viewing) {
+  if (state.waitingOnEndGameContinue) {
+    if (input.trigger) {
+      state.waitingOnEndGameContinue = false;
+      drawSpace(0,HEIGHT-5,200);
+      clearRenderState();
+    }
+  } else if (!state.viewing) {
     // Toggle readiness if waiting to start game
     if (state.round == 0 && input.trigger) {
       state.players[0].scores[0] = !state.players[0].scores[0];
@@ -311,7 +355,7 @@ void processInput() {
     }
 
     // Wait on this player to make roll decisions
-    if (!state.rollFrames && state.activePlayer == 0 && !state.playerMadeMove) {
+    if (!state.rollFrames && state.activePlayer == 0 && !state.playerMadeMove && state.round>0) {
       waitOnPlayerMove();
     }
   }
@@ -467,7 +511,7 @@ void waitOnPlayerMove() {
         state.playerMadeMove = true;
         hidecursorPos(4*prevCursorPos-(prevCursorPos==0)+16, HEIGHT-4);
         // Clear clock
-        drawSpace(6,HEIGHT-2,3);
+        drawSpace(6,HEIGHT-3,3);
         return;
       }
     }
@@ -501,6 +545,7 @@ void waitOnPlayerMove() {
   // Timed out, so hide all scores
   drawSpace(0,HEIGHT-5,200);
   centerText(HEIGHT-3,"you timed out. scoring first free row.");
+  state.playerMadeMove=1;
   i=0;
   for (j=0;j<15;j++) {
     if (i==0 && state.validScores[j]>-1) {

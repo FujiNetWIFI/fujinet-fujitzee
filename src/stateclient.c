@@ -168,9 +168,6 @@ void updateState(bool isTables) {
     isKey = !isKey;
     line=nextLine;
   }  
- // sprintf(tempBuffer, "%i", state.playerCount);
- // write_appkey(0x9999,  0x44, 0x44, tempBuffer);
-
  
 }
 
@@ -269,6 +266,7 @@ uint8_t getStateFromServer()
   }
   
   // Send an async request - if a request is currently in process, it will resume, ignoring the passed string 
+  // WIP - Currently sending SYNC only until SYNC issues are working out
   if ((apiCallResult = apiCall(tempBuffer, false)) == API_CALL_SUCCESS) {
     
     // If the request finished and at least 3 character retrieved, update the state, otherwise assume it is a "no change" response
