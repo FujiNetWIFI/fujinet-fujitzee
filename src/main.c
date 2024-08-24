@@ -69,8 +69,6 @@ void main(void)
 {
   uint8_t failedApiCalls=0;
 
-  //test(65,65,65,10);
-
   initGraphics(); 
   initSound();
   

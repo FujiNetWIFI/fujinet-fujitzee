@@ -18,7 +18,7 @@ uint8_t cursorPos, prevCursorPos, spectators;
 void progressAnim(unsigned char y) {
   for(i=0;i<3;++i) {
     pause(10);
-    drawChip(WIDTH/2-2+i*2,y);
+    drawMark(WIDTH/2-2+i*2,y);
   }
 }
 
@@ -53,15 +53,18 @@ void renderBoardNamesMessages() {
       clearRenderState();
 
     } else {
-      centerTextWide(HEIGHT-3,state.prompt);
+      
+      if (state.countdownStarted)
+        centerTextWide(HEIGHT-3,state.prompt);
+
       if (!state.countdownStarted && state.prompt[0]== 's') {
-          soundMyTurn();
+          soundJoinGame();
           if (state.players[0].scores[0] < 1) {
             sendMove("ready");
           }
           
           state.countdownStarted = true;
-        } else if (state.prompt[0]!= 's') {
+        } else if (state.countdownStarted && state.prompt[0]!= 's') {
           state.countdownStarted = false;
         }
       return;
@@ -101,9 +104,11 @@ void renderBoardNamesMessages() {
            // Player initials across top of screen
           drawCharAlt(14+i*4,0,c);
         }
-
-        drawText(1,i,player->name);
+        for (j=0;j<player->alias;j++) {
+          drawChar(1+j,i,player->name[j]);
+        }
         drawCharAlt(1+player->alias,i,c);
+        drawText(2+player->alias,i,player->name+player->alias+1);
         drawSpace(1+nameLen, i, 8-nameLen);
 
       } else if (i<=state.prevPlayerCount) {
@@ -129,7 +134,7 @@ void renderBoardNamesMessages() {
         centerTextWide(HEIGHT-3,state.prompt);
         state.promptChanged = false;
       if (!state.countdownStarted && state.prompt[0]== 's') {
-        soundMyTurn();
+        soundJoinGame();
         state.countdownStarted = true;
       } else if (state.prompt[0]!= 's') {
         state.countdownStarted = false;
@@ -141,10 +146,13 @@ void renderBoardNamesMessages() {
       for(i=0;i<6;i++) {
         if (i<state.playerCount && state.players[i].scores[0]==1) {
           drawTextVert(18+i*4,2,"ready");
-          drawChip(0,i+1);
+          drawMark(0,i+1);
         } else {
           drawTextVert(18+i*4,2,"     ");
-          drawBlank(0,i+1);
+          // Only clear the dice if it is still round LOBBY
+          if (state.round == 0) {
+            drawBlank(0,i+1);
+          }
         }
       }
 
@@ -173,8 +181,8 @@ void renderBoardNamesMessages() {
     scoreCursorY=0;
     for (k=0;k<2;k++) {
       for (i=0;i<state.playerCount;i++) {
-        // Break early if we reach spectators
-        if (state.players[i].scores[0]==-2)
+        // Break early if we reach spectators or go beyond 6
+        if (state.players[i].scores[0]==-2 || i>6)
           break;
         for (j=0;j<16;j++) {
           score = state.players[i].scores[j];
@@ -211,8 +219,9 @@ void renderBoardNamesMessages() {
       drawBlank(0,state.prevActivePlayer+1);
     
     // Draw new active player indicator
-    if (state.activePlayer>-1)
-      drawChip(0,state.activePlayer+1);
+    if (state.activePlayer>-1) {
+      drawMark(0,state.activePlayer+1);
+    }
 
     // Handle end of game
     if (state.round == 99) { 
@@ -222,9 +231,10 @@ void renderBoardNamesMessages() {
       centerText(HEIGHT-3, state.prompt);
       soundGameDone();
 
-      pause(30);
+      pause(120);
       centerTextAlt(HEIGHT-1,"press TRIGGER/SPACE to continue");
       state.waitingOnEndGameContinue = true;
+      state.countdownStarted = false;
 
       clearCommonInput();
       // while (!input.trigger) {
@@ -250,12 +260,11 @@ void renderBoardNamesMessages() {
     if (state.activePlayer == 0 && !state.viewing)
       soundMyTurn();
   }
-
 }
 
 void handleAnimation() {
   static bool isThisPlayer;
-  static uint8_t highScoreIndex;
+  static uint8_t highScoreIndex, isFujitzee;
   static int16_t score;
 
   waitvsync();  
@@ -291,22 +300,34 @@ void handleAnimation() {
 
   state.rollFrames--;
   
+  // Is fujitzee eligble 
+  isFujitzee = (state.activePlayer==0) && state.rollFrames == 0 && state.validScores[FUJITZEE_SCORE] == 50 ? 1 : 0;
 
   // Draw the dice, randomly displaying the ones that are currently being rolled
   if (state.rollFrames % 4==0)
     soundRollDice();
 
-  for(i=0;i<5;i++) {
-    if (state.rollFrames && state.keepRoll[i]=='1' ) {
-      // Draw a random die
-      drawDie(20+4*i,HEIGHT-4,rand()%6+1,0);
-    } else {
-      // Draw the kept die
-      drawDie(20+4*i,HEIGHT-4,state.dice[i]-48,(state.rollFrames || state.rollsLeft>0) && state.keepRoll[i]=='0');
+
+  for(j=0;j<=isFujitzee;j++) {
+
+    // Play fujitzee sound when rolled, then clear flag so dice return to white
+    if (isFujitzee && j) {
+      soundFujitzee();
+      isFujitzee=0;
     }
+    for(i=0;i<5;i++) {
+      if (state.rollFrames && state.keepRoll[i]=='1' ) {
+        // Draw a random die
+        drawDie(20+4*i,HEIGHT-4,rand()%6+1,0,isFujitzee);
+      } else {
+        // Draw the kept die
+        drawDie(20+4*i,HEIGHT-4,state.dice[i]-48,(state.rollFrames || state.rollsLeft>0) && state.keepRoll[i]=='0', isFujitzee);
+      }
+    }
+
+    soundStop();
   }
 
-  soundStop();
 
   // If the rolling has stopped and this player is playing
   if (isThisPlayer && !state.rollFrames) {
@@ -326,7 +347,7 @@ void handleAnimation() {
     }
 
     // Draw "Rolls" die if this player's turn and there are rolls left
-    drawDie(15,HEIGHT-4,state.rollsLeft+13,0);
+    drawDie(15,HEIGHT-4,state.rollsLeft+13,0,0);
   }
 }
 
@@ -493,7 +514,7 @@ void waitOnPlayerMove() {
       } else if (cursorPos>0) {
         // Toggle kept state of die
         i = state.keepRoll[cursorPos-1]= state.keepRoll[cursorPos-1]=='1' ? '0' : '1';
-        drawDie(16+4*cursorPos,HEIGHT-4,state.dice[cursorPos-1]-48,i == '0');
+        drawDie(16+4*cursorPos,HEIGHT-4,state.dice[cursorPos-1]-48,i == '0', 0);
         if (i=='0')
           soundKeep();
         else 
@@ -502,7 +523,7 @@ void waitOnPlayerMove() {
         // Request another roll
 
         // Highlight the roll die in green
-        drawDie(15,HEIGHT-4,state.rollsLeft+15,0);
+        drawDie(15,HEIGHT-4,state.rollsLeft+15,0,0);
         
         strcpy(tempBuffer, "roll/");
         strcat(tempBuffer, state.keepRoll);

@@ -26,11 +26,13 @@ void drawTextcursorPos(unsigned char x, unsigned char y);
 void drawTextVert(unsigned char x, unsigned char y, char* s);
 bool isEmpty(unsigned char x, unsigned char y);
 
+void drawChar(unsigned char x, unsigned char y, char c);
 void drawCharAlt(unsigned char, unsigned char y, char c);
 
 void drawFujzee(unsigned char x, unsigned char y);
-void drawDie(unsigned char x, unsigned char y, unsigned char s, bool isSelected);
-void drawChip(unsigned char x, unsigned char y);
+void drawDie(unsigned char x, unsigned char y, unsigned char s, bool isSelected, bool isHighlighted);
+void drawMark(unsigned char x, unsigned char y);
+void drawAltMark(unsigned char x, unsigned char y);
 void drawClock(unsigned char x, unsigned char y);
 void drawSpec(unsigned char x, unsigned char y);
 void drawCursor(unsigned char x, unsigned char y);

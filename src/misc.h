@@ -36,6 +36,8 @@
 
 #define PLAYER_MAX 12
 
+#define FUJITZEE_SCORE 14
+
 typedef struct {
   char* table;
   char* name;

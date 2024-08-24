@@ -107,6 +107,7 @@ void readCommonInput() {
       input.dirY=1;
       break;
     case KEY_SPACEBAR:
+    case KEY_RETURN:
       input.trigger=true;
       break;
   }

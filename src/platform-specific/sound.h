@@ -20,6 +20,7 @@ void setSound();
 void soundStop();
 void soundJoinGame();
 void soundMyTurn();
+void soundFujitzee();
 void soundGameDone();
 void soundRollDice();
 void soundTick();

@@ -21,13 +21,13 @@ void resetScreenWithBorder() {
   resetScreen();
   
   // Draw dice corners
-  drawDie(0,0,1, 0);
+  drawDie(0,0,1, 0,0);
   //drawDie(0,HEIGHT/2-2,"5", 0);
-  drawDie(0,HEIGHT-3,3, 0);
+  drawDie(0,HEIGHT-3,3, 0,0);
 
-  drawDie(WIDTH-3,0,2, 0);
+  drawDie(WIDTH-3,0,2, 0,0);
   //drawDie(WIDTH-3,HEIGHT/2-2,"6", 0);
-  drawDie(WIDTH-3,HEIGHT-3,4, 0);
+  drawDie(WIDTH-3,HEIGHT-3,4, 0,0);
 }
 
 /// @brief Shows information about the game
@@ -171,6 +171,10 @@ void showWelcomeScreen() {
   drawLogo();
   
   loadPrefs();
+
+  //centerText(13,"reading sdcard appkeys");
+  //centerText(13,"this may take up to a minute");
+
   welcomeActionVerifyPlayerName();
   welcomeActionVerifyServerDetails();
 
@@ -195,6 +199,7 @@ void tableActionJoinServer() {
   clearRenderState();
   state.waitingOnEndGameContinue = false;
   
+  // The query will have the table already, e.g. "?table=1234"
   strcat(query, "&player=");
   strcat(query, playerName);
   
@@ -204,12 +209,14 @@ void tableActionJoinServer() {
     if (query[i]==' ')
       query[i]='+';
   
+  // Reduce wait count for an immediate call
+  state.apiCallWait=0;
 }
 
 /// @brief Shows a screen to select a table to join
 void showTableSelectionScreen() {
-  static uint8_t shownChip, tableIndex, waitTime;
-  tableIndex=waitTime=0;
+  static uint8_t shownChip, tableIndex, waitTime, altChip;
+  tableIndex=waitTime=altChip=0;
   
   // An empty query means a table needs to be selected
   while (strlen(query)==0) {
@@ -251,7 +258,13 @@ void showTableSelectionScreen() {
 
       clearCommonInput();
       while (!input.trigger || !state.tableCount) {
+        if (altChip<50)
+          drawMark(4,8+tableIndex*2);
+        else
+          drawAltMark(4,8+tableIndex*2);
+
         waitvsync();
+        altChip=(altChip+1) % 60;
         readCommonInput();
        
         if (input.key == 'h' || input.key == 'H') {
@@ -276,15 +289,24 @@ void showTableSelectionScreen() {
         if (!shownChip || (state.tableCount>0 && input.dirY)) {
 
           drawBlank(4,8+tableIndex*2);
+          drawTextAlt(6,8+tableIndex*2, state.tables[tableIndex].name);
+          drawTextAlt(WIDTH-6-strlen(state.tables[tableIndex].players), 8+tableIndex*2, state.tables[tableIndex].players);
+
           tableIndex+=input.dirY;
           if (tableIndex==255) 
             tableIndex=state.tableCount-1;
           else if (tableIndex>=state.tableCount)
             tableIndex=0;
 
-          drawChip(4,8+tableIndex*2);
+          drawMark(4,8+tableIndex*2);
+          drawText(6,8+tableIndex*2, state.tables[tableIndex].name);
+          drawText(WIDTH-6-strlen(state.tables[tableIndex].players), 8+tableIndex*2, state.tables[tableIndex].players);
 
           soundCursor();
+
+          // Housekeeping - allows platform specific housekeeping, like stopping Attract/screensaver mode in Atari
+          housekeeping();
+
           shownChip=1;
         }
       }
@@ -312,6 +334,7 @@ void showTableSelectionScreen() {
   progressAnim(19);
   
   tableActionJoinServer();
+  
 }
 
 /// @brief shows in-game menu
