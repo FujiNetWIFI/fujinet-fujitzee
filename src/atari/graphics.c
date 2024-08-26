@@ -17,7 +17,7 @@ extern unsigned char charset[];
 
 // Set low enough that the program will run with or without BASIC enabled
 #define CHARSET_LOC 0x9000
-#define SCREEN_LOC 0x9400
+#define SCREEN_LOC ((uint8_t*)0x9400)
 #define SCREEN_BAK 0x8B00
 
 // Stack grows down from as low as 0x9C20
@@ -45,7 +45,7 @@ const unsigned char colors[] = {
  0x00, 0xFA, 0x0E, 0xBC,  0x74 // PAL
 };
 
-unsigned char diceChars[] = {
+const unsigned char diceChars[] = {
   // Normal dice
   0x41, 0x40, 0x42, 0x40, 0x45, 0x40, 0x43, 0x40, 0x44, // 1
   0x41, 0x40, 0x47, 0x40, 0x40, 0x40, 0x48, 0x40, 0x44, // 2
@@ -239,8 +239,8 @@ void drawTextcursorPos(unsigned char x, unsigned char y) {
   POKE(xypos(x,y),0xD9);
 }
 
-void drawCursor(unsigned char x, unsigned char y) {
-  POKE(xypos(x,y),0xBE);
+void drawCursor(unsigned char x, unsigned char y, unsigned char i) {
+  POKE(xypos(x,y),i+0xBE);
 }
 
 /// @brief Returns true if the screen location is empty
@@ -250,7 +250,7 @@ bool isEmpty(unsigned char x, unsigned char y) {
 
 void drawBoard() {
   static uint8_t y,x,c;
-  static unsigned char *dest, *value;
+  static unsigned char *dest;
 
   resetScreen();
 
@@ -267,34 +267,34 @@ void drawBoard() {
   // Main scores box
   drawBox(10,0,5,19);
 
-  // Vertical lines
+  // Vertical linesz
   c=91;
+  dest = xypos(20,0);
   for (y=0;y<21;y++) {
-    dest = xypos(20,y);
-    for (x=0;x<5;x++) {
-      *dest=c;
-      dest+=4;
+    for (x=0;x<20;x+=4) {
+      *(dest+x)=c;
     }
-    c=124;
-    if (y==19)
-      c = 88;
+    c = (y==19) ? 88 : 124; 
+    dest+=40;
   }
 
   // Cross areas
-  for (x=10;x<40;x+=4) {
-    POKE(xypos(x,7),83);
-    POKE(xypos(x,10),83);
-    POKE(xypos(x,18),86);
-    if (x==10)
-      x+=2;
+  dest = xypos(10,7);
+  for (x=0;x<7;x++) {
+    POKE(dest,83);
+    POKE(dest+40*3,83);
+    POKE(dest+40*11,86);
+    if (x)
+      dest+=4;
+    else
+      dest+=6;
   }
 
   POKE(xypos(16,20),88);
 
   // Score names
-  value = strtok(scores, ",");
   for(y = 0; y<16; y++) {
-      drawTextAlt(11,scoreY[y],scores[y]);
+    drawTextAlt(11,scoreY[y],scores[y]);
   }
   
   // Fujitzee score!
@@ -310,9 +310,6 @@ void drawLine(unsigned char x, unsigned char y, unsigned char w) {
   memset(xypos(x,y),82,w);
 }
 
-void hideLine(unsigned char x, unsigned char y, unsigned char w) {
- 
-}
 
 void drawBox(unsigned char x, unsigned char y, unsigned char w, unsigned char h) {
   static unsigned char i;
@@ -337,7 +334,7 @@ void drawBox(unsigned char x, unsigned char y, unsigned char w, unsigned char h)
   *(pos+w+1)=90;
 }
 
-void drawcursorPos(unsigned char x, unsigned char y) {
+void drawDiceCursor(unsigned char x, unsigned char y) {
   static unsigned char i;
   static unsigned char* pos;
 
@@ -360,7 +357,7 @@ void drawcursorPos(unsigned char x, unsigned char y) {
   *(pos+4)=180;
 }
 
-void hidecursorPos(unsigned char x, unsigned char y) {
+void hideDiceCursor(unsigned char x, unsigned char y) {
 static unsigned char i;
   static unsigned char* pos;
 

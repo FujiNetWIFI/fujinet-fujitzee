@@ -90,19 +90,14 @@ void main(void)
       switch (getStateFromServer()) {
         case STATE_UPDATE_ERROR:
           // ERROR - Wait a bit to avoid hammering the server if getting bad responses
-          failedApiCalls++;
-
-          // Exponential (wait an additional second each consequtive error)
-          state.apiCallWait=60*failedApiCalls;
-
-          // Don't wait more than 5 seconds
-          if (state.apiCallWait>300)
-            state.apiCallWait = 300;
-
-          // After a few failures, let the player know we are experiencing technical difficulties
-          if (failedApiCalls>3) {
+          if (failedApiCalls<4) {
+            failedApiCalls++;
             //drawStatusText("connection lost. reconnecting.."); 
           }
+          state.apiCallWait=60*failedApiCalls; 
+          
+          // After a few failures, let the player know we are experiencing technical difficulties
+          
           break;
         
         case STATE_UPDATE_NOCHANGE:

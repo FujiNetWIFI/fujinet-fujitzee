@@ -7,12 +7,11 @@
 #include <string.h>
 #include <peekpoke.h>
 #include <stdlib.h>
-#include "../misc.h"
 
 #include "../platform-specific/sound.h"
 
 // Set to control delay of played note
-static unsigned char delay;
+static uint8_t delay, i, j;
 
 void initSound() {
   // Silence SIO noise
@@ -43,26 +42,6 @@ void note(uint8_t n, uint8_t n2, uint8_t n3, uint8_t d, uint8_t f, uint8_t p) {
   }
   pause(p);
 }
-
-void playNote(unsigned f) {
-  
-  //  static unsigned char i;
-  //  SID.v1.freq=f;
-  //  SID.v1.ctrl = 0x11;
-  //  for(i=delay;--i;)
-  //   waitvsync();
-  //  SID.v1.ctrl = 0x10;
-}
-
-void playNoise(unsigned f) {
-  //  static unsigned char i;
-  //  SID.v2.freq=f;
-  //  SID.v2.ctrl = 0x81;
-  //  for(i=delay;--i;)
-  //   waitvsync();
-  //  SID.v2.ctrl = 0x80;
-}
-
 
 
 void soundJoinGame() {
@@ -112,12 +91,6 @@ void soundRollDice() {
   _sound(0, 150+ (rand() % 20)*5,8,8);
 }
 
-void soundPlayerJoin() {
-}
-
-void soundPlayerLeft() {
-}
-
 void soundCursor() {
    _sound(0,102,10,7);
    pause(1);
@@ -149,7 +122,7 @@ void soundRelease() {
 void soundTick() {
   _sound(0, 200,8,7);
   waitvsync();
-  _sound(0,0,0,0);
+  soundStop();
 }
 
 void soundStop() {

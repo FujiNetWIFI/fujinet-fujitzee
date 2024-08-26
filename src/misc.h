@@ -121,7 +121,7 @@ void readCommonInput();
 void loadPrefs();
 void savePrefs();
 
-void read_appkey(uint16_t creator_id, uint8_t app_id, uint8_t key_id, uint8_t* destination);
-void write_appkey(uint16_t creator_id, uint8_t app_id, uint8_t key_id, uint8_t *inputString);
+void read_appkey(uint16_t creator_id, uint8_t app_id, uint8_t key_id, char* destination);
+void write_appkey(uint16_t creator_id, uint8_t app_id, uint8_t key_id, char *inputString);
 
 #endif /* MISC_H */

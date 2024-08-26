@@ -91,9 +91,6 @@ void showHelpScreen() {
 
   clearCommonInput();
   cgetc();
-
-  resetScreen();
-  
 }
 
 /// @brief Action called in Welcome Screen to check if a server name is stored in an app key
@@ -135,12 +132,9 @@ void showPlayerNameScreen() {
   //while (input.key != KEY_RETURN || i<2) {
   while (!inputFieldCycle(16, 17, PLAYER_NAME_MAX, playerName)) ;
   
-  
   for (y=13;y<19;++y)
-    drawText(13,y, "                 ");
+    drawSpace(13,y,17);
   
-  
-
   write_appkey(AK_LOBBY_CREATOR_ID,  AK_LOBBY_APP_ID, AK_LOBBY_KEY_USERNAME, playerName);
 }
 
@@ -268,8 +262,9 @@ void showTableSelectionScreen() {
         readCommonInput();
        
         if (input.key == 'h' || input.key == 'H') {
+          saveScreen();
           showHelpScreen();
-          break;
+          restoreScreen();
         } else if (input.key == 'r' || input.key =='R') {
           break;
         } else if (input.key == 'c' || input.key =='C') {

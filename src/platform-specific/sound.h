@@ -24,15 +24,12 @@ void soundFujitzee();
 void soundGameDone();
 void soundRollDice();
 void soundTick();
-void soundPlayerJoin();
-void soundPlayerLeft();
-
 void soundCursor();
 void soundScoreCursor();
 void soundKeep();
 void soundRelease();
 void soundScore();
 
-
+void pause(unsigned char frames);
 
 #endif /* SOUND_H */

@@ -36,7 +36,7 @@ void processStateChange() {
 
 void renderBoardNamesMessages() {
   static bool redraw;
-  static uint8_t scoreCursorX, scoreCursorY, c,nameLen;
+  static uint8_t scoreCursorX, scoreCursorY, c, len;
   static Player *player; 
   static int16_t score;
   
@@ -88,9 +88,9 @@ void renderBoardNamesMessages() {
     for(i=1;i<PLAYER_MAX;i++) {
       if (i<=state.playerCount) {
      
-        player = &state.players[i-1];
+        player = &state.players[i-1]; 
         c= player->name[player->alias];
-        nameLen = strlen(player->name);
+        len = (uint8_t)strlen(player->name);
         
         if (player->scores[0]==-2) {
           drawSpec(0,i);
@@ -109,7 +109,7 @@ void renderBoardNamesMessages() {
         }
         drawCharAlt(1+player->alias,i,c);
         drawText(2+player->alias,i,player->name+player->alias+1);
-        drawSpace(1+nameLen, i, 8-nameLen);
+        drawSpace(1+len, i, 8-len);
 
       } else if (i<=state.prevPlayerCount) {
         // Blank out entries for this player
@@ -165,8 +165,8 @@ void renderBoardNamesMessages() {
     return;
     
   // Scoreboard and prompt - refresh if the active player changed, or round changed
-  if (state.activePlayer != state.prevActivePlayer || state.round != state.prevRound) {
-
+  if (state.activePlayer != state.prevActivePlayer || state.round != state.prevRound || state.playerCount != state.prevPlayerCount) {
+    
     if (state.round == 99)
       drawSpace(0,HEIGHT-5,200);
 
@@ -179,41 +179,60 @@ void renderBoardNamesMessages() {
     // Update scores on-screen - two pass - first highlights in green the new one
     h = 0;
     scoreCursorY=0;
-    for (k=0;k<2;k++) {
+    //for (k=0;k<2;k++) {
+      // Skip ahead to drawing the second round if the player hasn't changed
+      if (state.activePlayer == state.prevActivePlayer || redraw) {
+        k=1;
+      } else {
+        k=0;
+      }
       for (i=0;i<state.playerCount;i++) {
         // Break early if we reach spectators or go beyond 6
         if (state.players[i].scores[0]==-2 || i>6)
           break;
+        h=0;
         for (j=0;j<16;j++) {
           score = state.players[i].scores[j];
           if (score>-1) {
             itoa(score, tempBuffer, 10);
-            if (j==15 || (k==0 && i>0 && state.activePlayer>-1 && isEmpty(19+i*4, scoreY[j]))) {
-              drawTextAlt(20-strlen(tempBuffer)+i*4,scoreY[j],tempBuffer);
+            len=(uint8_t)strlen(tempBuffer);
+            if (len<3) {
+              drawSpace(17+i*4,scoreY[j],len);
+            }
+            if (j==15 || (h==0 && k==0 && i>0 && state.activePlayer>-1 && isEmpty(19+i*4, scoreY[j]))) {
+              drawTextAlt(20-len+i*4,scoreY[j],tempBuffer);
               if (scoreCursorY==0 ) {
                 scoreCursorY=scoreY[j];
                 scoreCursorX=17+i*4;
               }
-              h++;
+              h=1;
             } else {
-              drawText(20-strlen(tempBuffer)+i*4,scoreY[j],tempBuffer);
+              drawText(20-len+i*4,scoreY[j],tempBuffer);
             }
+          } else if (k==1) {
+            // Draw blank (just in case there was something there from a previous player)
+            drawSpace(17+i*4,scoreY[j],3);
           }
         }
-        if (k==0 && state.round<99 && scoreCursorY>0 && h>0 && h<5) {
-          drawCursor(scoreCursorX,scoreCursorY);
-          soundScore();
-        }
-      }
+       
+      //}
 
       // Pause unless a ton of numbers changed
-      if (scoreCursorY>0 && h>0 && h<5) {
+      if (!redraw && state.round<99 && scoreCursorY>0 && h) {
+        drawCursor(scoreCursorX,scoreCursorY, 0);
+       //  soundScoreCursor();
+        pause(25);
+        //for (i=0;i<2;i++) {
+          drawCursor(scoreCursorX,scoreCursorY, 1); soundScore();pause(5);
+          drawCursor(scoreCursorX,scoreCursorY, 0); //pause(10);
+       // }
         pause(30);
         drawBlank(scoreCursorX,scoreCursorY);
       }
     }
 
-  
+    TODO - highlight active player's column with PMG
+
      // Clear old turn indicator
     if (state.prevActivePlayer>-1)
       drawBlank(0,state.prevActivePlayer+1);
@@ -339,9 +358,10 @@ void handleAnimation() {
         if (score>0) {
           itoa(score, tempBuffer, 10);
           drawSpace(17,scoreY[j],3-strlen(tempBuffer)); 
-        }
-        else
+        } else {
           strcpy(tempBuffer,"  ");
+        }
+
         drawTextAlt(20-strlen(tempBuffer),scoreY[j],tempBuffer);
       } 
     }
@@ -403,9 +423,9 @@ void processInput() {
 }
 
 void waitOnPlayerMove() {
-  static int jifsPerSecond, seconds;
+  static int jifsPerSecond;
   static bool foundValidLocation;
-  static uint8_t waitCount;
+  static uint8_t waitCount, frames;
   
   resetTimer();
 
@@ -413,11 +433,13 @@ void waitOnPlayerMove() {
   jifsPerSecond=PEEK(0xD014)==1 ? 50 : 60;
 
   maxJifs = jifsPerSecond*state.moveTime;
-  waitCount=0;
+  waitCount=frames=0;
   
   // Move selection loop
   while (state.moveTime>0) {
-   
+      frames=(frames+1) % 30;
+      waitvsync();
+        
       // Update horizontal cursorPos location - dice: 0 = roll, 1-5 equal select dice at that index
       if (input.dirX !=0 && state.rollsLeft) {
         // If cursorPos was selecting a score, bring it back down
@@ -427,7 +449,7 @@ void waitOnPlayerMove() {
         cursorPos+=input.dirX;
 
         // Bounds check
-        if (cursorPos<0 || cursorPos>5)
+        if (cursorPos>5)
           cursorPos = prevCursorPos;
       
       // Update vertical cursorPos location - scores: 10-24 represent the possible scoring locations
@@ -464,7 +486,7 @@ void waitOnPlayerMove() {
       
       // Hide cursorPos
       if (prevCursorPos < 6)
-        hidecursorPos(4*prevCursorPos-(prevCursorPos==0)+16, HEIGHT-4);
+        hideDiceCursor(4*prevCursorPos-(prevCursorPos==0)+16, HEIGHT-4);
       else {
         drawBlank(17,scoreY[prevCursorPos-10]);
         if (state.validScores[prevCursorPos-10]==0) {
@@ -474,10 +496,10 @@ void waitOnPlayerMove() {
 
       // Draw cursorPos
       if (cursorPos < 6) {
-        drawcursorPos(4*cursorPos-(cursorPos==0)+16, HEIGHT-4);
+        drawDiceCursor(4*cursorPos-(cursorPos==0)+16, HEIGHT-4);
         soundCursor();
       } else {
-        drawCursor(17,scoreY[cursorPos-10]);
+        drawCursor(17,scoreY[cursorPos-10],0);
         if (state.validScores[cursorPos-10]==0) {
           drawTextAlt(19,scoreY[cursorPos-10],"0");
         }
@@ -486,6 +508,8 @@ void waitOnPlayerMove() {
       prevCursorPos = cursorPos;
       
       
+    } else if (cursorPos>9){ 
+      drawCursor(17,scoreY[cursorPos-10],(frames<3)*0x80);
     }
 
     // Handle trigger press
@@ -495,6 +519,9 @@ void waitOnPlayerMove() {
         // Select score
         i=cursorPos-10;
 
+        // Cursor select animation 
+        drawCursor(17,scoreY[cursorPos-10],1);soundScore();
+        
         // First, hide all scores but the main score
         for (j=0;j<15;j++) {
           if (state.validScores[j]>0) {
@@ -502,14 +529,16 @@ void waitOnPlayerMove() {
               drawSpace(17,scoreY[j],3);
           }
         }
-        
+
+        pause(5);drawCursor(17,scoreY[cursorPos-10],0);; pause(10);
+
         // Send command to score this value
         strcpy(tempBuffer, "score/");
         itoa(i, tempBuffer+6, 10);
         sendMove(tempBuffer);
 
         state.playerMadeMove = true;
-        soundScore();
+        //soundScore();
         return;
       } else if (cursorPos>0) {
         // Toggle kept state of die
@@ -530,7 +559,7 @@ void waitOnPlayerMove() {
         sendMove(tempBuffer);
 
         state.playerMadeMove = true;
-        hidecursorPos(4*prevCursorPos-(prevCursorPos==0)+16, HEIGHT-4);
+        hideDiceCursor(4*prevCursorPos-(prevCursorPos==0)+16, HEIGHT-4);
         // Clear clock
         drawSpace(6,HEIGHT-3,3);
         return;
@@ -616,7 +645,7 @@ void centerStatusText(char * text) {
 
 
 /// @brief Handles available key strokes for the defined input box (player name and chat). Returns true if user hits enter
-bool inputFieldCycle(uint8_t x, uint8_t y, uint8_t max, uint8_t* buffer) {
+bool inputFieldCycle(uint8_t x, uint8_t y, uint8_t max, char* buffer) {
   static uint8_t done, curx, lastY;
   
   // Initialize first call to input box

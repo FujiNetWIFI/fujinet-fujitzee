@@ -135,8 +135,8 @@ void savePrefs() {
 }
 
 
-void read_appkey(uint16_t creator_id, uint8_t app_id, uint8_t key_id, uint8_t* destination) {
-  uint16_t read = 0;
+void read_appkey(uint16_t creator_id, uint8_t app_id, uint8_t key_id, char* destination) {
+  static uint16_t read;
 
   fuji_set_appkey_details(creator_id, app_id, DEFAULT);
   if (!fuji_read_appkey(key_id, &read, destination))
@@ -146,7 +146,7 @@ void read_appkey(uint16_t creator_id, uint8_t app_id, uint8_t key_id, uint8_t* d
   destination[read] = 0;
 }
 
-void write_appkey(uint16_t creator_id, uint8_t app_id, uint8_t key_id, uint8_t *inputString)
+void write_appkey(uint16_t creator_id, uint8_t app_id, uint8_t key_id, char *inputString)
 {
  fuji_set_appkey_details(creator_id, app_id, DEFAULT);
  fuji_write_appkey(key_id, strlen(inputString), inputString);
