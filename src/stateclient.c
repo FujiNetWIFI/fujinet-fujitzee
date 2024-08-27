@@ -178,31 +178,31 @@ void updateState(bool isTables) {
  *  2 - async - received payload, still in process, call for more data
  *  0 - error - aborted
 */
-uint8_t apiCall(char *path, bool isAsync) {
+uint8_t apiCall(char *path) {
   static int16_t n;
   static uint8_t* buf;
   
   // If a synchronous call, or starting a new async call,initialize things
-  if (rx_pos == 0 || !isAsync) {
+  // * if (rx_pos == 0 || !isAsync) {
     
     // First check if we were in the middle of an async call but we are now requesting sync
     // If so, abort the earlier async call
-    if (!isAsync && rx_pos>0) 
-      network_close(url);
+    // * if (!isAsync && rx_pos>0) 
+    // * network_close(url);
 
     // Setup the url
-    strcpy(url, "N:");
+    strcpy(url, "n:");
     strcat(url, serverEndpoint);
     strcat(url, path);
     strcat(url, query);
     strcat(url, strlen(query)==0 ? "?" : "&");
-    strcat(url, "raw=1&lc=1&hash=");
-    strcat(url, hash);
+    strcat(url, "raw=1&lc=1");//&hash=");
+    //strcat(url, hash);
     
     // Initialize start of buffer for async calls, and reset position
     buf = rx_buf;
     rx_pos = 0;
-  }
+  // * }
 
   // Network error. Reset position and abort.
   if (network_open(url, OPEN_MODE_HTTP_GET, OPEN_TRANS_NONE)) {
@@ -210,21 +210,22 @@ uint8_t apiCall(char *path, bool isAsync) {
     return API_CALL_ERROR;
   }
 
-  if (isAsync) {
-    n = network_read_nb(url, buf, 40);
+  // * Comment out async until needed (e.g. text chat)
+  // if (isAsync) {
+  //   n = network_read_nb(url, buf, 40);
 
-    // If not finished, increment the buffer/position and return 2
-    if (fn_network_error != 136) {  
-      if (n>0) {
-        rx_pos+=n;
-        buf+=n;
-      }
-      return API_CALL_PENDING;
-    }
-  } else { 
+  //   // If not finished, increment the buffer/position and return 2
+  //   if (fn_network_error != 136) {  
+  //     if (n>0) {
+  //       rx_pos+=n;
+  //       buf+=n;
+  //     }
+  //     return API_CALL_PENDING;
+  //   }
+  // } else { 
     // Synchronous call
     rx_pos = network_read(url, rx_buf, sizeof(rx_buf));
-  }
+  // * }
 
   // Request is complete
   network_close(url);
@@ -266,8 +267,8 @@ uint8_t getStateFromServer()
   }
   
   // Send an async request - if a request is currently in process, it will resume, ignoring the passed string 
-  // WIP - Currently sending SYNC only until SYNC issues are working out
-  if ((apiCallResult = apiCall(tempBuffer, false)) == API_CALL_SUCCESS) {
+  // WIP - Currently sending SYNC only - will switch to async overhead if/when chat is added
+  if ((apiCallResult = apiCall(tempBuffer)) == API_CALL_SUCCESS) {
     
     // If the request finished and at least 3 character retrieved, update the state, otherwise assume it is a "no change" response
     if (rx_len>2)

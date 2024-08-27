@@ -231,7 +231,7 @@ void renderBoardNamesMessages() {
       }
     }
 
-    TODO - highlight active player's column with PMG
+    //TODO - highlight active player's column with PMG
 
      // Clear old turn indicator
     if (state.prevActivePlayer>-1)

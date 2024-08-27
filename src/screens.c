@@ -187,25 +187,6 @@ void showWelcomeScreen() {
   pause(30);
 } 
 
-/// @brief Action in Table Selection Screen, joins the selected server
-void tableActionJoinServer() {
-  // Reset the game state
-  clearRenderState();
-  state.waitingOnEndGameContinue = false;
-  
-  // The query will have the table already, e.g. "?table=1234"
-  strcat(query, "&player=");
-  strcat(query, playerName);
-  
-  // Replace space with + for player name
-  i=strlen(query);
-  while(--i)
-    if (query[i]==' ')
-      query[i]='+';
-  
-  // Reduce wait count for an immediate call
-  state.apiCallWait=0;
-}
 
 /// @brief Shows a screen to select a table to join
 void showTableSelectionScreen() {
@@ -222,11 +203,11 @@ void showTableSelectionScreen() {
     drawText(6,6, "game");
     drawText(WIDTH-13,6, "players");
     drawLine(6,7,WIDTH-12);
-    
-    waitvsync();
+   
     pause(waitTime);
-  
-    if (apiCall("tables", false)) {
+    waitvsync();
+   
+    if (apiCall("tables")) { 
 
       // Add an artifical wait time if refreshing
       waitTime=20;
@@ -328,7 +309,22 @@ void showTableSelectionScreen() {
   centerText(17, "connecting to server");
   progressAnim(19);
   
-  tableActionJoinServer();
+  // Reset the game state
+  clearRenderState();
+  state.waitingOnEndGameContinue = false;
+  
+  // The query will have the table already, e.g. "?table=1234"
+  strcat(query, "&player=");
+  strcat(query, playerName);
+  
+  // Replace space with + for player name
+  i=strlen(query);
+  while(--i)
+    if (query[i]==' ')
+      query[i]='+';
+  
+  // Reduce wait count for an immediate call
+  state.apiCallWait=0;
   
 }
 
@@ -379,7 +375,7 @@ void showInGameMenuScreen() {
           
 
           // Inform server player is leaving
-          apiCall("leave", false);
+          apiCall("leave");
           progressAnim(12);
           
           //  Clear server app key in case of reboot 

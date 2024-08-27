@@ -18,9 +18,6 @@ void welcomeActionVerifyPlayerName();
 /// @brief Shows the Welcome Screen with Logo. Asks player's name
 void showWelcomeScreen();
 
-/// @brief Action in Table Selection Screen, joins the selected server
-void tableActionJoinServer();
-
 /// @brief Shows a screen to select a table to join
 void showTableSelectionScreen();
 
