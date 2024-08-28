@@ -31,6 +31,6 @@ void showInGameMenuScreen();
 void showPlayerNameScreen();
 
 /// @brief Draw the title
-void drawLogo();
+void drawLogo(uint8_t x, uint8_t y);
 
 #endif /*SCREENS_H*/

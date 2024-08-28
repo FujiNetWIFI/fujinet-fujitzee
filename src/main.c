@@ -123,15 +123,3 @@ void main(void)
   return 0;
 #endif /* CMOC_VERSION_  */
 }
-
-/*
-  // May use in future for generating player id
-  AdapterConfigExtended ac;
-  fuji_get_adapter_config_extended(&ac);
-  
-  // Remove :s
-  for(i=5;i>0;--i) {
-    *(uint16_t*)&ac.sMacAddress[i*2] = *(uint16_t*)&ac.sMacAddress[i*3];
-  }
-  ac.sMacAddress[12]=0;
-*/

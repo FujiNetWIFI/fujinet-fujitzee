@@ -11,8 +11,9 @@
 #include <peekpoke.h>
 
 uint8_t chat[20]="";
-uint8_t scoreY[] = {1,2,3,4,5,6,8,9,11,12,13,14,15,16,17,19};
-char* scores[]={"one","two","three","four","five","six","total","bonus","set 3","set 4","house","s run","l run","count","","SCORE"};
+//uint8_t scoreY[] = {1,2,3,4,5,6, 8, 9,11,12,13,14,15,16,17,19};
+uint8_t scoreY[] =   {3,4,5,6,7,8,10,11,13,14,15,16,17,18,19,21};
+char* scores[]={"one","two","three","four","five","six","total","bonus","set 3","set 4","house","s run","l run","count"};
 uint8_t cursorPos, prevCursorPos, spectators;
 
 void progressAnim(unsigned char y) {
@@ -36,12 +37,20 @@ void processStateChange() {
 
 void renderBoardNamesMessages() {
   static bool redraw;
-  static uint8_t scoreCursorX, scoreCursorY, c, len;
+  static uint8_t scoreCursorX, scoreCursorY, c, len,maxScoreY;
   static Player *player; 
   static int16_t score;
   
+  if (state.drawBoard) {
+    state.drawBoard = false;
+    resetScreen();
+    drawLogo(0,0);
+    drawBoard();
+  }
+
+
   // If player is waiting on end game screen, auto-ready up if the game is starting
-    
+  
   // Redraw the entire board on a new game
   redraw = state.round < state.prevRound;
 
@@ -51,7 +60,6 @@ void renderBoardNamesMessages() {
       // Force a redraw since the player waited on the end game screen until start
       redraw = true;
       clearRenderState();
-
     } else {
       
       if (state.countdownStarted)
@@ -71,61 +79,72 @@ void renderBoardNamesMessages() {
     }
   }
   
-  // Draw board if we haven't drawn it yet, or a new game
-  if (redraw) {
-    drawBoard();
-
-      // Player ready indicators if waiting to start
-    if (state.round == 0) {
-      centerTextAlt(HEIGHT-1,"press TRIGGER/SPACE to toggle");
+  // Clear score board if a new round
+  if (redraw && state.round==0) {    
+      // Clear score locations
+    for (i=1;i<7;i++) {
+      for(j=0;j<15;j++)  {
+        drawSpace(13+i*4, scoreY[j], 3);
+      }
     }
+    drawSpace(0,scoreY[15],40);
+    
+    centerTextAlt(HEIGHT-1,"press TRIGGER/SPACE to toggle");
   }
+
 
   // Draw player names if the count changed
   if (true) { // (redraw || state.playerCount != state.prevPlayerCount || state.round == 0 || (state.round==1 && state.prevRound==0)) {
     spectators=0;
 
-    for(i=1;i<PLAYER_MAX;i++) {
-      if (i<=state.playerCount) {
+    for(i=1;i<=PLAYER_MAX;i++) {
+      y=i+2;
+      x=14+i*4;
      
+      if (i<=state.playerCount) {
+        
         player = &state.players[i-1]; 
         c= player->name[player->alias];
         len = (uint8_t)strlen(player->name);
         
         if (player->scores[0]==-2) {
-          drawSpec(0,i);
+          drawSpec(0,y);
           spectators++;
           if (i<=PLAYER_MAX) {
-            drawBlank(14+i*4,0);
+            drawBlank(x,1);
           }
         } else { 
           if (state.round>0 && state.activePlayer != i-1)
-            drawBlank(0,i);
+            drawBlank(0,y);
            // Player initials across top of screen
-          drawCharAlt(14+i*4,0,c);
+          drawCharAlt(x,1,c);
         }
         for (j=0;j<player->alias;j++) {
-          drawChar(1+j,i,player->name[j]);
+          drawChar(1+j,y,player->name[j]);
         }
-        drawCharAlt(1+player->alias,i,c);
-        drawText(2+player->alias,i,player->name+player->alias+1);
-        drawSpace(1+len, i, 8-len);
+        drawCharAlt(1+player->alias,y,c);
+        drawText(2+player->alias,y,player->name+player->alias+1);
+        drawSpace(1+len, y, 8-len);
 
       } else if (i<=state.prevPlayerCount) {
         // Blank out entries for this player
-        drawText(0,i,"         ");
+        drawSpace(0,y,9);
+       
         // Blank scoreboard
         if (i<7) {
-          drawBlank(14+i*4,0);
-          for(j=0;j<16;j++) 
-            drawSpace(13+i*4, scoreY[j], 3);
+          drawBlank(x,1);
+          for(j=0;j<15;j++)  {
+            drawSpace(x-1, scoreY[j], 3);
+          }
         }
       }
+
     }
 
     //if the player count changed, change the active player #, since a new player may have the same activePlayer number
     //state.prevActivePlayer = -1;
   }
+
 
   // Round 0 (waiting to start) checks, or going into round 1
   if (state.round ==0 || (state.round == 1 && state.prevRound==0)) {
@@ -145,13 +164,13 @@ void renderBoardNamesMessages() {
     if (forceReadyUpdates) {
       for(i=0;i<6;i++) {
         if (i<state.playerCount && state.players[i].scores[0]==1) {
-          drawTextVert(18+i*4,2,"ready");
-          drawMark(0,i+1);
+          drawTextVert(18+i*4,3,"ready");
+          drawMark(0,i+3);
         } else {
-          drawTextVert(18+i*4,2,"     ");
+          drawTextVert(18+i*4,3,"     ");
           // Only clear the dice if it is still round LOBBY
           if (state.round == 0) {
-            drawBlank(0,i+1);
+            drawBlank(0,i+3);
           }
         }
       }
@@ -163,23 +182,27 @@ void renderBoardNamesMessages() {
   // Exit early as below text is for rounds > 0 
   if (state.round == 0)
     return;
-    
+
   // Scoreboard and prompt - refresh if the active player changed, or round changed
   if (state.activePlayer != state.prevActivePlayer || state.round != state.prevRound || state.playerCount != state.prevPlayerCount) {
     
-    if (state.round == 99)
-      drawSpace(0,HEIGHT-5,200);
-
     // Remove score cursorPos
-    if (cursorPos<99) {
+    if (cursorPos>10 && cursorPos<99) {
       drawBlank(17,scoreY[cursorPos-10]);
       cursorPos = 99;
     }
 
+    if (state.round == 99) {
+      drawSpace(0,HEIGHT-5,200);
+      drawText(11,21,"score");
+      setHighlight(-1,0,0);
+    }
+
+
     // Update scores on-screen - two pass - first highlights in green the new one
     h = 0;
     scoreCursorY=0;
-    //for (k=0;k<2;k++) {
+   
       // Skip ahead to drawing the second round if the player hasn't changed
       if (state.activePlayer == state.prevActivePlayer || redraw) {
         k=1;
@@ -191,7 +214,8 @@ void renderBoardNamesMessages() {
         if (state.players[i].scores[0]==-2 || i>6)
           break;
         h=0;
-        for (j=0;j<16;j++) {
+        maxScoreY= state.round<99 ? 15 : 16;
+        for (j=0;j<maxScoreY;j++) {
           score = state.players[i].scores[j];
           if (score>-1) {
             itoa(score, tempBuffer, 10);
@@ -231,31 +255,37 @@ void renderBoardNamesMessages() {
       }
     }
 
-    //TODO - highlight active player's column with PMG
-
      // Clear old turn indicator
     if (state.prevActivePlayer>-1)
-      drawBlank(0,state.prevActivePlayer+1);
+      drawBlank(0,state.prevActivePlayer+3);
     
     // Draw new active player indicator
     if (state.activePlayer>-1) {
-      drawMark(0,state.activePlayer+1);
+      drawMark(0,state.activePlayer+3);
+      //if (state.activePlayer != 0)
+      setHighlight(state.activePlayer, state.activePlayer == 0, 0);
+    } else {
+      setHighlight(-1,0,0);
     }
 
     // Handle end of game
     if (state.round == 99) { 
 
       // Clear active indicators
-      drawTextVert(0,1,"      ");
+      drawTextVert(0,3,"            ");
       centerText(HEIGHT-3, state.prompt);
-      soundGameDone();
 
-      pause(120);
-      centerTextAlt(HEIGHT-1,"press TRIGGER/SPACE to continue");
-      state.waitingOnEndGameContinue = true;
-      state.countdownStarted = false;
+      if (state.round != state.prevRound) {
+        soundGameDone();
 
-      clearCommonInput();
+        pause(120);
+        centerTextAlt(HEIGHT-1,"press TRIGGER/SPACE to continue");
+        state.waitingOnEndGameContinue = true;
+        state.countdownStarted = false;
+      } else {
+        centerTextAlt(HEIGHT-1,"please wait..");
+      }
+        clearCommonInput();
       // while (!input.trigger) {
       //   readCommonInput();
       //   waitvsync();
@@ -263,7 +293,8 @@ void renderBoardNamesMessages() {
       // drawSpace(0,HEIGHT-5,200);
      
     } else {
-      pause(30);
+      if (state.activePlayer != 0)
+        pause(30);
       
       drawSpace(0,HEIGHT-5,200);
       if (spectators>0) {
@@ -276,8 +307,14 @@ void renderBoardNamesMessages() {
       pause(30);
     }
 
-    if (state.activePlayer == 0 && !state.viewing)
+    if (state.activePlayer == 0 && !state.viewing) {
+      setHighlight(state.activePlayer, true, 2);
+      pause(5);
       soundMyTurn();
+      soundMyTurn();
+      pause(5);
+      setHighlight(state.activePlayer, true, 0);
+    }
   }
 }
 
@@ -612,9 +649,9 @@ void waitOnPlayerMove() {
 
 // Invalidate state variables that will trigger re-rendering of screen items on the next cycle
 void clearRenderState() {
-  state.prevRound = 100;
+  state.prevRound = 99;
   state.prevPlayerCount = 0;
-  state.prevActivePlayer = -1;
+  state.prevActivePlayer = 99;
   forceReadyUpdates = true;
 }
 

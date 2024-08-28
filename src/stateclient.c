@@ -13,7 +13,7 @@
 #include "misc.h"
 #include "fujinet-network.h"
 
-char rx_buf[2048];     // buffer for payload
+char rx_buf[1024];     // buffer for payload
 
 // Internal to this file
 static char url[160];
@@ -36,12 +36,7 @@ void updateState(bool isTables) {
 
   // Load state by looping through result and extracting each string at each EOL character
   end = rx_buf + rx_len;
-  
-  // debugging
-  // POKEW(0x9000, rx_buf);
-  // POKEW(0x9004, rx_len);
-  // POKEW(0x9008, end);
-
+   
   // Ensure buffer ends with string terminator
   rx_buf[rx_len]=0;
 

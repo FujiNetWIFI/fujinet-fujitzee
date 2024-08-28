@@ -48,6 +48,8 @@ void hideDiceCursor(unsigned char x, unsigned char y);
 void saveScreen();
 void restoreScreen();
 
+void setHighlight(int8_t x, bool isThisPlayer, uint8_t flash );
+
 void initGraphics();
 void resetGraphics();
 void waitvsync();

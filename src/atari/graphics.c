@@ -19,12 +19,13 @@ extern unsigned char charset[];
 #define CHARSET_LOC 0x9000
 #define SCREEN_LOC ((uint8_t*)0x9400)
 #define SCREEN_BAK 0x8B00
+#define PM_BASE 0x8000
 
 // Stack grows down from as low as 0x9C20
 
 #define xypos(x,y) (SCREEN_LOC + x + (y)*WIDTH)
 
-unsigned char colorMode=0, oldChbas=0;
+unsigned char colorMode=0, oldChbas=0, highlightX=0, prevHighlightX=0, missleLineVisible=0, prevMissleLineVisible=0;
 
 // 26 lines
 void DisplayList =
@@ -39,11 +40,15 @@ void DisplayList =
     DL_JVB  /* JVB Destination will be updated at the real display list location*/
 };
 
-// Color scheme: Shadow, Highlights, White, Alt White, Background
+// Color scheme: 
+// Player/Missle: Selected player column, Shadow, Highlight
+// Shadow, Highlights, White, Alt White, Background
 const unsigned char colors[] = {
- 0x00, 0x2A, 0x0E, 0xCC,  0x84, // NTSC
- 0x00, 0xFA, 0x0E, 0xBC,  0x74 // PAL
+ 0x82, 0x00, 0x2A, 0x00,  0x00, 0x2A, 0x0E, 0xCC,  0x84, // NTSC
+ 0x72, 0x00, 0xFA, 0x00,  0x00, 0xFA, 0x0E, 0xBC,  0x74 // PAL
 };
+
+const OWN_PLAYER = 0xa2;
 
 const unsigned char diceChars[] = {
   // Normal dice
@@ -94,7 +99,8 @@ unsigned char cycleNextColor() {
 }
 
 void setColorMode(unsigned char mode) {
- memcpy(&OS.color0, &colors[PEEK(53268)==1 ? 5 : 0], 5);
+  colorMode = mode; 
+  memcpy(&OS.pcolr0, &colors[PEEK(53268)==1 ? 9 : 0], 9);
 }
 
 
@@ -113,18 +119,64 @@ void initGraphics() {
   oldChbas = OS.chbas;
   OS.chbas = CHARSET_LOC/256;
 
+  // Initialize player+missle graphics, single line
+  OS.sdmctl = OS.sdmctl | (12 + 16);
+  POKE(0xD407, PM_BASE/256);
+
+  // Turn on P+M
+  POKE(0xD01D, 3);
+  
+  // Players behind playfield
+  OS.gprior = 4; 
+   
+  // Vertical selector - player 0
+  memset(PM_BASE+1024+28,0xff,158);
+  POKE(0xd000,0); // horiz loc
+  POKE(0xd008,1); //  Double width
+  
+  // Missle side wall
+  memset(PM_BASE+768+29,0x18,156);
+
+  // Side wall upper and lower rounder corners
+  POKE(PM_BASE+768+26,0x20);
+  POKEW(PM_BASE+768+27,0x3030);
+
+  POKEW(PM_BASE+768+185,0x3030);
+  POKE(PM_BASE+768+187,0x24);
+  POKEW(PM_BASE+768+188,0x080c);
+  
+  POKEW(0xd005,0); // missle 1+2
+ 
   // Stub
   setColorMode(0);
 }
 
-// 19345
+void setHighlight(int8_t player, bool isThisPlayer, uint8_t flash ) {
+  POKE(0xd000,player>-1 ? player*16+112 : 0);
+  if (isThisPlayer) {
+    OS.pcolr0 = OWN_PLAYER + flash; 
+  } else {
+    setColorMode(colorMode);
+  }
+}
+
 void saveScreen() {
   memcpy(SCREEN_BAK, SCREEN_LOC, WIDTH*HEIGHT);
+  prevMissleLineVisible = missleLineVisible;
+  prevHighlightX = highlightX;
 }
 
 void restoreScreen() {
   waitvsync();
   memcpy(SCREEN_LOC, SCREEN_BAK, WIDTH*HEIGHT);
+  if (prevHighlightX) {
+    setHighlight(prevHighlightX, state.activePlayer == 0, 0);
+  }
+  
+  if (prevMissleLineVisible) {
+    POKEW(0xd005, 0xd0d0); // Right side missile location
+    missleLineVisible=1;
+  }
 }
 
 void drawText(unsigned char x, unsigned char y, char* s) {
@@ -186,6 +238,10 @@ void drawTextVert(unsigned char x, unsigned char y, char* s) {
 
 void resetScreen() { 
   waitvsync();
+  setHighlight(-1,0,0);
+  POKEW(0xd005,0);  // Right side missile location
+  missleLineVisible=false;
+
   // Clear screen memory
   memset((void*)SCREEN_LOC,0,WIDTH*HEIGHT);
 }
@@ -252,58 +308,69 @@ void drawBoard() {
   static uint8_t y,x,c;
   static unsigned char *dest;
 
-  resetScreen();
-
   // Thin horz ines
   //memset(xypos(0,7),84,40);
-  memset(xypos(10,7),84,30);
-  memset(xypos(11,10),84,29);
-  memset(xypos(0,20),84,10);
+  memset(xypos(10,9),84,30);
+  memset(xypos(11,12),84,29);
 
   // Thick horz lines
-  memset(xypos(11,18),82,29);
+  memset(xypos(17,0),82,23);
+  memset(xypos(11,2),82,29);
   memset(xypos(11,20),82,29);
 
-  // Main scores box
-  drawBox(10,0,5,19);
+  // For end game score section
+  //memset(xypos(11,22),82,29);
 
-  // Vertical linesz
+  // Main scores box
+  drawBox(10,2,5,17);
+ 
+  // Vertical lines
   c=91;
-  dest = xypos(20,0);
-  for (y=0;y<21;y++) {
-    for (x=0;x<20;x+=4) {
+  dest = xypos(16,0);
+  for (y=0;y<20;y++) {
+    for (x=0;x<24;x+=4) {
       *(dest+x)=c;
     }
-    c = (y==19) ? 88 : 124; 
+    c=124;
+    //c = (y==19) ? 88 : 124; 
     dest+=40;
   }
 
-  // Cross areas
-  dest = xypos(10,7);
+  // Cross sections
+  dest = xypos(10,9);
   for (x=0;x<7;x++) {
+    if (x) {
+      POKE(dest-40*7,86);
+      POKE(dest+40*11,88);
+    }
     POKE(dest,83);
     POKE(dest+40*3,83);
-    POKE(dest+40*11,86);
+    
     if (x)
       dest+=4;
     else
       dest+=6;
   }
 
-  POKE(xypos(16,20),88);
+  POKE(xypos(16,0),81);
+  POKEW(0xd005, 0xd0d0); // Right side missile location
+  missleLineVisible=1;
 
-  // Score names
-  for(y = 0; y<16; y++) {
+  // Set 2 missles that are the rightmost vertical line
+
+
+  // Score names (16 for end game score)
+  for(y = 0; y<14; y++) {
     drawTextAlt(11,scoreY[y],scores[y]);
   }
   
   // Fujitzee score!
-  drawFujzee(11,17);
+  drawFujzee(10,scoreY[14]);
 
 }
 
 void drawFujzee(unsigned char x, unsigned char y) {
-  memcpy(xypos(x,y),&"89:;<",5); // Fujzee
+  memcpy(xypos(x,y),&"89:;<=",6); // "/|\TZEE"
 }
 
 void drawLine(unsigned char x, unsigned char y, unsigned char w) {

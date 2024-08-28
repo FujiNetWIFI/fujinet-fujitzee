@@ -113,15 +113,15 @@ void welcomeActionVerifyServerDetails() {
   }
 }
 
-void drawLogo()
+void drawLogo(uint8_t x, uint8_t y)
 {
-  centerText(4, "fujitzee!");
+  drawBox(x,y,8,1);
+  drawTextAlt(x+1,y+1,"fujiTZEE");
 }
 
 void showPlayerNameScreen() {
   
   resetScreenWithBorder();
-  drawLogo();
 
   drawText(13,13, "enter your name:");
   drawBox(15,16,PLAYER_NAME_MAX+1,1);
@@ -152,8 +152,6 @@ void welcomeActionVerifyPlayerName() {
       playerName[i]+=32;
   }
   
-
-
   // Capture username if player didn't come in from the lobby
   if (strlen(playerName) == 0)
     showPlayerNameScreen();
@@ -162,7 +160,7 @@ void welcomeActionVerifyPlayerName() {
 /// @brief Shows the Welcome Screen with Logo. Asks player's name
 void showWelcomeScreen() {
   resetScreenWithBorder();
-  drawLogo();
+  drawLogo(WIDTH/2-5,3);
   
   loadPrefs();
 
@@ -312,6 +310,7 @@ void showTableSelectionScreen() {
   // Reset the game state
   clearRenderState();
   state.waitingOnEndGameContinue = false;
+  state.drawBoard = true;
   
   // The query will have the table already, e.g. "?table=1234"
   strcat(query, "&player=");
@@ -325,7 +324,6 @@ void showTableSelectionScreen() {
   
   // Reduce wait count for an immediate call
   state.apiCallWait=0;
-  
 }
 
 /// @brief shows in-game menu

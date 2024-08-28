@@ -90,6 +90,7 @@ typedef struct {
   bool promptChanged;
   bool countdownStarted;
   bool waitingOnEndGameContinue;
+  bool drawBoard;
 } GameState;
 
 typedef struct {
