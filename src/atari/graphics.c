@@ -25,7 +25,7 @@ extern unsigned char charset[];
 
 #define xypos(x,y) (SCREEN_LOC + x + (y)*WIDTH)
 
-unsigned char colorMode=0, oldChbas=0, highlightX=0, prevHighlightX=0, missleLineVisible=0, prevMissleLineVisible=0;
+unsigned char colorMode=0, oldChbas=0, highlightX=0, prevHighlightX=0, missleLineVisible=0, prevMissleLineVisible=0, colIndex=0;
 
 // 26 lines
 void DisplayList =
@@ -41,14 +41,14 @@ void DisplayList =
 };
 
 // Color scheme: 
-// Player/Missle: Selected player column, Shadow, Highlight
+// Player/Missle: Current player higlight, other player highlight, Shadow, Highlight
 // Shadow, Highlights, White, Alt White, Background
 const unsigned char colors[] = {
- 0x82, 0x00, 0x2A, 0x00,  0x00, 0x2A, 0x0E, 0xCC,  0x84, // NTSC
- 0x72, 0x00, 0xFA, 0x00,  0x00, 0xFA, 0x0E, 0xBC,  0x74 // PAL
+ 0xA2, 0x82, 0x00, 0x2A, 0x00,  0x00, 0x2A, 0x0E, 0xCC,  0x84, // NTSC
+ 0x92, 0x72, 0x00, 0xFA, 0x00,  0x00, 0xFA, 0x0E, 0xBC,  0x74 // PAL
 };
 
-const OWN_PLAYER = 0xa2;
+uint8_t own_player;
 
 const unsigned char diceChars[] = {
   // Normal dice
@@ -100,12 +100,15 @@ unsigned char cycleNextColor() {
 
 void setColorMode(unsigned char mode) {
   colorMode = mode; 
-  memcpy(&OS.pcolr0, &colors[PEEK(53268)==1 ? 9 : 0], 9);
+  memcpy(&OS.pcolr0, &colors[colIndex+1], 9);
 }
 
 
 void initGraphics() {
   resetScreen();
+  if (PEEK(53268)==1) {
+    colIndex=10;
+  }
   
   // Set the displaylist end JVB instruction to point to the start of the display list
   POKEW(PEEKW(0x230)+31, OS.sdlst);
@@ -154,7 +157,7 @@ void initGraphics() {
 void setHighlight(int8_t player, bool isThisPlayer, uint8_t flash ) {
   POKE(0xd000,player>-1 ? player*16+112 : 0);
   if (isThisPlayer) {
-    OS.pcolr0 = OWN_PLAYER + flash; 
+    OS.pcolr0 = colors[colIndex] + flash; 
   } else {
     setColorMode(colorMode);
   }
