@@ -15,7 +15,7 @@ void centerTextAlt(unsigned char y, char * text);
 void centerTextWide(unsigned char y, char * text);
 void centerStatusText(char * text);
 
-bool inputFieldCycle(uint8_t x, uint8_t y, uint8_t max, char* buffer);
+bool inputFieldCycle(uint8_t x, uint8_t y, uint8_t max, char* buffer, bool canEscape);
 
 
 void renderBoardNamesMessages();

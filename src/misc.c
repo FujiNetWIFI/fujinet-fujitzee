@@ -117,37 +117,38 @@ void loadPrefs() {
   read_appkey(AK_CREATOR_ID, AK_APP_ID, AK_KEY_PREFS, tempBuffer);
   
   if (strlen(tempBuffer)==0) {
-    // Default all prefs to 1 up to the local pref
-    memset(prefs,1,sizeof(prefs));
+    // Prefs in memory is defaulted to all zeros
+    prefs.localPlayerCount=1;
   } else {
-    strcpy(prefs, tempBuffer);
-    if (prefs[PREF_LOCAL]== 0xff) {
+    memcpy(&prefs, tempBuffer, sizeof(prefs));
+
+    if (prefs.debugFlag == 0xff) {
       strcpy(serverEndpoint, localServer);
     }
   }
 
-  setColorMode(prefs[PREF_COLOR]-1);
+  setColorMode(prefs.color);
 }
 
 void savePrefs() {
-  prefs[sizeof(prefs)-1] = 0; // Terminate prefs end as a string
-  write_appkey(AK_CREATOR_ID, AK_APP_ID, AK_KEY_PREFS, prefs);
+  write_appkey(AK_CREATOR_ID, AK_APP_ID, AK_KEY_PREFS, sizeof(prefs), (char*)&prefs);
 }
 
 
-void read_appkey(uint16_t creator_id, uint8_t app_id, uint8_t key_id, char* destination) {
+uint16_t read_appkey(uint16_t creator_id, uint8_t app_id, uint8_t key_id, char* destination) {
   static uint16_t read;
 
   fuji_set_appkey_details(creator_id, app_id, DEFAULT);
   if (!fuji_read_appkey(key_id, &read, destination))
     read=0;
 
-  // Add string terminator at end
+  // Add string terminator after the data ends in case it is being interpreted as a string
   destination[read] = 0;
+  return read;
 }
 
-void write_appkey(uint16_t creator_id, uint8_t app_id, uint8_t key_id, char *inputString)
+void write_appkey(uint16_t creator_id, uint8_t app_id, uint8_t key_id,  uint16_t count, char *data)
 {
  fuji_set_appkey_details(creator_id, app_id, DEFAULT);
- fuji_write_appkey(key_id, strlen(inputString), inputString);
+ fuji_write_appkey(key_id, count, data);
 }

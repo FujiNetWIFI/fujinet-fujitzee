@@ -671,7 +671,7 @@ void centerStatusText(char * text) {
 
 
 /// @brief Handles available key strokes for the defined input box (player name and chat). Returns true if user hits enter
-bool inputFieldCycle(uint8_t x, uint8_t y, uint8_t max, char* buffer) {
+bool inputFieldCycle(uint8_t x, uint8_t y, uint8_t max, char* buffer, bool canEscape) {
   static uint8_t done, curx, lastY;
   
   // Initialize first call to input box
@@ -693,7 +693,7 @@ bool inputFieldCycle(uint8_t x, uint8_t y, uint8_t max, char* buffer) {
     // Debugging - See what key was pressed
     // itoa(input.key, tempBuffer, 10);drawText(0,0, tempBuffer);
 
-    if (input.key == KEY_RETURN && curx>1) {
+    if (input.key == KEY_RETURN && curx>1 || (canEscape && input.key==KEY_ESCAPE)) {
       done=1;
       // remove cursorPos
       drawText(x+1+i,y," ");

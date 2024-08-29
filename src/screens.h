@@ -27,8 +27,11 @@ void showGameScreen();
 /// @brief shows in-game menu
 void showInGameMenuScreen();
 
-/// @brief Allow the player to modify their name
-void showPlayerNameScreen();
+/// @brief Allow a local player to modify their name
+void showPlayerNameScreen(uint8_t p);
+
+/// @brief Choose multiple local players to play
+void showPlayerGroupScreen();
 
 /// @brief Draw the title
 void drawLogo(uint8_t x, uint8_t y);

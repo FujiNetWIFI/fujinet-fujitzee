@@ -36,9 +36,9 @@ char localServer[50] = "http://127.0.0.1:8080/"; // Set 3rd byte in the e41c0300
 //char serverEndpoint[64] = "N:http://api.open-notify.org/iss-now.json";
 
 char query[50] = ""; //?table=blue&player=ERICAPL2";
-char playerName[12] = "";
 
 GameState state;
+PrefsStruct prefs;
 
 // State helper vars
 uint16_t rx_len, maxJifs;
@@ -47,7 +47,6 @@ bool forceReadyUpdates;
 // Common local scope temp variables
 unsigned char h, i, j, k, x, y;
 char tempBuffer[128];
-char prefs[10];
 
 // void test(unsigned char x, unsigned char y, unsigned char z, unsigned char w) {
 //   unsigned char g;

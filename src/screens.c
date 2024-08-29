@@ -15,6 +15,7 @@
 #include <string.h>
 
 #define PLAYER_NAME_MAX 8
+#define PLAYER_BOX_TOP 13
 
 /// @brief Convenience function to reset screen and draw border
 void resetScreenWithBorder() {
@@ -119,30 +120,137 @@ void drawLogo(uint8_t x, uint8_t y)
   drawTextAlt(x+1,y+1,"fujiTZEE");
 }
 
-void showPlayerNameScreen() {
-  
-  resetScreenWithBorder();
 
-  drawText(13,13, "enter your name:");
-  drawBox(15,16,PLAYER_NAME_MAX+1,1);
-  //drawText(16,17, playerName);
-  //i=strlen(playerName);
+void showPlayerGroupScreen() {
+  static bool showPlayers;
+  resetScreenWithBorder();
+  drawBox(5,0,28,1);
+  drawTextAlt(6,1,"fujiTZEE: LOCAL PLAYER SETUP");
+  
+  centerText(5,"up to 4 players can play from the");
+  centerText(7,"the same system, sharing controls");
+
+  centerTextAlt(10,"press 1-4 to edit/remove player");
+
+  centerTextAlt(HEIGHT-2,"PRESS trigger/space WHEN DONE");
   
   clearCommonInput();
-  //while (input.key != KEY_RETURN || i<2) {
-  while (!inputFieldCycle(16, 17, PLAYER_NAME_MAX, playerName)) ;
+  showPlayers = true;
+
+  while (!input.trigger ) {
+    readCommonInput();
+    
+    // Exit early
+    if (input.key == 'q' || input.key == KEY_ESCAPE)
+      break;
+      
+    // Edit player by number
+    if (input.key >= '1' && input.key <= '4') {
+      i = input.key-'0';
+      if (i<=prefs.localPlayerCount) {
+        saveScreen();
+        showPlayerNameScreen(i);
+        restoreScreen();
+        showPlayers=true;
+      } else {
+        soundRelease();
+      } 
+    }
+
+    // Add new player
+    if (input.key == 'a') {
+      if (prefs.localPlayerCount<4) {
+        // Clear name
+        strcpy(&prefs.localPlayer[prefs.localPlayerCount],"");
+        prefs.localPlayerCount++;
+        saveScreen();
+        showPlayerNameScreen(prefs.localPlayerCount);
+        restoreScreen();
+        showPlayers=true;
+      } else {
+        soundRelease();
+      }
+    }
+
+    waitvsync();
+    if (showPlayers) {
+      showPlayers = false;
+
+      for (i=PLAYER_BOX_TOP;i<PLAYER_BOX_TOP+10;i++)
+        drawSpace(WIDTH/2-8,i,16);
+
+      drawBox(WIDTH/2-8,PLAYER_BOX_TOP,14,2+prefs.localPlayerCount + (prefs.localPlayerCount<4 ? 2:0));
+      for(i=0;i<prefs.localPlayerCount;i++) {
+        itoa(i+1,tempBuffer, 10);
+        drawTextAlt(WIDTH/2-6,PLAYER_BOX_TOP+2+i, tempBuffer);
+        drawText(WIDTH/2-5,PLAYER_BOX_TOP+2+i,":");
+        drawText(WIDTH/2-4,PLAYER_BOX_TOP+2+i,prefs.localPlayer[i].name);
+      }
+      if (prefs.localPlayerCount<4) 
+        drawTextAlt(WIDTH/2-6,PLAYER_BOX_TOP+3+i, "a:ADD PLAYER");
+    }
+  }
+  clearCommonInput();
+}
+
+void showPlayerNameScreen(uint8_t p) {
+  static char* playerName;
+  static bool canDelete;
+  resetScreenWithBorder();
+
+  canDelete = prefs.localPlayerCount>1;
+
+  if (p>0) {
+    strcpy(tempBuffer,"player ");
+    itoa(p,tempBuffer+7, 10);
+    centerTextAlt(5,tempBuffer);
+    p--;
+  } else {
+    // First load of game
+    tempBuffer[0]=p=0;
+    centerTextAlt(4, "WELCOME TO fujiTZEE!");
+  }
+
+  centerText(7, "enter your name:");
+  centerText(17,  "name must be at least 2 letters.");
+
+  if (canDelete) {
+    centerTextAlt(20,"to REMOVE this player, press ESC");
+  }
+
+  drawBox(15,10,PLAYER_NAME_MAX+1,1);
+
+  playerName = prefs.localPlayer[p].name;
   
-  for (y=13;y<19;++y)
-    drawSpace(13,y,17);
+  clearCommonInput();
+  while (!inputFieldCycle(16, 11, PLAYER_NAME_MAX, playerName, canDelete));
   
-  write_appkey(AK_LOBBY_CREATOR_ID,  AK_LOBBY_APP_ID, AK_LOBBY_KEY_USERNAME, playerName);
+  if (input.key == KEY_ESCAPE && canDelete) {
+    // Clear this player's name
+    memset(playerName,0,9);
+
+    // Shuffle downward player to take place if available
+    for (i=p+1;i<prefs.localPlayerCount;i++) {
+      strcpy(&prefs.localPlayer[i-1].name, &prefs.localPlayer[i].name);
+      memset(&prefs.localPlayer[i].name,0,9);
+    }
+    prefs.localPlayerCount--;
+  }
+  
+  if (p==0) {
+    write_appkey(AK_LOBBY_CREATOR_ID,  AK_LOBBY_APP_ID, AK_LOBBY_KEY_USERNAME,strlen(playerName), playerName);
+  }
+  savePrefs();
 }
 
 /// @brief Action called in Welcome Screen to verify player has a name
 void welcomeActionVerifyPlayerName() {
+  static char* playerName;
+  playerName = prefs.localPlayer[0].name;
+
   // Read player's name from app key
   read_appkey(AK_LOBBY_CREATOR_ID,  AK_LOBBY_APP_ID, AK_LOBBY_KEY_USERNAME, tempBuffer);  
-  tempBuffer[12]=0;
+  tempBuffer[8]=0;
   strcpy(playerName,tempBuffer);
 
 
@@ -154,13 +262,13 @@ void welcomeActionVerifyPlayerName() {
   
   // Capture username if player didn't come in from the lobby
   if (strlen(playerName) == 0)
-    showPlayerNameScreen();
+    showPlayerNameScreen(0);
 }
 
 /// @brief Shows the Welcome Screen with Logo. Asks player's name
 void showWelcomeScreen() {
-  resetScreenWithBorder();
-  drawLogo(WIDTH/2-5,3);
+  //resetScreenWithBorder();
+  //drawLogo(WIDTH/2-5,3);
   
   loadPrefs();
 
@@ -170,15 +278,15 @@ void showWelcomeScreen() {
   welcomeActionVerifyPlayerName();
   welcomeActionVerifyServerDetails();
 
-  strcpy(tempBuffer, "welcome ");
-  strcat(tempBuffer, playerName);
-  centerText(13,tempBuffer);  
+  //strcpy(tempBuffer, "welcome ");
+  //strcat(tempBuffer, prefs.localPlayer[0].name);
+  //centerText(14,tempBuffer);  
   
-  pause(45);
+  //pause(45);
 
   // If first run, show the help screen
-  if (prefs[PREF_HELP]!=2) {
-    prefs[PREF_HELP]=2;
+  if (!prefs.seenHelp) {
+    prefs.seenHelp=true;
     savePrefs();
     showHelpScreen();
   } 
@@ -196,11 +304,12 @@ void showTableSelectionScreen() {
 
     // Show the status immediately before retrival
     resetScreenWithBorder();
+    drawLogo(WIDTH/2-5,0);
     centerStatusText("refreshing game list..");
-    centerText(3, "choose a game to join");
-    drawText(6,6, "game");
-    drawText(WIDTH-13,6, "players");
-    drawLine(6,7,WIDTH-12);
+    centerText(4, "choose a game to join");
+    drawText(6,7, "game");
+    drawText(WIDTH-13,7, "players");
+    drawLine(6,8,WIDTH-12);
    
     pause(waitTime);
     waitvsync();
@@ -213,10 +322,10 @@ void showTableSelectionScreen() {
       updateState(true);
       if (state.tableCount>0) {
         for(i=0;i<state.tableCount;++i) {
-          drawTextAlt(6,8+i*2, state.tables[i].name);
-          drawTextAlt(WIDTH-6-strlen(state.tables[i].players), 8+i*2, state.tables[i].players);
+          drawTextAlt(6,9+i*2, state.tables[i].name);
+          drawTextAlt(WIDTH-6-strlen(state.tables[i].players), 9+i*2, state.tables[i].players);
           if (state.tables[i].players[0]>'0') {
-            drawText(WIDTH-6-strlen(state.tables[i].players)-2, 8+i*2, "*");
+            drawText(WIDTH-6-strlen(state.tables[i].players)-2, 9+i*2, "*");
           }
         }
       } else {
@@ -225,16 +334,17 @@ void showTableSelectionScreen() {
 
       //drawStatusText("r>efresh   h+elp  c:olor   n+ame   q+uit");
       //centerStatusText("Refresh Help Color Name Quit");
-      centerStatusText("Refresh  Help  Name  Quit");
+      //centerStatusText("Refresh  Help  Name  Quit");
+      centerStatusText("Refresh  Help  Players  Quit");
       
       shownChip=0;
 
       clearCommonInput();
       while (!input.trigger || !state.tableCount) {
         if (altChip<50)
-          drawMark(4,8+tableIndex*2);
+          drawMark(4,9+tableIndex*2);
         else
-          drawAltMark(4,8+tableIndex*2);
+          drawAltMark(4,9+tableIndex*2);
 
         waitvsync();
         altChip=(altChip+1) % 60;
@@ -247,11 +357,11 @@ void showTableSelectionScreen() {
         } else if (input.key == 'r' || input.key =='R') {
           break;
         } else if (input.key == 'c' || input.key =='C') {
-          prefs[PREF_COLOR] = cycleNextColor()+1;
+          prefs.color = cycleNextColor();
           savePrefs();
           break;
-         } else if (input.key == 'n' || input.key =='N') {
-          showPlayerNameScreen();
+         } else if (input.key == 'p' || input.key =='P') {
+          showPlayerGroupScreen();
           break;
         } else if (input.key == 'q' || input.key =='Q') {
           quit();
@@ -262,9 +372,9 @@ void showTableSelectionScreen() {
         
         if (!shownChip || (state.tableCount>0 && input.dirY)) {
 
-          drawBlank(4,8+tableIndex*2);
-          drawTextAlt(6,8+tableIndex*2, state.tables[tableIndex].name);
-          drawTextAlt(WIDTH-6-strlen(state.tables[tableIndex].players), 8+tableIndex*2, state.tables[tableIndex].players);
+          drawBlank(4,9+tableIndex*2);
+          drawTextAlt(6,9+tableIndex*2, state.tables[tableIndex].name);
+          drawTextAlt(WIDTH-6-strlen(state.tables[tableIndex].players), 9+tableIndex*2, state.tables[tableIndex].players);
 
           tableIndex+=input.dirY;
           if (tableIndex==255) 
@@ -272,9 +382,9 @@ void showTableSelectionScreen() {
           else if (tableIndex>=state.tableCount)
             tableIndex=0;
 
-          drawMark(4,8+tableIndex*2);
-          drawText(6,8+tableIndex*2, state.tables[tableIndex].name);
-          drawText(WIDTH-6-strlen(state.tables[tableIndex].players), 8+tableIndex*2, state.tables[tableIndex].players);
+          drawMark(4,9+tableIndex*2);
+          drawText(6,9+tableIndex*2, state.tables[tableIndex].name);
+          drawText(WIDTH-6-strlen(state.tables[tableIndex].players), 9+tableIndex*2, state.tables[tableIndex].players);
 
           soundCursor();
 
@@ -298,7 +408,7 @@ void showTableSelectionScreen() {
         strcat(tempBuffer, query);
 
         //  Update server app key in case of reboot 
-        write_appkey(AK_LOBBY_CREATOR_ID,  AK_LOBBY_APP_ID, AK_LOBBY_KEY_SERVER, tempBuffer);
+        write_appkey(AK_LOBBY_CREATOR_ID,  AK_LOBBY_APP_ID, AK_LOBBY_KEY_SERVER, strlen(tempBuffer), tempBuffer);
 
       }
     }
@@ -314,7 +424,7 @@ void showTableSelectionScreen() {
   
   // The query will have the table already, e.g. "?table=1234"
   strcat(query, "&player=");
-  strcat(query, playerName);
+  strcat(query, prefs.localPlayer[0].name);
   
   // Replace space with + for player name
   i=strlen(query);
@@ -355,7 +465,7 @@ void showInGameMenuScreen() {
       switch (input.key) {
         case 'c':
         case 'C':
-            prefs[PREF_COLOR] = cycleNextColor()+1;
+            prefs.color = cycleNextColor();
             savePrefs();
             i=2;
             break;
@@ -370,14 +480,13 @@ void showInGameMenuScreen() {
         case 'Q':
           resetScreenWithBorder();
           centerText(10, "please wait");
-          
 
           // Inform server player is leaving
           apiCall("leave");
           progressAnim(12);
           
           //  Clear server app key in case of reboot 
-          write_appkey(AK_LOBBY_CREATOR_ID,  AK_LOBBY_APP_ID, AK_LOBBY_KEY_SERVER, "");
+          write_appkey(AK_LOBBY_CREATOR_ID,  AK_LOBBY_APP_ID, AK_LOBBY_KEY_SERVER,0, "");
 
           // Clear query so a new table will be selected
           strcpy(query,"");

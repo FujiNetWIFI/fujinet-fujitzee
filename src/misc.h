@@ -30,10 +30,6 @@
 #define AK_APP_ID 3               // Fujzee App ID
 #define AK_KEY_PREFS 0            // Preferences
 
-#define PREF_HELP 0  // 1/2 - seen help screen no/yes
-#define PREF_COLOR 1 // 1/2 - Color mode
-#define PREF_LOCAL 2 // 1/8 - If appkey is manually set to 0xFF, use localhost instead of prod server
-
 #define PLAYER_MAX 12
 
 #define FUJITZEE_SCORE 14
@@ -91,6 +87,9 @@ typedef struct {
   bool countdownStarted;
   bool waitingOnEndGameContinue;
   bool drawBoard;
+
+  uint8_t currentLocalPlayer;
+  
 } GameState;
 
 typedef struct {
@@ -101,20 +100,32 @@ typedef struct {
 } InputStruct;
 
 
+typedef struct {
+  char name[9];
+} LocalPlayer;
+
+typedef struct {
+  bool seenHelp;
+  uint8_t color;
+  uint8_t debugFlag; // 0xFF to use localhost instead of server
+  uint8_t localPlayerCount;
+  LocalPlayer localPlayer[4];
+} PrefsStruct;
+
+
 extern uint16_t rx_len, maxJifs;
 extern bool forceReadyUpdates;
 extern char tempBuffer[128];
 extern char query[50];
-extern char playerName[12];
 extern char serverEndpoint[50];
 extern char localServer[50];
 
 extern GameState state;
 extern InputStruct input;
+extern PrefsStruct prefs;
 
 // Common local scope temp variables
 extern unsigned char h, i, j, k, x, y;
-extern char prefs[10];
 
 void pause(unsigned char frames);
 void clearCommonInput();
@@ -122,7 +133,12 @@ void readCommonInput();
 void loadPrefs();
 void savePrefs();
 
-void read_appkey(uint16_t creator_id, uint8_t app_id, uint8_t key_id, char* destination);
-void write_appkey(uint16_t creator_id, uint8_t app_id, uint8_t key_id, char *inputString);
+
+/// @brief Helper method to write to an appkey
+void write_appkey(uint16_t creator_id, uint8_t app_id, uint8_t key_id,  uint16_t count, char *data);
+
+/// @brief Helper method to read from an appkey.
+/// NULL will be appended to data in case this is a string, though the length returned will not consider the NULL.
+uint16_t read_appkey(uint16_t creator_id, uint8_t app_id, uint8_t key_id, char* destination);
 
 #endif /* MISC_H */
