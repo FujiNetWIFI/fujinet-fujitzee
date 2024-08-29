@@ -94,6 +94,9 @@ const unsigned char diceChars[] = {
 
 };
 
+uint8_t cursorUpper[] = {177,182,182,182,178,0,0,0,0,0};
+uint8_t cursorLower[] = {179,182,182,182,180,0,0,0,0,0};
+
 unsigned char cycleNextColor() {
   return 0;
 }
@@ -252,7 +255,8 @@ void resetScreen() {
 void drawDie(unsigned char x, unsigned char y, unsigned char s, bool isSelected, bool isHighlighted) {
   static unsigned char *source, *dest;
   
-  source=diceChars + (s-1)*9 ; // Locate the diceChar index for this die number
+  // Locate the diceChar index for this die number
+  source=diceChars + (s-1)*9 ; 
   
   // Change the dice color
   if (isSelected)
@@ -262,8 +266,8 @@ void drawDie(unsigned char x, unsigned char y, unsigned char s, bool isSelected,
   if (isHighlighted)
     source+=153;
 
+  // Draw the dice to the screen
   dest = xypos(x,y);
-  
   memcpy(dest, source, 3);
   memcpy(dest+40, source+3, 3);
   memcpy(dest+80, source+6, 3);
@@ -307,6 +311,10 @@ bool isEmpty(unsigned char x, unsigned char y) {
   return PEEK(xypos(x,y))==0;
 }
 
+void clearBelowBoard() {
+  memset(xypos(0,HEIGHT-5),0,200);
+}
+
 void drawBoard() {
   static uint8_t y,x,c;
   static unsigned char *dest;
@@ -321,9 +329,6 @@ void drawBoard() {
   memset(xypos(11,2),82,29);
   memset(xypos(11,20),82,29);
 
-  // For end game score section
-  //memset(xypos(11,22),82,29);
-
   // Main scores box
   drawBox(10,2,5,17);
  
@@ -335,7 +340,6 @@ void drawBoard() {
       *(dest+x)=c;
     }
     c=124;
-    //c = (y==19) ? 88 : 124; 
     dest+=40;
   }
 
@@ -346,30 +350,27 @@ void drawBoard() {
       POKE(dest-40*7,86);
       POKE(dest+40*11,88);
     }
-    POKE(dest,83);
-    POKE(dest+40*3,83);
+    *dest=*(dest+40*3)=83;
     
     if (x)
       dest+=4;
     else
       dest+=6;
   }
-
+  
   POKE(xypos(16,0),81);
-  POKEW(0xd005, 0xd0d0); // Right side missile location
-  missleLineVisible=1;
 
   // Set 2 missles that are the rightmost vertical line
-
+  POKEW(0xd005, 0xd0d0); // Right side missile location
+  missleLineVisible=1;
 
   // Score names (16 for end game score)
   for(y = 0; y<14; y++) {
     drawTextAlt(11,scoreY[y],scores[y]);
   }
   
-  // Fujitzee score!
+  // Fujitzee score text
   drawFujzee(10,scoreY[14]);
-
 }
 
 void drawFujzee(unsigned char x, unsigned char y) {
@@ -404,46 +405,31 @@ void drawBox(unsigned char x, unsigned char y, unsigned char w, unsigned char h)
   *(pos+w+1)=90;
 }
 
-void drawDiceCursor(unsigned char x, unsigned char y) {
+void drawDiceCursorInternal(unsigned char x, unsigned char offset) {
   static unsigned char i;
   static unsigned char* pos;
+  
+  pos = xypos(x-1,HEIGHT-5);
 
-  pos = xypos(x-1,y-1);
-
-  // Top row
-  *pos=177;
-  memset(pos+1,182,3);
-  *(pos+4)=178;
-
+  // Top
+  memcpy(pos, cursorUpper+offset, 5);
+  
   // Sides
   for(i=0;i<3;i++) {
     pos+=40;
-    *pos=*(pos+4)=181;
+    *pos=*(pos+4)=offset? 0 :181;
   }
-  
-  // Bottom row
-  *(pos+=40)=179;
-  memset(pos+1,182,3);
-  *(pos+4)=180;
+
+  // Bottom
+  memcpy(pos+40, cursorLower+offset, 5);
 }
 
-void hideDiceCursor(unsigned char x, unsigned char y) {
-static unsigned char i;
-  static unsigned char* pos;
+void drawDiceCursor(unsigned char x) {
+  drawDiceCursorInternal(x,0);
+}
 
-  pos = xypos(x-1,y-1);
-
-  // Top row
-  memset(pos,0,5);
-
-  // Sides
-  for(i=0;i<3;i++) {
-    pos+=40;
-    *pos=*(pos+4)=0;
-  }
-  
-  // Bottom row
-  memset(pos+40,0,5);
+void hideDiceCursor(unsigned char x) {
+  drawDiceCursorInternal(x,5);
 }
 
 void resetGraphics() {
@@ -451,7 +437,5 @@ void resetGraphics() {
   OS.chbas = oldChbas;
   waitvsync();
 }
-
-
 
 #endif /* __C64__ */

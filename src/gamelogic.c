@@ -37,7 +37,7 @@ void processStateChange() {
 
 void renderBoardNamesMessages() {
   static bool redraw;
-  static uint8_t scoreCursorX, scoreCursorY, c, len,maxScoreY;
+  static uint8_t scoreCursorX, scoreCursorY, c, len,maxScoreY, newScoreFound, ignoreNewScore, mostRecentPlayer;
   static Player *player; 
   static int16_t score;
   
@@ -87,63 +87,59 @@ void renderBoardNamesMessages() {
         drawSpace(13+i*4, scoreY[j], 3);
       }
     }
-    drawSpace(0,scoreY[15],40);
-    
+    //drawSpace(0,scoreY[15],40);
+    clearBelowBoard();
     centerTextAlt(HEIGHT-1,"press TRIGGER/SPACE to toggle");
   }
 
 
   // Draw player names if the count changed
-  if (true) { // (redraw || state.playerCount != state.prevPlayerCount || state.round == 0 || (state.round==1 && state.prevRound==0)) {
-    spectators=0;
+  spectators=0;
 
-    for(i=1;i<=PLAYER_MAX;i++) {
-      y=i+2;
-      x=14+i*4;
-     
-      if (i<=state.playerCount) {
-        
-        player = &state.players[i-1]; 
-        c= player->name[player->alias];
-        len = (uint8_t)strlen(player->name);
-        
-        if (player->scores[0]==-2) {
-          drawSpec(0,y);
-          spectators++;
-          if (i<=PLAYER_MAX) {
-            drawBlank(x,1);
-          }
-        } else { 
-          if (state.round>0 && state.activePlayer != i-1)
-            drawBlank(0,y);
-           // Player initials across top of screen
-          drawCharAlt(x,1,c);
-        }
-        for (j=0;j<player->alias;j++) {
-          drawChar(1+j,y,player->name[j]);
-        }
-        drawCharAlt(1+player->alias,y,c);
-        drawText(2+player->alias,y,player->name+player->alias+1);
-        drawSpace(1+len, y, 8-len);
-
-      } else if (i<=state.prevPlayerCount) {
-        // Blank out entries for this player
-        drawSpace(0,y,9);
-       
-        // Blank scoreboard
-        if (i<7) {
+  for(i=1;i<=PLAYER_MAX;i++) {
+    y=i+2;
+    x=14+i*4;
+    
+    if (i<=state.playerCount) {
+      
+      player = &state.players[i-1]; 
+      c= player->name[player->alias];
+      len = (uint8_t)strlen(player->name);
+      
+      if (player->scores[0]==-2) {
+        drawSpec(0,y);
+        spectators++;
+        if (i<=PLAYER_MAX) {
           drawBlank(x,1);
-          for(j=0;j<15;j++)  {
-            drawSpace(x-1, scoreY[j], 3);
-          }
+        }
+      } else { 
+        if (state.round>0 && state.activePlayer != i-1)
+          drawBlank(0,y);
+          // Player initials across top of screen
+        drawCharAlt(x,1,c);
+      }
+      for (j=0;j<player->alias;j++) {
+        drawChar(1+j,y,player->name[j]);
+      }
+      drawCharAlt(1+player->alias,y,c);
+      drawText(2+player->alias,y,player->name+player->alias+1);
+      drawSpace(1+len, y, 8-len);
+
+    } else if (i<=state.prevPlayerCount) {
+      // Blank out entries for this player
+      drawSpace(0,y,9);
+      
+      // Blank scoreboard
+      if (i<7) {
+        drawBlank(x,1);
+        for(j=0;j<15;j++)  {
+          drawSpace(x-1, scoreY[j], 3);
         }
       }
-
     }
 
-    //if the player count changed, change the active player #, since a new player may have the same activePlayer number
-    //state.prevActivePlayer = -1;
   }
+
 
 
   // Round 0 (waiting to start) checks, or going into round 1
@@ -193,66 +189,69 @@ void renderBoardNamesMessages() {
     }
 
     if (state.round == 99) {
-      drawSpace(0,HEIGHT-5,200);
+      clearBelowBoard();
       drawText(11,21,"score");
       setHighlight(-1,0,0);
     }
 
 
     // Update scores on-screen - two pass - first highlights in green the new one
-    h = 0;
+    newScoreFound = 0;
     scoreCursorY=0;
    
-      // Skip ahead to drawing the second round if the player hasn't changed
-      if (state.activePlayer == state.prevActivePlayer || redraw) {
-        k=1;
-      } else {
-        k=0;
-      }
-      for (i=0;i<state.playerCount;i++) {
-        // Break early if we reach spectators or go beyond 6
-        if (state.players[i].scores[0]==-2 || i>6)
-          break;
-        h=0;
-        maxScoreY= state.round<99 ? 15 : 16;
-        for (j=0;j<maxScoreY;j++) {
-          score = state.players[i].scores[j];
-          if (score>-1) {
-            itoa(score, tempBuffer, 10);
-            len=(uint8_t)strlen(tempBuffer);
-            if (len<3) {
-              drawSpace(17+i*4,scoreY[j],len);
-            }
-            if (j==15 || (h==0 && k==0 && i>0 && state.activePlayer>-1 && isEmpty(19+i*4, scoreY[j]))) {
-              drawTextAlt(20-len+i*4,scoreY[j],tempBuffer);
-              if (scoreCursorY==0 ) {
-                scoreCursorY=scoreY[j];
-                scoreCursorX=17+i*4;
-              }
-              h=1;
-            } else {
-              drawText(20-len+i*4,scoreY[j],tempBuffer);
-            }
-          } else if (k==1) {
-            // Draw blank (just in case there was something there from a previous player)
-            drawSpace(17+i*4,scoreY[j],3);
+    // Skip ahead to drawing the second round if the player hasn't changed
+    ignoreNewScore= state.activePlayer == state.prevActivePlayer || redraw;
+    
+    // In case this client is lagging behind (multiple players scored since)
+    // only animate the most recent player's score
+    mostRecentPlayer = (state.activePlayer+state.playerCount-1) % state.playerCount;
+    while (state.players[mostRecentPlayer].scores[0]==-2) {
+      mostRecentPlayer = (mostRecentPlayer+state.playerCount-1) % state.playerCount;
+    }
+
+    for (i=state.playerCount-1;i<255;i--) {
+      // Skip spectators or going beyond 6 players
+      if (i>5 || state.players[i].scores[0]==-2)
+        continue;
+      
+      maxScoreY= state.round<99 ? 15 : 16;
+      for (j=0;j<maxScoreY;j++) {
+        score = state.players[i].scores[j];
+        if (score>-1) {
+          itoa(score, tempBuffer, 10);
+          len=(uint8_t)strlen(tempBuffer);
+          if (len<3) {
+            drawSpace(17+i*4,scoreY[j],len);
           }
+          if (j==15 || (!newScoreFound && !ignoreNewScore && i>0 && i==mostRecentPlayer && isEmpty(19+i*4, scoreY[j]))) {
+            drawTextAlt(20-len+i*4,scoreY[j],tempBuffer);
+            if (scoreCursorY==0 ) {
+              scoreCursorY=scoreY[j];
+              scoreCursorX=17+i*4;
+            }
+            newScoreFound=1;
+          } else {
+            drawText(20-len+i*4,scoreY[j],tempBuffer);
+          }
+        } else if (ignoreNewScore) {
+          // Draw blank (just in case there was something there from a previous player)
+          drawSpace(17+i*4,scoreY[j],3);
         }
+      }
        
       //}
+    }
 
-      // Pause unless a ton of numbers changed
-      if (!redraw && state.round<99 && scoreCursorY>0 && h) {
-        drawCursor(scoreCursorX,scoreCursorY, 0);
-       //  soundScoreCursor();
-        pause(25);
-        //for (i=0;i<2;i++) {
-          drawCursor(scoreCursorX,scoreCursorY, 1); soundScore();pause(5);
-          drawCursor(scoreCursorX,scoreCursorY, 0); //pause(10);
-       // }
-        pause(30);
-        drawBlank(scoreCursorX,scoreCursorY);
-      }
+    // Animate arrow showing newly added score
+    if (!redraw && state.round<99 && scoreCursorY>0 && newScoreFound) {
+      drawCursor(scoreCursorX,scoreCursorY, 0);
+      pause(25);
+      drawCursor(scoreCursorX,scoreCursorY, 1);
+      soundScore();
+      pause(5);
+      drawCursor(scoreCursorX,scoreCursorY, 0);
+      pause(30);
+      drawBlank(scoreCursorX,scoreCursorY);
     }
 
      // Clear old turn indicator
@@ -285,18 +284,12 @@ void renderBoardNamesMessages() {
       } else {
         centerTextAlt(HEIGHT-1,"please wait..");
       }
-        clearCommonInput();
-      // while (!input.trigger) {
-      //   readCommonInput();
-      //   waitvsync();
-      // }
-      // drawSpace(0,HEIGHT-5,200);
-     
+        clearCommonInput();     
     } else {
       if (state.activePlayer != 0)
         pause(30);
       
-      drawSpace(0,HEIGHT-5,200);
+      clearBelowBoard();
       if (spectators>0) {
         itoa(spectators, tempBuffer, 10);
         strcat(tempBuffer," watching");
@@ -356,9 +349,18 @@ void handleAnimation() {
 
   state.rollFrames--;
   
-  // Is fujitzee eligble 
-  isFujitzee = (state.activePlayer==0) && state.rollFrames == 0 && state.validScores[FUJITZEE_SCORE] == 50 ? 1 : 0;
-
+  // Check for Fujitzee roll (all 5 dice match each other)
+  // To display special animation
+  if (state.rollFrames==0) {
+    for (i=1;i<5;i++) {
+      if (state.dice[i]!=state.dice[0])
+        break;
+    }
+    isFujitzee=i==5;
+  } else {
+    isFujitzee=0;
+  }
+  
   // Draw the dice, randomly displaying the ones that are currently being rolled
   if (state.rollFrames % 4==0)
     soundRollDice();
@@ -414,7 +416,7 @@ void processInput() {
   if (state.waitingOnEndGameContinue) {
     if (input.trigger) {
       state.waitingOnEndGameContinue = false;
-      drawSpace(0,HEIGHT-5,200);
+      clearBelowBoard();
       clearRenderState();
     }
   } else if (!state.viewing) {
@@ -444,19 +446,6 @@ void processInput() {
         showInGameMenuScreen();  
         break;
     }    
-
-  // static bool chatInit=false;
-  // if (kbhit()) {
-  //   //if (!chatInit) {
-  //   //  drawText(20,23,">>");
-  //   //  inputFieldCycle(22,23,18, chat);
-  //     //chat[0]=0;
-  //     //chatInit=true;
-  //   //}
-
-    
-  // }
-  //readCommonInput();
 }
 
 void waitOnPlayerMove() {
@@ -523,7 +512,7 @@ void waitOnPlayerMove() {
       
       // Hide cursorPos
       if (prevCursorPos < 6)
-        hideDiceCursor(4*prevCursorPos-(prevCursorPos==0)+16, HEIGHT-4);
+        hideDiceCursor(4*prevCursorPos-(prevCursorPos==0)+16);
       else {
         drawBlank(17,scoreY[prevCursorPos-10]);
         if (state.validScores[prevCursorPos-10]==0) {
@@ -533,7 +522,7 @@ void waitOnPlayerMove() {
 
       // Draw cursorPos
       if (cursorPos < 6) {
-        drawDiceCursor(4*cursorPos-(cursorPos==0)+16, HEIGHT-4);
+        drawDiceCursor(4*cursorPos-(cursorPos==0)+16);
         soundCursor();
       } else {
         drawCursor(17,scoreY[cursorPos-10],0);
@@ -596,7 +585,7 @@ void waitOnPlayerMove() {
         sendMove(tempBuffer);
 
         state.playerMadeMove = true;
-        hideDiceCursor(4*prevCursorPos-(prevCursorPos==0)+16, HEIGHT-4);
+        hideDiceCursor(4*prevCursorPos-(prevCursorPos==0)+16);
         // Clear clock
         drawSpace(6,HEIGHT-3,3);
         return;
@@ -630,7 +619,7 @@ void waitOnPlayerMove() {
   }
 
   // Timed out, so hide all scores
-  drawSpace(0,HEIGHT-5,200);
+  clearBelowBoard();
   centerText(HEIGHT-3,"you timed out. scoring first free row.");
   state.playerMadeMove=1;
   i=0;
@@ -686,7 +675,6 @@ bool inputFieldCycle(uint8_t x, uint8_t y, uint8_t max, char* buffer) {
   static uint8_t done, curx, lastY;
   
   // Initialize first call to input box
-  //i=strlen(buffer);
   if (done == 1 || lastY != y) {
     done=0;
     lastY=y;
@@ -695,12 +683,6 @@ bool inputFieldCycle(uint8_t x, uint8_t y, uint8_t max, char* buffer) {
     drawTextcursorPos(x+curx,y);
     enableKeySounds();
   }
-   // curx=i;
-   // done=0;
- // }
-
-
-
 
   // Process any waiting keystrokes
   if (kbhit()) {
@@ -732,10 +714,10 @@ bool inputFieldCycle(uint8_t x, uint8_t y, uint8_t max, char* buffer) {
     drawTextAlt(x,y, buffer);
     drawTextcursorPos(x+curx,y);
 
-    if (done==1) 
+    if (done) 
       disableKeySounds();
 
-    return done==1;
+    return done;
   }
 
   return false;

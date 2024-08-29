@@ -26,6 +26,8 @@ void drawTextcursorPos(unsigned char x, unsigned char y);
 void drawTextVert(unsigned char x, unsigned char y, char* s);
 bool isEmpty(unsigned char x, unsigned char y);
 
+void clearBelowBoard();
+
 void drawChar(unsigned char x, unsigned char y, char c);
 void drawCharAlt(unsigned char, unsigned char y, char c);
 
@@ -42,8 +44,8 @@ void drawLine(unsigned char x, unsigned char y, unsigned char w);
 void drawBox(unsigned char x, unsigned char y, unsigned char w, unsigned char h);
 void drawBorder();
 void drawBoard();
-void drawDiceCursor(unsigned char x, unsigned char y);
-void hideDiceCursor(unsigned char x, unsigned char y);
+void drawDiceCursor(unsigned char x);
+void hideDiceCursor(unsigned char x);
 
 void saveScreen();
 void restoreScreen();
