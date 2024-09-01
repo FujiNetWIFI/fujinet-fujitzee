@@ -13,6 +13,7 @@
 
 void updateState(bool isTables);
 uint8_t getStateFromServer();
+void apiCallForAll(char* path );
 uint8_t apiCall(char *path );
 void sendMove(char* move);
 

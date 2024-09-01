@@ -14,7 +14,7 @@ uint8_t chat[20]="";
 //uint8_t scoreY[] = {1,2,3,4,5,6, 8, 9,11,12,13,14,15,16,17,19};
 uint8_t scoreY[] =   {3,4,5,6,7,8,10,11,13,14,15,16,17,18,19,21};
 char* scores[]={"one","two","three","four","five","six","total","bonus","set 3","set 4","house","s run","l run","count"};
-uint8_t cursorPos, prevCursorPos, spectators;
+uint8_t cursorPos, prevCursorPos, spectators, inputField_done, validX;
 
 void progressAnim(unsigned char y) {
   for(i=0;i<3;++i) {
@@ -68,7 +68,7 @@ void renderBoardNamesMessages() {
       if (!state.countdownStarted && state.prompt[0]== 's') {
           soundJoinGame();
           if (state.players[0].scores[0] < 1) {
-            sendMove("ready");
+            apiCallForAll("ready");
           }
           
           state.countdownStarted = true;
@@ -107,12 +107,19 @@ void renderBoardNamesMessages() {
       len = (uint8_t)strlen(player->name);
       
       if (player->scores[0]==-2) {
+        // Draw spec icon in front of name 
         drawSpec(0,y);
         spectators++;
-        if (i<=PLAYER_MAX) {
+        // Clear initial/scoreboard for this player index if they were not previously viewing
+        if (!player->isViewing && i<7) {
           drawBlank(x,1);
+          for(j=0;j<15;j++)  {
+            drawSpace(x-1, scoreY[j], 3);
+          }
+          player->isViewing=true;
         }
       } else { 
+        player->isViewing=false;
         if (state.round>0 && state.activePlayer != i-1)
           drawBlank(0,y);
           // Player initials across top of screen
@@ -184,13 +191,17 @@ void renderBoardNamesMessages() {
     
     // Remove score cursorPos
     if (cursorPos>10 && cursorPos<99) {
-      drawBlank(17,scoreY[cursorPos-10]);
+      drawBlank(validX,scoreY[cursorPos-10]);
       cursorPos = 99;
     }
 
     if (state.round == 99) {
       clearBelowBoard();
-      drawText(11,21,"score");
+
+      // Only specify scores header if there are scores (game not aborted early)
+      if (state.players[0].scores[15]>0) {
+        drawText(11,21,"score");
+      }
       setHighlight(-1,0,0);
     }
 
@@ -214,7 +225,7 @@ void renderBoardNamesMessages() {
       if (i>5 || state.players[i].scores[0]==-2)
         continue;
       
-      maxScoreY= state.round<99 ? 15 : 16;
+      maxScoreY= state.round<99 ? 16 : 15;
       for (j=0;j<maxScoreY;j++) {
         score = state.players[i].scores[j];
         if (score>-1) {
@@ -223,7 +234,7 @@ void renderBoardNamesMessages() {
           if (len<3) {
             drawSpace(17+i*4,scoreY[j],len);
           }
-          if (j==15 || (!newScoreFound && !ignoreNewScore && i>0 && i==mostRecentPlayer && isEmpty(19+i*4, scoreY[j]))) {
+          if (j==15 || (!newScoreFound && !ignoreNewScore && i!= state.localPlayer[state.currentLocalPlayer].index && i==mostRecentPlayer && isEmpty(19+i*4, scoreY[j]))) {
             drawTextAlt(20-len+i*4,scoreY[j],tempBuffer);
             if (scoreCursorY==0 ) {
               scoreCursorY=scoreY[j];
@@ -262,7 +273,7 @@ void renderBoardNamesMessages() {
     if (state.activePlayer>-1) {
       drawMark(0,state.activePlayer+3);
       //if (state.activePlayer != 0)
-      setHighlight(state.activePlayer, state.activePlayer == 0, 0);
+      setHighlight(state.activePlayer, state.localPlayerIsActive, 0);
     } else {
       setHighlight(-1,0,0);
     }
@@ -286,7 +297,7 @@ void renderBoardNamesMessages() {
       }
         clearCommonInput();     
     } else {
-      if (state.activePlayer != 0)
+      if (!state.localPlayerIsActive)
         pause(30);
       
       clearBelowBoard();
@@ -296,11 +307,19 @@ void renderBoardNamesMessages() {
         drawSpec(0,HEIGHT-1);
         drawTextAlt(2,HEIGHT-1, tempBuffer);
       } 
-      drawText(0,HEIGHT-4, state.prompt);
+
+      // Visual hack - when playing multiple local players, put player's name + your turn
+      if (state.localPlayerIsActive && prefs.localPlayerCount>1) {
+        drawText(0,HEIGHT-4,"your turn");
+        drawText(0,HEIGHT-3,state.players[state.activePlayer].name);
+      } else {
+        drawText(0,HEIGHT-4, state.prompt); 
+      }
+      
       pause(30);
     }
 
-    if (state.activePlayer == 0 && !state.viewing) {
+    if (state.localPlayerIsActive && !state.viewing) {
       setHighlight(state.activePlayer, true, 2);
       pause(5);
       soundMyTurn();
@@ -322,7 +341,7 @@ void handleAnimation() {
   if (state.waitingOnEndGameContinue)
     return;
 
-  isThisPlayer = !state.viewing && state.activePlayer==0;
+  isThisPlayer = !state.viewing && state.localPlayerIsActive;
 
   // Setup the player input details if this is a new roll
   if (state.rollsLeft != state.prevRollsLeft || state.activePlayer != state.prevActivePlayer )  {
@@ -331,6 +350,8 @@ void handleAnimation() {
       state.playerMadeMove=false;
       prevCursorPos=5;
       cursorPos=1;
+      validX=17+state.activePlayer*4;
+
 
       // If no rolls are remaining, default the cursorPos on the highest score
       if (state.rollsLeft==0) {
@@ -396,12 +417,12 @@ void handleAnimation() {
       if (score>=0) {
         if (score>0) {
           itoa(score, tempBuffer, 10);
-          drawSpace(17,scoreY[j],3-strlen(tempBuffer)); 
+          drawSpace(validX,scoreY[j],3-strlen(tempBuffer)); 
         } else {
           strcpy(tempBuffer,"  ");
         }
 
-        drawTextAlt(20-strlen(tempBuffer),scoreY[j],tempBuffer);
+        drawTextAlt(validX+3-strlen(tempBuffer),scoreY[j],tempBuffer);
       } 
     }
 
@@ -422,7 +443,10 @@ void processInput() {
   } else if (!state.viewing) {
     // Toggle readiness if waiting to start game
     if (state.round == 0 && input.trigger) {
-      state.players[0].scores[0] = !state.players[0].scores[0];
+      j=!state.players[0].scores[0];
+      for(i=0;i<prefs.localPlayerCount;i++) {
+        state.players[state.localPlayer[i].index].scores[0] = j;
+      }
       forceReadyUpdates=true;
       renderBoardNamesMessages();
       if (state.players[0].scores[0]) 
@@ -430,12 +454,12 @@ void processInput() {
       else
         soundScoreCursor();
 
-      sendMove("ready");
+      apiCallForAll("ready");
       return;
     }
 
     // Wait on this player to make roll decisions
-    if (!state.rollFrames && state.activePlayer == 0 && !state.playerMadeMove && state.round>0) {
+    if (!state.rollFrames && state.localPlayerIsActive && !state.playerMadeMove && state.round>0) {
       waitOnPlayerMove();
     }
   }
@@ -477,9 +501,12 @@ void waitOnPlayerMove() {
         // Bounds check
         if (cursorPos>5)
           cursorPos = prevCursorPos;
-      
-      // Update vertical cursorPos location - scores: 10-24 represent the possible scoring locations
-      } else if (input.dirY != 0) {
+      } else if (input.dirY == 1 && cursorPos<10) {
+        // If pressing down on dice cursor, navigate directly to roll button.
+        cursorPos=0;
+        
+        // Update vertical cursorPos location - scores: 10-24 represent the possible scoring locations
+      }else if (input.dirY != 0) {
         // If cursorPos was selecting dice, bring it up
         if (cursorPos<10)
           cursorPos=25;
@@ -514,9 +541,9 @@ void waitOnPlayerMove() {
       if (prevCursorPos < 6)
         hideDiceCursor(4*prevCursorPos-(prevCursorPos==0)+16);
       else {
-        drawBlank(17,scoreY[prevCursorPos-10]);
+        drawBlank(validX,scoreY[prevCursorPos-10]);
         if (state.validScores[prevCursorPos-10]==0) {
-          drawBlank(19,scoreY[prevCursorPos-10]);
+          drawBlank(validX+2,scoreY[prevCursorPos-10]);
         }
       }
 
@@ -525,9 +552,9 @@ void waitOnPlayerMove() {
         drawDiceCursor(4*cursorPos-(cursorPos==0)+16);
         soundCursor();
       } else {
-        drawCursor(17,scoreY[cursorPos-10],0);
+        drawCursor(validX,scoreY[cursorPos-10],0);
         if (state.validScores[cursorPos-10]==0) {
-          drawTextAlt(19,scoreY[cursorPos-10],"0");
+          drawTextAlt(validX+2,scoreY[cursorPos-10],"0");
         }
         soundScoreCursor();
       }
@@ -535,7 +562,7 @@ void waitOnPlayerMove() {
       
       
     } else if (cursorPos>9){ 
-      drawCursor(17,scoreY[cursorPos-10],(frames<3)*0x80);
+      drawCursor(validX,scoreY[cursorPos-10],(frames<3)*0x80);
     }
 
     // Handle trigger press
@@ -546,17 +573,17 @@ void waitOnPlayerMove() {
         i=cursorPos-10;
 
         // Cursor select animation 
-        drawCursor(17,scoreY[cursorPos-10],1);soundScore();
+        drawCursor(validX,scoreY[cursorPos-10],1);soundScore();
         
         // First, hide all scores but the main score
         for (j=0;j<15;j++) {
           if (state.validScores[j]>0) {
             if (j != i)
-              drawSpace(17,scoreY[j],3);
+              drawSpace(validX,scoreY[j],3);
           }
         }
 
-        pause(5);drawCursor(17,scoreY[cursorPos-10],0);; pause(10);
+        pause(5);drawCursor(validX,scoreY[cursorPos-10],0);; pause(10);
 
         // Send command to score this value
         strcpy(tempBuffer, "score/");
@@ -579,6 +606,7 @@ void waitOnPlayerMove() {
 
         // Highlight the roll die in green
         drawDie(15,HEIGHT-4,state.rollsLeft+15,0,0);
+        soundRollButton();
         
         strcpy(tempBuffer, "roll/");
         strcat(tempBuffer, state.keepRoll);
@@ -587,7 +615,7 @@ void waitOnPlayerMove() {
         state.playerMadeMove = true;
         hideDiceCursor(4*prevCursorPos-(prevCursorPos==0)+16);
         // Clear clock
-        drawSpace(6,HEIGHT-3,3);
+        drawSpace(10,HEIGHT-4,3);
         return;
       }
     }
@@ -600,8 +628,8 @@ void waitOnPlayerMove() {
         state.moveTime = i;
         tempBuffer[0]=' ';
         itoa(i, tempBuffer+1, 10);
-        drawTextAlt(8-strlen(tempBuffer), HEIGHT-3, tempBuffer);
-        drawClock(8,HEIGHT-3);
+        drawTextAlt(12-strlen(tempBuffer), HEIGHT-4, tempBuffer);
+        drawClock(12,HEIGHT-4);
         soundTick();
       }
     } 
@@ -629,7 +657,7 @@ void waitOnPlayerMove() {
       drawTextAlt(20-strlen(tempBuffer),scoreY[j],tempBuffer);
       i=1;
     } else if (state.validScores[j]>0) {
-      drawSpace(17,scoreY[j],3);
+      drawSpace(validX,scoreY[j],3);
     }
   }
 
@@ -669,14 +697,20 @@ void centerStatusText(char * text) {
   drawTextAlt((WIDTH-strlen(text))>>1,HEIGHT-1,text);
 }
 
+/// @brief Init/reset the input field for display
+/// @return 
+bool resetInputField() {
+  inputField_done = 1;
+  disableKeySounds();
+}
 
 /// @brief Handles available key strokes for the defined input box (player name and chat). Returns true if user hits enter
-bool inputFieldCycle(uint8_t x, uint8_t y, uint8_t max, char* buffer, bool canEscape) {
-  static uint8_t done, curx, lastY;
+bool inputFieldCycle(uint8_t x, uint8_t y, uint8_t max, char* buffer) {
+  static uint8_t curx, lastY;
   
   // Initialize first call to input box
-  if (done == 1 || lastY != y) {
-    done=0;
+  if (inputField_done == 1 || lastY != y) {
+    inputField_done=0;
     lastY=y;
     curx = strlen(buffer);
     drawTextAlt(x,y, buffer);
@@ -686,17 +720,17 @@ bool inputFieldCycle(uint8_t x, uint8_t y, uint8_t max, char* buffer, bool canEs
 
   // Process any waiting keystrokes
   if (kbhit()) {
-    done=0;
+    inputField_done=0;
     
     input.key = cgetc();
 
     // Debugging - See what key was pressed
     // itoa(input.key, tempBuffer, 10);drawText(0,0, tempBuffer);
 
-    if (input.key == KEY_RETURN && curx>1 || (canEscape && input.key==KEY_ESCAPE)) {
-      done=1;
-      // remove cursorPos
-      drawText(x+1+i,y," ");
+    if (input.key == KEY_RETURN && curx>1) {
+      inputField_done=1;
+      // remove cursor
+      drawBlank(x+curx,y);
     } else if (input.key == KEY_BACKSPACE && curx>0) {
       buffer[--curx]=0;
       drawText(x+1+curx,y," ");
@@ -712,12 +746,13 @@ bool inputFieldCycle(uint8_t x, uint8_t y, uint8_t max, char* buffer, bool canEs
     }
 
     drawTextAlt(x,y, buffer);
-    drawTextcursorPos(x+curx,y);
-
-    if (done) 
+    
+    if (inputField_done) 
       disableKeySounds();
+    else 
+      drawTextcursorPos(x+curx,y);
 
-    return done;
+    return inputField_done;
   }
 
   return false;

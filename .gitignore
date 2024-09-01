@@ -32,6 +32,7 @@ _libs
 *.xex
 *.prg
 *.map
+*.lbl
 
 # Project specific ignores
 gen/gencharset

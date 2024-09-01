@@ -44,12 +44,18 @@ typedef struct {
   char* name;
   uint8_t alias;
   int16_t scores[16];
+  bool isViewing;
 } Player;
 
 typedef struct {
   char* move;
   char* name; 
 } ValidMove;
+
+typedef struct {
+  char query[50]; //?table=12345678&pov=12345678&player=12345678
+  uint8_t index;
+} LocalPlayerState;
 
 typedef struct {
 
@@ -88,7 +94,10 @@ typedef struct {
   bool waitingOnEndGameContinue;
   bool drawBoard;
 
-  uint8_t currentLocalPlayer;
+  int8_t currentLocalPlayer;
+  bool localPlayerIsActive;
+  LocalPlayerState localPlayer[4];
+
   
 } GameState;
 
@@ -104,6 +113,8 @@ typedef struct {
   char name[9];
 } LocalPlayer;
 
+
+
 typedef struct {
   bool seenHelp;
   uint8_t color;
@@ -116,9 +127,8 @@ typedef struct {
 extern uint16_t rx_len, maxJifs;
 extern bool forceReadyUpdates;
 extern char tempBuffer[128];
-extern char query[50];
 extern char serverEndpoint[50];
-extern char localServer[50];
+extern char localServer[];
 
 extern GameState state;
 extern InputStruct input;

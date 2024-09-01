@@ -13,12 +13,12 @@
 #include "misc.h"
 #include "fujinet-network.h"
 
-char rx_buf[1024];     // buffer for payload
+char rx_buf[800];     // buffer for payload
 
 // Internal to this file
 static char url[160];
-static char hash[32] = ""; 
-static uint16_t rx_pos=0;
+//static char hash[32] = ""; 
+//static uint16_t rx_pos=0;
 char *requestedMove;
 
 void updateState(bool isTables) {
@@ -27,10 +27,9 @@ void updateState(bool isTables) {
   static char c;
   static unsigned int i;
 
-  //write_appkey(0x9999,  1, 1, "US");
   // Reset state and vars
   isKey=true; inArray=false;
-  state.playerCount=state.tableCount=0;
+  state.playerCount=state.tableCount=state.currentLocalPlayer=state.localPlayerIsActive=0;
   
   parent = NULL;
 
@@ -93,7 +92,21 @@ void updateState(bool isTables) {
             // Cap name at 8 chars max
             if (strlen(value)>8) 
               value[8]=0; 
-            state.players[state.playerCount].name=value;
+              state.players[state.playerCount].name=value;
+              
+              // Map this player to a local player
+              for(i=0;i<prefs.localPlayerCount;i++) {
+                if (strcmp(value, prefs.localPlayer[i].name)==0) {
+                  state.localPlayer[i].index = state.playerCount;
+                  // If this player is the active player, set the appropriate local player index and flag it is a local player's turn
+                  if (state.playerCount == state.activePlayer) {
+                    state.currentLocalPlayer = i;
+                    state.localPlayerIsActive = true;
+                  }
+                  break;
+                }
+              }
+            
             break;
           case 'a':
             state.players[state.playerCount].alias = atoi(value);
@@ -114,9 +127,9 @@ void updateState(bool isTables) {
         }
       } else {
         switch (key[0]) {
-          case 'h':
-            strcpy(hash, value);
-            break;
+          //case 'h':
+          //  strcpy(hash, value);
+          //  break;
           case 'n':
             if (strlen(value)>0) {
               strcpy(state.serverName, value); 
@@ -176,60 +189,32 @@ void updateState(bool isTables) {
 uint8_t apiCall(char *path) {
   static int16_t n;
   static uint8_t* buf;
-  
-  // If a synchronous call, or starting a new async call,initialize things
-  // * if (rx_pos == 0 || !isAsync) {
-    
-    // First check if we were in the middle of an async call but we are now requesting sync
-    // If so, abort the earlier async call
-    // * if (!isAsync && rx_pos>0) 
-    // * network_close(url);
+  static char *query;
 
-    // Setup the url
-    strcpy(url, "n:");
-    strcat(url, serverEndpoint);
-    strcat(url, path);
-    strcat(url, query);
-    strcat(url, strlen(query)==0 ? "?" : "&");
-    strcat(url, "raw=1&lc=1");//&hash=");
-    //strcat(url, hash);
-    
-    // Initialize start of buffer for async calls, and reset position
-    buf = rx_buf;
-    rx_pos = 0;
-  // * }
+  strcpy(url, "n:");
+  strcat(url, serverEndpoint);
+  strcat(url, path);
+  query = &state.localPlayer[state.currentLocalPlayer].query;
+  strcat(url, query );
+  strcat(url, query[0] ? "&raw=1&lc=1" : "?raw=1&lc=1");
+  
+  // Initialize start of buffer for async calls, and reset position
+  buf = rx_buf;
 
   // Network error. Reset position and abort.
   if (network_open(url, OPEN_MODE_HTTP_GET, OPEN_TRANS_NONE)) {
-    rx_pos=0;
     return API_CALL_ERROR;
   }
 
-  // * Comment out async until needed (e.g. text chat)
-  // if (isAsync) {
-  //   n = network_read_nb(url, buf, 40);
-
-  //   // If not finished, increment the buffer/position and return 2
-  //   if (fn_network_error != 136) {  
-  //     if (n>0) {
-  //       rx_pos+=n;
-  //       buf+=n;
-  //     }
-  //     return API_CALL_PENDING;
-  //   }
-  // } else { 
-    // Synchronous call
-    rx_pos = network_read(url, rx_buf, sizeof(rx_buf));
-  // * }
-
-  // Request is complete
+  n = network_read(url, rx_buf, sizeof(rx_buf));
   network_close(url);
 
-  rx_len=rx_pos;
+  if (n<=0) {
+    rx_len=0;
+    return API_CALL_ERROR;
+  }
 
-  // Reset position (indicates async request no longer in process)
-  rx_pos=0;
-   
+  rx_len=n;
   return API_CALL_SUCCESS;
 }
 
@@ -240,37 +225,32 @@ void sendMove(char* move) {
   requestedMove = move;
 }
 
+/// @brief Makes the requested call for all local players. Suitable for joining, ready toggle, leaving
+/// @param path 
+void apiCallForAll(char* path ) {
+  for(i=0;i<prefs.localPlayerCount;i++) {
+    state.currentLocalPlayer = i;
+    apiCall(path);
+  }
+}
+
 uint8_t getStateFromServer()
 {
   static uint8_t apiCallResult;
 
-  // Since we are making an asynchronous call, only update the path if there
-  // isn't already a request in progress
-  if (rx_pos == 0) {
-    if (requestedMove) {  
+  if (requestedMove) {  
 
-      // Copy requested move to the temp buffer it is not already one and the same
-      if (requestedMove != tempBuffer)  
-        strcpy(tempBuffer, requestedMove);
+    // Copy requested move to the temp buffer it is not already one and the same
+    if (requestedMove != tempBuffer)  
+      strcpy(tempBuffer, requestedMove);
 
-      // Clear hash when sending a move
-      strcpy(hash, "");
-      requestedMove=NULL;
-    } else {
-      strcpy(tempBuffer, "state");
-    }
+    requestedMove=NULL;
+  } else {
+    strcpy(tempBuffer, "state");
   }
-  
-  // Send an async request - if a request is currently in process, it will resume, ignoring the passed string 
-  // WIP - Currently sending SYNC only - will switch to async overhead if/when chat is added
+
   if ((apiCallResult = apiCall(tempBuffer)) == API_CALL_SUCCESS) {
-    
-    // If the request finished and at least 3 character retrieved, update the state, otherwise assume it is a "no change" response
-    if (rx_len>2)
-      updateState(false);
-    else
-      return STATE_UPDATE_NOCHANGE;
-    
+    updateState(false);
   }
 
   return apiCallResult;

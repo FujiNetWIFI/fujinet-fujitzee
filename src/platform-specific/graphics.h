@@ -50,7 +50,7 @@ void hideDiceCursor(unsigned char x);
 void saveScreen();
 void restoreScreen();
 
-void setHighlight(int8_t x, bool isThisPlayer, uint8_t flash );
+void setHighlight(int8_t player, bool isThisPlayer, uint8_t flash );
 
 void initGraphics();
 void resetGraphics();

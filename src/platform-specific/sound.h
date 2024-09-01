@@ -23,6 +23,7 @@ void soundMyTurn();
 void soundFujitzee();
 void soundGameDone();
 void soundRollDice();
+void soundRollButton();
 void soundTick();
 void soundCursor();
 void soundScoreCursor();

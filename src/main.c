@@ -31,11 +31,7 @@ typedef unsigned char bool;
 
 // Store default server endpoint in case lobby did not set app key
 char serverEndpoint[50] = "https://fujitzee.carr-designs.com/";
-char localServer[50] = "http://127.0.0.1:8080/"; // Set 3rd byte in the e41c0300 appkey to 0xff to use local
-
-//char serverEndpoint[64] = "N:http://api.open-notify.org/iss-now.json";
-
-char query[50] = ""; //?table=blue&player=ERICAPL2";
+char localServer[] = "http://127.0.0.1:8080/"; // Set 3rd byte in the e41c0300 appkey to 0xff to use local
 
 GameState state;
 PrefsStruct prefs;
@@ -89,22 +85,25 @@ void main(void)
       switch (getStateFromServer()) {
         case STATE_UPDATE_ERROR:
           // ERROR - Wait a bit to avoid hammering the server if getting bad responses
+          // Wait max 4 seconds (since 4*60=240 fits in a single byte)
           if (failedApiCalls<4) {
             failedApiCalls++;
-            //drawStatusText("connection lost. reconnecting.."); 
           }
           state.apiCallWait=60*failedApiCalls; 
           
-          // After a few failures, let the player know we are experiencing technical difficulties
-          
+          // After consequitive failures, let the player know we are experiencing technical difficulties
+          if (failedApiCalls>1) {
+            drawTextAlt(0, HEIGHT-1, "#$reconnecting..");
+          }
           break;
-        
-        case STATE_UPDATE_NOCHANGE:
-          // Wait a few frames before checking for more data
-          state.apiCallWait = 5;
-          break;
-
+     
         case STATE_UPDATE_CHANGE:
+
+          // Clear connection failure message
+          if (failedApiCalls>1) {
+            drawSpace(0, HEIGHT-1, 16);
+          }
+          failedApiCalls=0;
           processStateChange();
           
           // Poll again in a bit

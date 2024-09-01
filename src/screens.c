@@ -16,6 +16,9 @@
 
 #define PLAYER_NAME_MAX 8
 #define PLAYER_BOX_TOP 13
+#define REMOVE_PLAYER_KEY '/'
+
+char query[20] = "";
 
 /// @brief Convenience function to reset screen and draw border
 void resetScreenWithBorder() {
@@ -130,9 +133,9 @@ void showPlayerGroupScreen() {
   centerText(5,"up to 4 players can play from the");
   centerText(7,"the same system, sharing controls");
 
-  centerTextAlt(10,"press 1-4 to edit/remove player");
+  centerTextAlt(10,"PRESS 1-4 TO EDIT PLAYER");
 
-  centerTextAlt(HEIGHT-2,"PRESS trigger/space WHEN DONE");
+  centerTextAlt(HEIGHT-2,"press TRIGGER/SPACE when done");
   
   clearCommonInput();
   showPlayers = true;
@@ -143,7 +146,7 @@ void showPlayerGroupScreen() {
     // Exit early
     if (input.key == 'q' || input.key == KEY_ESCAPE)
       break;
-      
+
     // Edit player by number
     if (input.key >= '1' && input.key <= '4') {
       i = input.key-'0';
@@ -160,8 +163,8 @@ void showPlayerGroupScreen() {
     // Add new player
     if (input.key == 'a') {
       if (prefs.localPlayerCount<4) {
-        // Clear name
-        strcpy(&prefs.localPlayer[prefs.localPlayerCount],"");
+        // Make sure new name is empty
+        memset(&prefs.localPlayer[prefs.localPlayerCount],0,9);
         prefs.localPlayerCount++;
         saveScreen();
         showPlayerNameScreen(prefs.localPlayerCount);
@@ -182,12 +185,12 @@ void showPlayerGroupScreen() {
       drawBox(WIDTH/2-8,PLAYER_BOX_TOP,14,2+prefs.localPlayerCount + (prefs.localPlayerCount<4 ? 2:0));
       for(i=0;i<prefs.localPlayerCount;i++) {
         itoa(i+1,tempBuffer, 10);
-        drawTextAlt(WIDTH/2-6,PLAYER_BOX_TOP+2+i, tempBuffer);
-        drawText(WIDTH/2-5,PLAYER_BOX_TOP+2+i,":");
-        drawText(WIDTH/2-4,PLAYER_BOX_TOP+2+i,prefs.localPlayer[i].name);
+        drawText(WIDTH/2-6,PLAYER_BOX_TOP+2+i, tempBuffer);
+        drawTextAlt(WIDTH/2-5,PLAYER_BOX_TOP+2+i,":");
+        drawTextAlt(WIDTH/2-4,PLAYER_BOX_TOP+2+i,prefs.localPlayer[i].name);
       }
       if (prefs.localPlayerCount<4) 
-        drawTextAlt(WIDTH/2-6,PLAYER_BOX_TOP+3+i, "a:ADD PLAYER");
+        drawTextAlt(WIDTH/2-6,PLAYER_BOX_TOP+3+i, "A:add player");
     }
   }
   clearCommonInput();
@@ -195,7 +198,7 @@ void showPlayerGroupScreen() {
 
 void showPlayerNameScreen(uint8_t p) {
   static char* playerName;
-  static bool canDelete;
+  static bool canDelete, canCancel, duplicateNames;
   resetScreenWithBorder();
 
   canDelete = prefs.localPlayerCount>1;
@@ -205,9 +208,10 @@ void showPlayerNameScreen(uint8_t p) {
     itoa(p,tempBuffer+7, 10);
     centerTextAlt(5,tempBuffer);
     p--;
+    canCancel=true;
   } else {
     // First load of game
-    tempBuffer[0]=p=0;
+    tempBuffer[0]=p=canCancel=0;
     centerTextAlt(4, "WELCOME TO fujiTZEE!");
   }
 
@@ -215,32 +219,91 @@ void showPlayerNameScreen(uint8_t p) {
   centerText(17,  "name must be at least 2 letters.");
 
   if (canDelete) {
-    centerTextAlt(20,"to REMOVE this player, press ESC");
+    centerTextAlt(20,"to REMOVE this player, press  ");
+    drawText(WIDTH/2+14,20,"/"); 
   }
 
   drawBox(15,10,PLAYER_NAME_MAX+1,1);
 
-  playerName = prefs.localPlayer[p].name;
+  // Copy name to local buffer in case 
+  playerName=&prefs.localPlayer[p].name;
+  strcpy(tempBuffer, playerName);
   
+  resetInputField();
   clearCommonInput();
-  while (!inputFieldCycle(16, 11, PLAYER_NAME_MAX, playerName, canDelete));
-  
-  if (input.key == KEY_ESCAPE && canDelete) {
-    // Clear this player's name
-    memset(playerName,0,9);
+  while (true) {
 
-    // Shuffle downward player to take place if available
-    for (i=p+1;i<prefs.localPlayerCount;i++) {
-      strcpy(&prefs.localPlayer[i-1].name, &prefs.localPlayer[i].name);
-      memset(&prefs.localPlayer[i].name,0,9);
+    while (!inputFieldCycle(16, 11, PLAYER_NAME_MAX, tempBuffer)) {
+
+      // Check if we are deleting this player (hitting / or cancelling a new player)
+      if (canDelete && (
+          input.key == REMOVE_PLAYER_KEY || 
+          (input.key == KEY_ESCAPE && strlen(playerName)==0))
+        ) {
+        
+        // Clear this player's name
+        memset(playerName,0,9);
+
+        // Shuffle downward player to take place if available
+        for (i=p+1;i<prefs.localPlayerCount;i++) {
+          strcpy(&prefs.localPlayer[i-1].name, &prefs.localPlayer[i].name);
+          memset(&prefs.localPlayer[i].name,0,9);
+        }
+        prefs.localPlayerCount--;
+        break;
+      } else if (input.key == KEY_ESCAPE) {
+        // Cancel editing
+        break;
+      }
     }
-    prefs.localPlayerCount--;
+
+    if (input.key != KEY_RETURN) {
+      break;
+    }
+
+    // Remove trailing space
+    while (tempBuffer[strlen(tempBuffer)-1]==' ') {
+      tempBuffer[strlen(tempBuffer)-1]=0;
+    }
+
+    // If length < 2, keep editing
+    if (strlen(tempBuffer)<2)
+      continue;
+
+    // Check if new name already exists
+    duplicateNames=false;
+    for(i=0;i<prefs.localPlayerCount;i++) {
+      if (i != p && strcmp(tempBuffer, prefs.localPlayer[i].name)==0) {
+        centerTextAlt(14,  "that name already exists! pick another");
+        soundRelease();
+        duplicateNames=true;
+        break;
+      }
+    }
+    if (!duplicateNames) {
+      break;
+    }
+
   }
-  
-  if (p==0) {
-    write_appkey(AK_LOBBY_CREATOR_ID,  AK_LOBBY_APP_ID, AK_LOBBY_KEY_USERNAME,strlen(playerName), playerName);
+
+  // reset input field in case we broke early from the input loop (remove, cancel)
+  resetInputField();
+
+  if (input.key != KEY_ESCAPE) {
+    
+    // Copy from the temp buffer to the player name (if not deleting)
+    if (input.key != REMOVE_PLAYER_KEY) {
+      strcpy(playerName, tempBuffer);
+    }
+
+    // If player 1, write out to the main user app key
+    if (p==0) {
+      write_appkey(AK_LOBBY_CREATOR_ID,  AK_LOBBY_APP_ID, AK_LOBBY_KEY_USERNAME,strlen(playerName), playerName);
+    }
+
+    // Save prefs, as other local player names are stored there
+    savePrefs();
   }
-  savePrefs();
 }
 
 /// @brief Action called in Welcome Screen to verify player has a name
@@ -296,8 +359,9 @@ void showWelcomeScreen() {
 
 /// @brief Shows a screen to select a table to join
 void showTableSelectionScreen() {
-  static uint8_t shownChip, tableIndex, waitTime, altChip;
-  tableIndex=waitTime=altChip=0;
+  static uint8_t shownChip, tableIndex, altChip;
+  static char* localQuery;
+  tableIndex=altChip=0;
   
   // An empty query means a table needs to be selected
   while (strlen(query)==0) {
@@ -310,109 +374,130 @@ void showTableSelectionScreen() {
     drawText(6,7, "game");
     drawText(WIDTH-13,7, "players");
     drawLine(6,8,WIDTH-12);
-   
-    pause(waitTime);
-    waitvsync();
-   
-    if (apiCall("tables")) { 
 
-      // Add an artifical wait time if refreshing
-      waitTime=20;
-      
-      updateState(true);
-      if (state.tableCount>0) {
-        for(i=0;i<state.tableCount;++i) {
-          drawTextAlt(6,9+i*2, state.tables[i].name);
-          drawTextAlt(WIDTH-6-strlen(state.tables[i].players), 9+i*2, state.tables[i].players);
-          if (state.tables[i].players[0]>'0') {
-            drawText(WIDTH-6-strlen(state.tables[i].players)-2, 9+i*2, "*");
-          }
+    // Show names of local player(s)
+  
+    if (prefs.localPlayerCount==1) {
+      strcpy(tempBuffer,"HELLO "); 
+      strcat(tempBuffer, prefs.localPlayer[0].name);
+      centerTextAlt(19, tempBuffer);
+      centerTextAlt(21, "PRESS p TO ADD LOCAL PLAYERS");
+    } else {
+      centerTextAlt(19,"local players");
+      strcpy(tempBuffer,"");
+      for(i=0;i<prefs.localPlayerCount;i++) {
+        strcat(tempBuffer, prefs.localPlayer[i].name);
+        if (i<prefs.localPlayerCount-1) {
+          strcat(tempBuffer, ", ");
         }
-      } else {
-        centerTextAlt(12, "sorry, no servers are available");
       }
+      centerText(21, tempBuffer);
+    }
 
-      //drawStatusText("r>efresh   h+elp  c:olor   n+ame   q+uit");
-      //centerStatusText("Refresh Help Color Name Quit");
-      //centerStatusText("Refresh  Help  Name  Quit");
-      centerStatusText("Refresh  Help  Players  Quit");
-      
-      shownChip=0;
+    waitvsync();
 
-      clearCommonInput();
-      while (!input.trigger || !state.tableCount) {
+    state.tableCount = 0;
+    if (apiCall("tables")) { 
+      // Add an artifical wait time if refreshing
+      updateState(true);
+    }
+
+    if (state.tableCount>0) {
+      for(i=0;i<state.tableCount;++i) {
+        drawTextAlt(6,9+i*2, state.tables[i].name);
+        drawTextAlt(WIDTH-6-strlen(state.tables[i].players), 9+i*2, state.tables[i].players);
+        if (state.tables[i].players[0]>'0') {
+          drawText(WIDTH-6-strlen(state.tables[i].players)-2, 9+i*2, "*");
+        }
+      }
+    } else {
+      centerTextAlt(12, "sorry, no servers are available");
+    }
+
+    //drawStatusText("r>efresh   h+elp  c:olor   n+ame   q+uit");
+    //centerStatusText("Refresh Help Color Name Quit");
+    //centerStatusText("Refresh  Help  Name  Quit");
+    centerStatusText("Refresh  Help  Players  Quit");
+    
+    shownChip=!state.tableCount;
+
+    clearCommonInput();
+    while (!input.trigger || !state.tableCount) {
+
+      if (state.tableCount) {
         if (altChip<50)
           drawMark(4,9+tableIndex*2);
         else
           drawAltMark(4,9+tableIndex*2);
-
-        waitvsync();
-        altChip=(altChip+1) % 60;
-        readCommonInput();
-       
-        if (input.key == 'h' || input.key == 'H') {
-          saveScreen();
-          showHelpScreen();
-          restoreScreen();
-        } else if (input.key == 'r' || input.key =='R') {
-          break;
-        } else if (input.key == 'c' || input.key =='C') {
-          prefs.color = cycleNextColor();
-          savePrefs();
-          break;
-         } else if (input.key == 'p' || input.key =='P') {
-          showPlayerGroupScreen();
-          break;
-        } else if (input.key == 'q' || input.key =='Q') {
-          quit();
-        } /*else if (input.key != 0) {
-          itoa(input.key, tempBuffer, 10);
-          drawStatusText(tempBuffer);
-        }*/
-        
-        if (!shownChip || (state.tableCount>0 && input.dirY)) {
-
-          drawBlank(4,9+tableIndex*2);
-          drawTextAlt(6,9+tableIndex*2, state.tables[tableIndex].name);
-          drawTextAlt(WIDTH-6-strlen(state.tables[tableIndex].players), 9+tableIndex*2, state.tables[tableIndex].players);
-
-          tableIndex+=input.dirY;
-          if (tableIndex==255) 
-            tableIndex=state.tableCount-1;
-          else if (tableIndex>=state.tableCount)
-            tableIndex=0;
-
-          drawMark(4,9+tableIndex*2);
-          drawText(6,9+tableIndex*2, state.tables[tableIndex].name);
-          drawText(WIDTH-6-strlen(state.tables[tableIndex].players), 9+tableIndex*2, state.tables[tableIndex].players);
-
-          soundCursor();
-
-          // Housekeeping - allows platform specific housekeeping, like stopping Attract/screensaver mode in Atari
-          housekeeping();
-
-          shownChip=1;
-        }
       }
+
+      waitvsync();
+      altChip=(altChip+1) % 60;
+      readCommonInput();
       
-      if (input.trigger) {
+      if (input.key == 'h' || input.key == 'H') {
+        saveScreen();
+        showHelpScreen();
+        restoreScreen();
+      } else if (input.key == 'r' || input.key =='R') {
+        break;
+      } else if (input.key == 'c' || input.key =='C') {
+        prefs.color = cycleNextColor();
+        savePrefs();
+        break;
+        } else if (input.key == 'p' || input.key =='P') {
+        showPlayerGroupScreen();
+        break;
+      } else if (input.key == 'q' || input.key =='Q') {
+        quit();
+      } /*else if (input.key != 0) {
+        itoa(input.key, tempBuffer, 10);
+        drawStatusText(tempBuffer);
+      }*/
+      
+      if (!shownChip || (state.tableCount>0 && input.dirY)) {
+
+        drawBlank(4,9+tableIndex*2);
+        drawTextAlt(6,9+tableIndex*2, state.tables[tableIndex].name);
+        drawTextAlt(WIDTH-6-strlen(state.tables[tableIndex].players), 9+tableIndex*2, state.tables[tableIndex].players);
+
+        tableIndex+=input.dirY;
+        if (tableIndex==255) 
+          tableIndex=state.tableCount-1;
+        else if (tableIndex>=state.tableCount)
+          tableIndex=0;
+
+        drawMark(4,9+tableIndex*2);
+        drawText(6,9+tableIndex*2, state.tables[tableIndex].name);
+        drawText(WIDTH-6-strlen(state.tables[tableIndex].players), 9+tableIndex*2, state.tables[tableIndex].players);
+
         soundCursor();
 
-        // Clear screen and write server name
-        resetScreenWithBorder();
-        centerText(15, state.tables[tableIndex].name);
-        
-        strcpy(query, "?table=");
-        strcat(query, state.tables[tableIndex].table);
-        strcpy(tempBuffer, serverEndpoint);
-        strcat(tempBuffer, query);
+        // Housekeeping - allows platform specific housekeeping, like stopping Attract/screensaver mode in Atari
+        housekeeping();
 
-        //  Update server app key in case of reboot 
-        write_appkey(AK_LOBBY_CREATOR_ID,  AK_LOBBY_APP_ID, AK_LOBBY_KEY_SERVER, strlen(tempBuffer), tempBuffer);
-
+        shownChip=1;
       }
     }
+    
+    if (input.trigger) {
+      soundScore();
+
+      // Clear screen and write server name
+      resetScreenWithBorder();
+      centerText(15, state.tables[tableIndex].name);
+      
+      strcpy(query, "?table=");
+      strcat(query, state.tables[tableIndex].table);
+      strcpy(tempBuffer, serverEndpoint);
+      strcat(tempBuffer, query);
+
+      //  Update server app key in case of reboot 
+      write_appkey(AK_LOBBY_CREATOR_ID,  AK_LOBBY_APP_ID, AK_LOBBY_KEY_SERVER, strlen(tempBuffer), tempBuffer);
+
+    }
   }
+  
   
   centerText(17, "connecting to server");
   progressAnim(19);
@@ -423,14 +508,32 @@ void showTableSelectionScreen() {
   state.drawBoard = true;
   
   // The query will have the table already, e.g. "?table=1234"
-  strcat(query, "&player=");
-  strcat(query, prefs.localPlayer[0].name);
+
+  // Build the queries for each local player
+  for(i=0;i<prefs.localPlayerCount;i++) {
+    localQuery = &state.localPlayer[i].query;
+    // Append the table
+    strcpy(localQuery, query);
+
+    // When there is more than one local player, send a pov to lock in the visual order
+    // so the board view is constant from player to player
+    if (prefs.localPlayerCount>1) {
+      strcat(localQuery,"&pov=");
+      strcat(localQuery,prefs.localPlayer[0].name);
+    }
+
+    strcat(localQuery,"&player=");
+    strcat(localQuery, prefs.localPlayer[i].name);
   
-  // Replace space with + for player name
-  i=strlen(query);
-  while(--i)
-    if (query[i]==' ')
-      query[i]='+';
+    // Replace space with + in query
+    while (j=*(++localQuery)) {
+      if (j==' ')
+        *localQuery='+';
+    }  
+  }
+
+  // Join all local players to table
+  apiCallForAll("state");
   
   // Reduce wait count for an immediate call
   state.apiCallWait=0;
@@ -482,7 +585,7 @@ void showInGameMenuScreen() {
           centerText(10, "please wait");
 
           // Inform server player is leaving
-          apiCall("leave");
+          apiCallForAll("leave");
           progressAnim(12);
           
           //  Clear server app key in case of reboot 

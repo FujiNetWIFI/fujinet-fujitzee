@@ -55,7 +55,7 @@ ASFLAGS =
 # Additional linker flags and options.
 # Default: none
 # LDFLAGS = 
-LDFLAGS = -m $(PROGRAM).map 
+LDFLAGS = -m $(PROGRAM_STUB).map -Ln $(PROGRAM_STUB).lbl
 
 # Path to the directory containing C and ASM sources.
 # Default: src
@@ -370,6 +370,7 @@ else
 endif
 
 test: $(PROGRAM)
+	sed -i ''  "s/\.//" $(PROGRAM_STUB).lbl
 	$(PREEMUCMD)
 	$(EMUCMD) $<
 	$(POSTEMUCMD)

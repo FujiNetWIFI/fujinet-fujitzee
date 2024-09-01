@@ -158,6 +158,7 @@ void initGraphics() {
 }
 
 void setHighlight(int8_t player, bool isThisPlayer, uint8_t flash ) {
+  highlightX=player;
   POKE(0xd000,player>-1 ? player*16+112 : 0);
   if (isThisPlayer) {
     OS.pcolr0 = colors[colIndex] + flash; 
@@ -176,7 +177,7 @@ void restoreScreen() {
   waitvsync();
   memcpy(SCREEN_LOC, SCREEN_BAK, WIDTH*HEIGHT);
   if (prevHighlightX) {
-    setHighlight(prevHighlightX, state.activePlayer == 0, 0);
+    setHighlight(prevHighlightX, state.localPlayerIsActive, 0);
   }
   
   if (prevMissleLineVisible) {

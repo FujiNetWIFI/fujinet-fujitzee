@@ -91,6 +91,15 @@ void soundRollDice() {
   _sound(0, 150+ (rand() % 20)*5,8,8);
 }
 
+void soundRollButton() {
+  _sound(0,96,10,5);
+   pause(2);
+   _sound(0,81,10,4);
+   pause(2);
+   soundStop();
+
+}
+
 void soundCursor() {
    _sound(0,102,10,7);
    pause(1);
@@ -113,8 +122,8 @@ void soundKeep() {
 }
 
 void soundRelease() {
- for(i=7;i<255;i--) {
-    _sound(0,200,10,i);
+ for(i=6;i<255;i--) {
+    _sound(0,255-i*5,10,i);
     waitvsync();
   }
 }
