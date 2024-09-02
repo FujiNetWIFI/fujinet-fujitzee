@@ -17,6 +17,7 @@
 #define PLAYER_NAME_MAX 8
 #define PLAYER_BOX_TOP 13
 #define REMOVE_PLAYER_KEY '/'
+#define INGAME_MENU_X WIDTH/2-8
 
 char query[20] = "";
 
@@ -361,6 +362,7 @@ void showWelcomeScreen() {
 void showTableSelectionScreen() {
   static uint8_t shownChip, tableIndex, altChip;
   static char* localQuery;
+  static Table* table;
   tableIndex=altChip=0;
   
   // An empty query means a table needs to be selected
@@ -398,25 +400,26 @@ void showTableSelectionScreen() {
 
     state.tableCount = 0;
     if (apiCall("tables")) { 
-      // Add an artifical wait time if refreshing
       updateState(true);
     }
 
     if (state.tableCount>0) {
       for(i=0;i<state.tableCount;++i) {
-        drawTextAlt(6,9+i*2, state.tables[i].name);
-        drawTextAlt(WIDTH-6-strlen(state.tables[i].players), 9+i*2, state.tables[i].players);
-        if (state.tables[i].players[0]>'0') {
-          drawText(WIDTH-6-strlen(state.tables[i].players)-2, 9+i*2, "*");
+        table = &state.tables[i];        
+        j=9+i*2;
+        k=WIDTH-6-strlen(table->players);
+        
+        drawTextAlt(k, j, table->players);
+        drawTextAlt(6,j, table->name);
+        
+        if (table->players[0]>'0') {
+          drawText(k-2, j, "*");
         }
       }
     } else {
       centerTextAlt(12, "sorry, no servers are available");
     }
 
-    //drawStatusText("r>efresh   h+elp  c:olor   n+ame   q+uit");
-    //centerStatusText("Refresh Help Color Name Quit");
-    //centerStatusText("Refresh  Help  Name  Quit");
     centerStatusText("Refresh  Help  Players  Quit");
     
     shownChip=!state.tableCount;
@@ -456,20 +459,22 @@ void showTableSelectionScreen() {
       }*/
       
       if (!shownChip || (state.tableCount>0 && input.dirY)) {
+        // Visually unselect old table
+        table = &state.tables[tableIndex];
+        j=9+tableIndex*2;
+        drawBlank(4,j);
+        drawTextAlt(6,j, table->name);
+        drawTextAlt(WIDTH-6-strlen(table->players), j, table->players);
 
-        drawBlank(4,9+tableIndex*2);
-        drawTextAlt(6,9+tableIndex*2, state.tables[tableIndex].name);
-        drawTextAlt(WIDTH-6-strlen(state.tables[tableIndex].players), 9+tableIndex*2, state.tables[tableIndex].players);
+        // Move table index to new table
+        tableIndex = (input.dirY+tableIndex+state.tableCount) % state.tableCount;
 
-        tableIndex+=input.dirY;
-        if (tableIndex==255) 
-          tableIndex=state.tableCount-1;
-        else if (tableIndex>=state.tableCount)
-          tableIndex=0;
-
-        drawMark(4,9+tableIndex*2);
-        drawText(6,9+tableIndex*2, state.tables[tableIndex].name);
-        drawText(WIDTH-6-strlen(state.tables[tableIndex].players), 9+tableIndex*2, state.tables[tableIndex].players);
+        // Visually select new table
+        table = &state.tables[tableIndex];
+        j=9+tableIndex*2;
+        drawMark(4,j);
+        drawText(6,j, table->name);
+        drawText(WIDTH-6-strlen(table->players), j, table->players);
 
         soundCursor();
 
@@ -547,14 +552,13 @@ void showInGameMenuScreen() {
     
     resetScreenWithBorder();
     
-    x = WIDTH/2-8;
     y = HEIGHT/2-5;
       
-    drawBox(x-3,y-2,21,9);
-    drawTextAlt(x,y,    "  Q: quit table");
-    drawTextAlt(x,y+=2, "  H: how to play"); 
-    drawTextAlt(x,y+=2, "  C: color toggle");
-    drawTextAlt(x,y+=2, "ESC: keep playing"); 
+    drawBox(INGAME_MENU_X-3,y-2,21,9);
+    drawTextAlt(INGAME_MENU_X,y,    "  Q: quit table");
+    drawTextAlt(INGAME_MENU_X,y+=2, "  H: how to play"); 
+    drawTextAlt(INGAME_MENU_X,y+=2, "  C: color toggle");
+    drawTextAlt(INGAME_MENU_X,y+=2, "ESC: keep playing"); 
     
     strcpy(tempBuffer,  "CURRENTLY AT ");
     strcat(tempBuffer, state.serverName);

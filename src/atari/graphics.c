@@ -321,7 +321,6 @@ void drawBoard() {
   static unsigned char *dest;
 
   // Thin horz ines
-  //memset(xypos(0,7),84,40);
   memset(xypos(10,9),84,30);
   memset(xypos(11,12),84,29);
 

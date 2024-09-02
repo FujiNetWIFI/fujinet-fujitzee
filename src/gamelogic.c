@@ -37,7 +37,7 @@ void processStateChange() {
 
 void renderBoardNamesMessages() {
   static bool redraw;
-  static uint8_t scoreCursorX, scoreCursorY, c, len,maxScoreY, newScoreFound, ignoreNewScore, mostRecentPlayer;
+  static uint8_t scoreCursorX, scoreCursorY, c, len,maxScoreY, newScoreFound, ignoreNewScore, mostRecentPlayer, i4;
   static Player *player; 
   static int16_t score;
   
@@ -82,9 +82,9 @@ void renderBoardNamesMessages() {
   // Clear score board if a new round
   if (redraw && state.round==0) {    
       // Clear score locations
-    for (i=1;i<7;i++) {
+    for (i=17;i<41;i+=4) {
       for(j=0;j<15;j++)  {
-        drawSpace(13+i*4, scoreY[j], 3);
+        drawSpace(i, scoreY[j], 3);
       }
     }
     //drawSpace(0,scoreY[15],40);
@@ -166,11 +166,12 @@ void renderBoardNamesMessages() {
     // Show players that are ready to start
     if (forceReadyUpdates) {
       for(i=0;i<6;i++) {
+        i4=18+i*4;
         if (i<state.playerCount && state.players[i].scores[0]==1) {
-          drawTextVert(18+i*4,3,"ready");
+          drawTextVert(i4,3,"ready");
           drawMark(0,i+3);
         } else {
-          drawTextVert(18+i*4,3,"     ");
+          drawTextVert(i4,3,"     ");
           // Only clear the dice if it is still round LOBBY
           if (state.round == 0) {
             drawBlank(0,i+3);
@@ -224,7 +225,8 @@ void renderBoardNamesMessages() {
       // Skip spectators or going beyond 6 players
       if (i>5 || state.players[i].scores[0]==-2)
         continue;
-      
+      h=17+i*4;
+      i4=h+3;
       maxScoreY= state.round<99 ? 16 : 15;
       for (j=0;j<maxScoreY;j++) {
         score = state.players[i].scores[j];
@@ -232,21 +234,21 @@ void renderBoardNamesMessages() {
           itoa(score, tempBuffer, 10);
           len=(uint8_t)strlen(tempBuffer);
           if (len<3) {
-            drawSpace(17+i*4,scoreY[j],len);
+            drawSpace(h,scoreY[j],len);
           }
-          if (j==15 || (!newScoreFound && !ignoreNewScore && i!= state.localPlayer[state.currentLocalPlayer].index && i==mostRecentPlayer && isEmpty(19+i*4, scoreY[j]))) {
-            drawTextAlt(20-len+i*4,scoreY[j],tempBuffer);
+          if (j==15 || (!newScoreFound && !ignoreNewScore && i!= state.localPlayer[state.currentLocalPlayer].index && i==mostRecentPlayer && isEmpty(h+2, scoreY[j]))) {
+            drawTextAlt(i4-len,scoreY[j],tempBuffer);
             if (scoreCursorY==0 ) {
               scoreCursorY=scoreY[j];
-              scoreCursorX=17+i*4;
+              scoreCursorX=h;
             }
             newScoreFound=1;
           } else {
-            drawText(20-len+i*4,scoreY[j],tempBuffer);
+            drawText(i4-len,scoreY[j],tempBuffer);
           }
         } else if (ignoreNewScore) {
           // Draw blank (just in case there was something there from a previous player)
-          drawSpace(17+i*4,scoreY[j],3);
+          drawSpace(h,scoreY[j],3);
         }
       }
        
@@ -332,7 +334,7 @@ void renderBoardNamesMessages() {
 
 void handleAnimation() {
   static bool isThisPlayer;
-  static uint8_t highScoreIndex, isFujitzee;
+  static uint8_t highScoreIndex, isFujitzee, i4;
   static int16_t score;
 
   waitvsync();  
@@ -395,12 +397,13 @@ void handleAnimation() {
       isFujitzee=0;
     }
     for(i=0;i<5;i++) {
+      i4=20+4*i;
       if (state.rollFrames && state.keepRoll[i]=='1' ) {
         // Draw a random die
-        drawDie(20+4*i,HEIGHT-4,rand()%6+1,0,isFujitzee);
+        drawDie(i4,HEIGHT-4,rand()%6+1,0,isFujitzee);
       } else {
         // Draw the kept die
-        drawDie(20+4*i,HEIGHT-4,state.dice[i]-48,(state.rollFrames || state.rollsLeft>0) && state.keepRoll[i]=='0', isFujitzee);
+        drawDie(i4,HEIGHT-4,state.dice[i]-48,(state.rollFrames || state.rollsLeft>0) && state.keepRoll[i]=='0', isFujitzee);
       }
     }
 
@@ -537,13 +540,14 @@ void waitOnPlayerMove() {
     // Draw cursorPos
     if (cursorPos != prevCursorPos) {
       
-      // Hide cursorPos
+      // Hide cursorPos 
       if (prevCursorPos < 6)
         hideDiceCursor(4*prevCursorPos-(prevCursorPos==0)+16);
       else {
-        drawBlank(validX,scoreY[prevCursorPos-10]);
-        if (state.validScores[prevCursorPos-10]==0) {
-          drawBlank(validX+2,scoreY[prevCursorPos-10]);
+        h=prevCursorPos-10;
+        drawBlank(validX,scoreY[h]);
+        if (state.validScores[h]==0) {
+          drawBlank(validX+2,scoreY[h]);
         }
       }
 
@@ -552,9 +556,10 @@ void waitOnPlayerMove() {
         drawDiceCursor(4*cursorPos-(cursorPos==0)+16);
         soundCursor();
       } else {
-        drawCursor(validX,scoreY[cursorPos-10],0);
-        if (state.validScores[cursorPos-10]==0) {
-          drawTextAlt(validX+2,scoreY[cursorPos-10],"0");
+        h=cursorPos-10;
+        drawCursor(validX,scoreY[h],0);
+        if (state.validScores[h]==0) {
+          drawTextAlt(validX+2,scoreY[h],"0");
         }
         soundScoreCursor();
       }
@@ -596,7 +601,7 @@ void waitOnPlayerMove() {
       } else if (cursorPos>0) {
         // Toggle kept state of die
         i = state.keepRoll[cursorPos-1]= state.keepRoll[cursorPos-1]=='1' ? '0' : '1';
-        drawDie(16+4*cursorPos,HEIGHT-4,state.dice[cursorPos-1]-48,i == '0', 0);
+        drawDie(16+cursorPos*4,HEIGHT-4,state.dice[cursorPos-1]-48,i == '0', 0);
         if (i=='0')
           soundKeep();
         else 
@@ -666,9 +671,8 @@ void waitOnPlayerMove() {
 
 // Invalidate state variables that will trigger re-rendering of screen items on the next cycle
 void clearRenderState() {
-  state.prevRound = 99;
+  state.prevActivePlayer = state.prevRound = 99;
   state.prevPlayerCount = 0;
-  state.prevActivePlayer = 99;
   forceReadyUpdates = true;
 }
 

@@ -24,9 +24,10 @@ char *requestedMove;
 void updateState(bool isTables) {
   static char *line, *nextLine, *end, *key, *value, *parent, *arrayPart;
   static bool isKey, inArray;
-  static char c;
   static unsigned int i;
-
+  static int16_t *score;
+  static Table * table;
+  table=&state.tables[0];
   // Reset state and vars
   isKey=true; inArray=false;
   state.playerCount=state.tableCount=state.currentLocalPlayer=state.localPlayerIsActive=0;
@@ -67,21 +68,23 @@ void updateState(bool isTables) {
 
    
       // Set our state variables based on the key
+  
       if (isTables) {
         switch (key[0]) {
           case 't': 
-            state.tables[state.tableCount].table = value;
+            table->table = value;
             break;
           case 'n': 
-            state.tables[state.tableCount].name = value; 
+            table->name = value; 
             break;
           case 'p': 
-            strcpy(state.tables[state.tableCount].players, value); 
+            strcpy(table->players, value); 
             break;
           case 'm': 
-            strcat(state.tables[state.tableCount].players, " / ");
-            strcat(state.tables[state.tableCount].players, value); 
+            strcat(table->players, " / ");
+            strcat(table->players, value); 
             state.tableCount++;
+            table=&state.tables[state.tableCount];
             break;
           default:
            break;
