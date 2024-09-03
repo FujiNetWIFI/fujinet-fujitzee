@@ -116,15 +116,17 @@ void readCommonInput() {
 void loadPrefs() {
   read_appkey(AK_CREATOR_ID, AK_APP_ID, AK_KEY_PREFS, tempBuffer);
   
-  if (strlen(tempBuffer)==0) {
-    // Prefs in memory is defaulted to all zeros
-    prefs.localPlayerCount=1;
-  } else {
+  if (strlen(tempBuffer)>0) {
     memcpy(&prefs, tempBuffer, sizeof(prefs));
 
     if (prefs.debugFlag == 0xff) {
       strcpy(serverEndpoint, localServer);
     }
+  }
+
+  // Ensure local player count is at least one (older appkeys may have this set to 0)
+  if (prefs.localPlayerCount==0 || prefs.localPlayerCount>4) {
+    prefs.localPlayerCount=1;
   }
 
   setColorMode(prefs.color);

@@ -325,28 +325,25 @@ void welcomeActionVerifyPlayerName() {
   }
   
   // Capture username if player didn't come in from the lobby
-  if (strlen(playerName) == 0)
+  if (strlen(playerName) == 0) {
     showPlayerNameScreen(0);
+  } else {
+    // Set the app key player name with first player in the local player list
+    strcpy(prefs.localPlayer[0].name, playerName);
+  }
 }
 
 /// @brief Shows the Welcome Screen with Logo. Asks player's name
 void showWelcomeScreen() {
-  //resetScreenWithBorder();
-  //drawLogo(WIDTH/2-5,3);
-  
+
+  // Load preferences
   loadPrefs();
-
-  //centerText(13,"reading sdcard appkeys");
-  //centerText(13,"this may take up to a minute");
-
-  welcomeActionVerifyPlayerName();
-  welcomeActionVerifyServerDetails();
-
-  //strcpy(tempBuffer, "welcome ");
-  //strcat(tempBuffer, prefs.localPlayer[0].name);
-  //centerText(14,tempBuffer);  
   
-  //pause(45);
+  // Retrieve the main player's name
+  welcomeActionVerifyPlayerName();
+  
+  // Parse server url from app key if present 
+  welcomeActionVerifyServerDetails();
 
   // If first run, show the help screen
   if (!prefs.seenHelp) {
@@ -354,6 +351,7 @@ void showWelcomeScreen() {
     savePrefs();
     showHelpScreen();
   } 
+  
   pause(30);
 } 
 
