@@ -227,7 +227,7 @@ void renderBoardNamesMessages() {
         continue;
       h=17+i*4;
       i4=h+3;
-      maxScoreY= state.round<99 ? 16 : 15;
+      maxScoreY= state.round<99 ? 15 : 16;
       for (j=0;j<maxScoreY;j++) {
         score = state.players[i].scores[j];
         if (score>-1) {
