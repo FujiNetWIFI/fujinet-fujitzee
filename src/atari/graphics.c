@@ -15,13 +15,21 @@
 
 extern unsigned char charset[];
 
-// Set low enough that the program will run with or without BASIC enabled
-#define CHARSET_LOC 0x9000
-#define SCREEN_LOC ((uint8_t*)0x9400)
-#define SCREEN_BAK 0x8B00
-#define PM_BASE 0x8000
+// I'm using the space XL/XE allocates to BASIC for player/missles, charset, and screen buffer/backup
+// On graphics initialization, I turn off BASIC, freeing up this space.
 
-// Stack grows down from as low as 0x9C20
+// There are two startup scenarios for XL/XE that must be considered:
+// 1. If BASIC is disabled, the cc65 Stack will grow down from $BC1F, so to leave 1024 bytes for stack,
+//    that gives us $A000-$B81F to use.
+
+// 2. If BASIC is enabled, the stack grows down from $9C1F. So, again allowing for 1024 byte stack,
+//    $981F is as high as we want to allow the program to reach without needing custom cc65 configs/segments
+
+#define CHARSET_LOC 0xB000
+#define SCREEN_LOC ((uint8_t*)0xB400)
+#define SCREEN_BAK 0xAB00
+#define PM_BASE 0xA000
+
 
 #define xypos(x,y) (SCREEN_LOC + x + (y)*WIDTH)
 
@@ -108,6 +116,20 @@ void setColorMode(unsigned char mode) {
 
 
 void initGraphics() {
+  // Check if BASIC is enabled
+  if (PEEKW(0x2E5)<0xBC1F && !(PEEK(0xD301)&2) ) {
+    waitvsync();
+    
+    // Disable BASIC by setting bit 1 of 0xD301
+    POKE(0xD301, PEEK(0xD301)|2);
+
+    // Disable BASIC at shadow location
+    POKE(0x3F8, 1);
+
+    // Clear pmg memory
+    memset(PM_BASE,0, 0x800);
+  }
+
   resetScreen();
   if (PEEK(53268)==1) {
     colIndex=10;
@@ -323,6 +345,7 @@ void drawBoard() {
   // Thin horz ines
   memset(xypos(10,9),84,30);
   memset(xypos(11,12),84,29);
+  memset(xypos(0,5),84,10);
 
   // Thick horz lines
   memset(xypos(17,0),82,23);

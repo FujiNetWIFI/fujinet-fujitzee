@@ -13,7 +13,7 @@
 #include "misc.h"
 #include "fujinet-network.h"
 
-char rx_buf[800];     // buffer for payload
+char rx_buf[1024];     // buffer for payload
 
 // Internal to this file
 static char url[160];

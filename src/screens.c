@@ -44,24 +44,42 @@ void showHelpScreen() {
   drawTextAlt(10,1,"how to play fujitzee");
   drawLine(10,2,20);
   y=3;
+
+                   //1234567890123456789012345678901234567890
+  // y++;drawText(5,y, "this is a dice game where players");
+  // y++;drawText(5,y, "take turns rolling 5 dice up to 3");
+  // y++;drawText(5,y, "times per turn to achieve specific");
+  // y++;drawText(5,y, "combos, such as three of a kind,");
+  // y++;drawText(5,y, "full house, or a straight. each");
+  // y++;drawText(5,y, "combination corresponds to a score");
+  // y++;drawText(5,y, "on the player's scorecard. Players");
+  // y++;drawText(5,y, "must strategically choose which");
+  // y++;drawText(5,y, "combo to score after each roll.");
+  // y++;drawText(5,y, "the game continues until all 13");
+  // y++;drawText(5,y, "score categories are filled, and");
+  // y++;drawText(5,y, "the player with the highest total");
+  // y++;drawText(5,y, "score at the end wins!");
+                      //1234567890123456789012345678901234567890
+  y++;drawTextAlt(3,y, "TAKE TURNS ROLLING DICE UP TO three");
+  y++;drawTextAlt(3,y, "TIMES PER turn TO GET COMBINATIONS");
+  y++;drawTextAlt(3,y, "LIKE A set, full house, OR run.");
+  y++;
+  y++;drawTextAlt(3,y, "score YOUR COMBO TO EARN POINTS.");
+  y++;
+  y++;drawTextAlt(3,y, "PLAY CONTINUES FOR 13 ROUNDS UNTIL");
+  y++;drawTextAlt(3,y, "THE SCORESHEET IS FILLED.");
   
-  y++;drawText(5,y, "players take turns rolling five");
-  y++;drawText(5,y, "dice over 13 rounds to fill out");
-  y++;drawText(5,y, "their score sheet.");
+  y++;
+  y++;drawTextAlt(3,y, "THE PLAYER WITH THE highest TOTAL");
+  y++;drawTextAlt(3,y, "SCORE WINS THE GAME!");
 
-  y+=3;
-  centerTextAlt(y, "winning");
+  y++;y++;y++;
+  centerTextAlt(y, "turn steps");
 
-  y+=2;drawText(5,y, "the player with the highest");
-  y++;drawText(5,y, "score wins the game!");
-
-  y+=3;
-  centerTextAlt(y, "turn details");
-
-  y+=2;drawTextAlt(5,y, "1. SELECT ANY DICE TO KEEP");
-  y++;drawTextAlt(5,y, "2. roll TO GET NEW DICE");
-  y++;drawTextAlt(5,y, "3. REPEAT UP TO TWO TIMES MORE");
-  y++;drawTextAlt(5,y, "4. CHOOSE YOUR score");
+  y+=2;drawTextAlt(7,y, "1. SELECT ANY DICE TO keep");
+  y++;drawTextAlt(7,y, "2. roll TO GET NEW DICE");
+  y++;drawTextAlt(7,y, "3. YOU MAY REPEAT STEPS 1-2");
+  y++;drawTextAlt(7,y, "4. CHOOSE YOUR score");
 
   centerStatusText("PRESS ANY KEY FOR score INFO");
 

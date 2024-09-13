@@ -10,6 +10,8 @@
 #include <stdio.h>
 #include <peekpoke.h>
 
+#define PLAYER_LIST_Y_OFFSET 5
+
 uint8_t chat[20]="";
 //uint8_t scoreY[] = {1,2,3,4,5,6, 8, 9,11,12,13,14,15,16,17,19};
 uint8_t scoreY[] =   {3,4,5,6,7,8,10,11,13,14,15,16,17,18,19,21};
@@ -42,12 +44,13 @@ void renderBoardNamesMessages() {
   static int16_t score;
   
   if (state.drawBoard) {
-    state.drawBoard = false;
     resetScreen();
     drawLogo(0,0);
     drawBoard();
+    drawTextAlt(1,4,"players");
+  
+    state.drawBoard = false;
   }
-
 
   // If player is waiting on end game screen, auto-ready up if the game is starting
   
@@ -97,7 +100,7 @@ void renderBoardNamesMessages() {
   spectators=0;
 
   for(i=1;i<=PLAYER_MAX;i++) {
-    y=i+2;
+    y=i+PLAYER_LIST_Y_OFFSET;
     x=14+i*4;
     
     if (i<=state.playerCount) {
@@ -169,12 +172,12 @@ void renderBoardNamesMessages() {
         i4=18+i*4;
         if (i<state.playerCount && state.players[i].scores[0]==1) {
           drawTextVert(i4,3,"ready");
-          drawMark(0,i+3);
+          drawMark(0,i+PLAYER_LIST_Y_OFFSET+1);
         } else {
           drawTextVert(i4,3,"     ");
           // Only clear the dice if it is still round LOBBY
           if (state.round == 0) {
-            drawBlank(0,i+3);
+            drawBlank(0,i+PLAYER_LIST_Y_OFFSET+1);
           }
         }
       }
@@ -269,22 +272,38 @@ void renderBoardNamesMessages() {
 
      // Clear old turn indicator
     if (state.prevActivePlayer>-1)
-      drawBlank(0,state.prevActivePlayer+3);
+      drawBlank(0,state.prevActivePlayer+PLAYER_LIST_Y_OFFSET+1);
     
     // Draw new active player indicator
     if (state.activePlayer>-1) {
-      drawMark(0,state.activePlayer+3);
+      drawMark(0,state.activePlayer+PLAYER_LIST_Y_OFFSET+1);
       //if (state.activePlayer != 0)
       setHighlight(state.activePlayer, state.localPlayerIsActive, 0);
     } else {
       setHighlight(-1,0,0);
     }
 
+    // Display current round
+    if (state.round != state.prevRound) {
+      if (state.round>0 && state.round< 14) {
+        // Display static round details
+        drawTextAlt(1,3,"round ");
+        drawTextAlt(1,4,"   of ");
+        drawText(7,4,"13"); 
+        itoa(state.round, tempBuffer, 10);
+        drawText(8-(state.round>9),3,tempBuffer);
+      } else {
+        drawSpace(1,3,8);
+        drawTextAlt(1,4,"players ");
+      }
+    }
+    
+      
     // Handle end of game
     if (state.round == 99) { 
 
       // Clear active indicators
-      drawTextVert(0,3,"            ");
+      drawTextVert(0,PLAYER_LIST_Y_OFFSET+1,"            ");
       centerText(HEIGHT-3, state.prompt);
 
       if (state.round != state.prevRound) {

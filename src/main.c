@@ -29,9 +29,12 @@ typedef unsigned char bool;
 
 #include "fujinet-fuji.h"
 
-// Store default server endpoint in case lobby did not set app key
+// Store default public server endpoint in case lobby did not set app key
 char serverEndpoint[50] = "https://fujitzee.carr-designs.com/";
-char localServer[] = "http://127.0.0.1:8080/"; // Set 3rd byte in the e41c0300 appkey to 0xff to use local
+
+// For local dev testing, instead of changing the endpoint above, 
+// set 3rd byte in the e41c0300 appkey to 0xff, which will cause the below endpoing to be used
+char localServer[] = "http://127.0.0.1:8080/"; 
 
 GameState state;
 PrefsStruct prefs;
@@ -43,18 +46,6 @@ bool forceReadyUpdates;
 // Common local scope temp variables
 unsigned char h, i, j, k, x, y;
 char tempBuffer[128];
-
-// void test(unsigned char x, unsigned char y, unsigned char z, unsigned char w) {
-//   unsigned char g;
-//   x=y=z=y;
-//   w--;
-//   if (w) {
-//     test(x,y,z,w);
-//   } else {
-//     cputs("WAIT");
-//     cgetc();
-//   }
-// }
 
 #ifdef _CMOC_VERSION_
 int main(void)
