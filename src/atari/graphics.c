@@ -461,4 +461,4 @@ void resetGraphics() {
   waitvsync();
 }
 
-#endif /* __C64__ */
+#endif /* __ATARI__ */

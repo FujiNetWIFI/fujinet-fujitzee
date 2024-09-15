@@ -6,10 +6,10 @@
 
 // Include platform specific defines before the input include
 //#include "../c64/vars.h"
-//#include "../apple2/vars.h"
 //#include "../adam/vars.h"
 //#include "../coco/vars.h"
 #include "../atari/vars.h"
+#include "../apple2/vars.h"
 
 
 // Platform specific implementations

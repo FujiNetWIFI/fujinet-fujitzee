@@ -11,6 +11,7 @@
 #include <peekpoke.h>
 
 #define PLAYER_LIST_Y_OFFSET 5
+#define BOTTOM_PANEL_Y HEIGHT-BOTTOM_HEIGHT
 
 uint8_t chat[20]="";
 //uint8_t scoreY[] = {1,2,3,4,5,6, 8, 9,11,12,13,14,15,16,17,19};
@@ -90,7 +91,7 @@ void renderBoardNamesMessages() {
         drawSpace(i, scoreY[j], 3);
       }
     }
-    //drawSpace(0,scoreY[15],40);
+    
     clearBelowBoard();
     centerTextAlt(HEIGHT-1,"press TRIGGER/SPACE to toggle");
   }
@@ -133,7 +134,9 @@ void renderBoardNamesMessages() {
       }
       drawCharAlt(1+player->alias,y,c);
       drawText(2+player->alias,y,player->name+player->alias+1);
-      drawSpace(1+len, y, 8-len);
+      if (len<8) {
+        drawSpace(1+len, y, 8-len);
+      }
 
     } else if (i<=state.prevPlayerCount) {
       // Blank out entries for this player
@@ -331,10 +334,10 @@ void renderBoardNamesMessages() {
 
       // Visual hack - when playing multiple local players, put player's name + your turn
       if (state.localPlayerIsActive && prefs.localPlayerCount>1) {
-        drawText(0,HEIGHT-4,"your turn");
-        drawText(0,HEIGHT-3,state.players[state.activePlayer].name);
+        drawText(0,BOTTOM_PANEL_Y,"your turn");
+        drawText(0,BOTTOM_PANEL_Y+1,state.players[state.activePlayer].name);
       } else {
-        drawText(0,HEIGHT-4, state.prompt); 
+        drawText(0,BOTTOM_PANEL_Y, state.prompt); 
       }
       
       pause(30);
@@ -343,7 +346,6 @@ void renderBoardNamesMessages() {
     if (state.localPlayerIsActive && !state.viewing) {
       setHighlight(state.activePlayer, true, 2);
       pause(5);
-      soundMyTurn();
       soundMyTurn();
       pause(5);
       setHighlight(state.activePlayer, true, 0);
@@ -366,7 +368,7 @@ void handleAnimation() {
 
   // Setup the player input details if this is a new roll
   if (state.rollsLeft != state.prevRollsLeft || state.activePlayer != state.prevActivePlayer )  {
-    state.rollFrames=31;
+    state.rollFrames=ROLL_FRAMES;
     if (isThisPlayer) {
       state.playerMadeMove=false;
       prevCursorPos=5;
@@ -404,7 +406,7 @@ void handleAnimation() {
   }
   
   // Draw the dice, randomly displaying the ones that are currently being rolled
-  if (state.rollFrames % 4==0)
+  if (state.rollFrames % ROLL_SOUND_MOD ==0)
     soundRollDice();
 
 
@@ -586,7 +588,7 @@ void waitOnPlayerMove() {
       
       
     } else if (cursorPos>9){ 
-      drawCursor(validX,scoreY[cursorPos-10],(frames<3)*0x80);
+      drawCursor(validX,scoreY[cursorPos-10],(frames<2)*SCORE_CURSOR_ALT);
     }
 
     // Handle trigger press
@@ -639,7 +641,7 @@ void waitOnPlayerMove() {
         state.playerMadeMove = true;
         hideDiceCursor(4*prevCursorPos-(prevCursorPos==0)+16);
         // Clear clock
-        drawSpace(10,HEIGHT-4,3);
+        drawSpace(10,BOTTOM_PANEL_Y,4);
         return;
       }
     }
@@ -652,8 +654,8 @@ void waitOnPlayerMove() {
         state.moveTime = i;
         tempBuffer[0]=' ';
         itoa(i, tempBuffer+1, 10);
-        drawTextAlt(12-strlen(tempBuffer), HEIGHT-4, tempBuffer);
-        drawClock(12,HEIGHT-4);
+        drawTextAlt(12-strlen(tempBuffer), BOTTOM_PANEL_Y, tempBuffer);
+        drawClock(12,BOTTOM_PANEL_Y);
         soundTick();
       }
     } 

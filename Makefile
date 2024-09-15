@@ -13,7 +13,7 @@
 # Space or comma separated list of cc65 supported target platforms to build for.
 
 # Supported targets: atari c64 apple2 (lowercase!)
-TARGETS := atari
+TARGETS := apple2
  
 # Name of the final, single-file executable.
 # Default: name of the current dir with target name appended
@@ -54,8 +54,8 @@ ASFLAGS =
  
 # Additional linker flags and options.
 # Default: none
-# LDFLAGS = 
-LDFLAGS = -m $(PROGRAM_STUB).map -Ln $(PROGRAM_STUB).lbl
+# LDFLAGS =   -C apple2-hgr.cfg  -D __STACKSIZE__=0x0200 -D __HIMEM__=0xBF00 isn't working
+LDFLAGS = -m $(PROGRAM_STUB).map -Ln $(PROGRAM_STUB).lbl 
 
 # Path to the directory containing C and ASM sources.
 # Default: src
@@ -359,8 +359,7 @@ endif
 	java -jar "support/apple2/dist/ac.jar" -as "support/apple2/dist/$(PROGRAM_STUB).po" $(PROGRAM_STUB) bin <$(PROGRAM)
 ifneq ($(OS),Windows_NT)
 	# Start the Apple Fujinet, as it needs to be restarted before each Apple2 boot
-	cd ~/Documents/projects/fujinet-firmware/build_apple/dist;./run-fujinet&
-	#cd ~/Documents/fujinet-pc-apple/dist;./run-fujinet&
+	cd ~/Documents/fujinetpc-apple;./run-fujinet&
 endif
 endif
 ifeq ($(OS),Windows_NT) 

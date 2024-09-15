@@ -47,6 +47,8 @@ bool forceReadyUpdates;
 unsigned char h, i, j, k, x, y;
 char tempBuffer[128];
 
+extern void toneFinder();
+
 #ifdef _CMOC_VERSION_
 int main(void)
 #else
@@ -54,9 +56,14 @@ void main(void)
 #endif /* _CMOC_VERSION_ */
 {
   uint8_t failedApiCalls=0;
+  
+  //soundMyTurn();
+  //soundRollButton();
+  //toneFinder();
 
   initGraphics(); 
   initSound();
+  
   
   showWelcomeScreen();
   showTableSelectionScreen();

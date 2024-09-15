@@ -73,7 +73,7 @@ void showHelpScreen() {
   y++;drawTextAlt(3,y, "THE PLAYER WITH THE highest TOTAL");
   y++;drawTextAlt(3,y, "SCORE WINS THE GAME!");
 
-  y++;y++;y++;
+  y++;y++;
   centerTextAlt(y, "turn steps");
 
   y+=2;drawTextAlt(7,y, "1. SELECT ANY DICE TO keep");
@@ -398,10 +398,15 @@ void showTableSelectionScreen() {
     if (prefs.localPlayerCount==1) {
       strcpy(tempBuffer,"HELLO "); 
       strcat(tempBuffer, prefs.localPlayer[0].name);
-      centerTextAlt(19, tempBuffer);
-      centerTextAlt(21, "PRESS p TO ADD LOCAL PLAYERS");
+      centerTextAlt(18, tempBuffer);
+      centerTextAlt(20, "PRESS p TO ADD LOCAL PLAYERS");
+      
+      #if __APPLE2__ // Trying to avoid ifdefs, this is a temp hack to underline the keys to press
+      drawLine(12,21,1); // P
+      #endif
+
     } else {
-      centerTextAlt(19,"local players");
+      centerTextAlt(18,"local players");
       strcpy(tempBuffer,"");
       for(i=0;i<prefs.localPlayerCount;i++) {
         strcat(tempBuffer, prefs.localPlayer[i].name);
@@ -409,7 +414,7 @@ void showTableSelectionScreen() {
           strcat(tempBuffer, ", ");
         }
       }
-      centerText(21, tempBuffer);
+      centerText(20, tempBuffer);
     }
 
     waitvsync();
@@ -438,6 +443,14 @@ void showTableSelectionScreen() {
 
     centerStatusText("Refresh  Help  Players  Quit");
     
+    // Trying to avoid ifdefs, this is a temp hack to underline the keys to press
+    #if __APPLE2__
+    drawLine(6,HEIGHT,1); // R
+    drawLine(15,HEIGHT,1); // H
+    drawLine(21,HEIGHT,1); // P
+    drawLine(30,HEIGHT,1); // Q
+    #endif
+    
     shownChip=!state.tableCount;
 
     clearCommonInput();
@@ -448,7 +461,7 @@ void showTableSelectionScreen() {
           drawMark(4,9+tableIndex*2);
         else
           drawAltMark(4,9+tableIndex*2);
-      }
+      } 
 
       waitvsync();
       altChip=(altChip+1) % 60;
@@ -552,7 +565,7 @@ void showTableSelectionScreen() {
         *localQuery='+';
     }  
   }
-
+ 
   // Join all local players to table
   apiCallForAll("state");
   

@@ -68,7 +68,7 @@ void soundFujitzee() {
 }
 
 void soundMyTurn() {
-  
+   for (j=0;j<1;j++) {
     _sound(0,81,10,5);
     pause(2);
     for (i=7;i<255;i--) {
@@ -76,7 +76,7 @@ void soundMyTurn() {
       waitvsync();
     }
     waitvsync();
-  
+  }
  }
 
 

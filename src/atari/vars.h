@@ -8,6 +8,12 @@
 #define WIDTH 40
 #define HEIGHT 26
 
+// Other platform specific constnats
+
+#define ROLL_SOUND_MOD 4 // How often to play roll sound
+#define ROLL_FRAMES 31 // How many roll frames to play
+#define SCORE_CURSOR_ALT 0x80 // Alternate score cursor color
+#define BOTTOM_HEIGHT 4 // How high the bottom panel is
 
 /**
  * Platform specific key map for common input
