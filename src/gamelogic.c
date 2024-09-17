@@ -86,7 +86,7 @@ void renderBoardNamesMessages() {
   // Clear score board if a new round
   if (redraw && state.round==0) {    
       // Clear score locations
-    for (i=17;i<41;i+=4) {
+    for (i=SCORES_X+6;i<41;i+=4) {
       for(j=0;j<15;j++)  {
         drawSpace(i, scoreY[j], 3);
       }
@@ -102,7 +102,7 @@ void renderBoardNamesMessages() {
 
   for(i=1;i<=PLAYER_MAX;i++) {
     y=i+PLAYER_LIST_Y_OFFSET;
-    x=14+i*4;
+    x=SCORES_X+3+i*4;
     
     if (i<=state.playerCount) {
       
@@ -172,7 +172,7 @@ void renderBoardNamesMessages() {
     // Show players that are ready to start
     if (forceReadyUpdates) {
       for(i=0;i<6;i++) {
-        i4=18+i*4;
+        i4=SCORES_X+7+i*4;
         if (i<state.playerCount && state.players[i].scores[0]==1) {
           drawTextVert(i4,3,"ready");
           drawMark(0,i+PLAYER_LIST_Y_OFFSET+1);
@@ -207,7 +207,7 @@ void renderBoardNamesMessages() {
 
       // Only specify scores header if there are scores (game not aborted early)
       if (state.players[0].scores[15]>0) {
-        drawText(11,21,"score");
+        drawText(SCORES_X,21,"score");
       }
       setHighlight(-1,0,0);
     }
@@ -231,7 +231,7 @@ void renderBoardNamesMessages() {
       // Skip spectators or going beyond 6 players
       if (i>5 || state.players[i].scores[0]==-2)
         continue;
-      h=17+i*4;
+      h=SCORES_X+6+i*4;
       i4=h+3;
       maxScoreY= state.round<99 ? 15 : 16;
       for (j=0;j<maxScoreY;j++) {
@@ -242,7 +242,7 @@ void renderBoardNamesMessages() {
           if (len<3) {
             drawSpace(h,scoreY[j],len);
           }
-          if (j==15 || (!newScoreFound && !ignoreNewScore && i!= state.localPlayer[state.currentLocalPlayer].index && i==mostRecentPlayer && isEmpty(h+2, scoreY[j]))) {
+          if (j==15 || (!newScoreFound && !ignoreNewScore && i!= state.localPlayer[state.currentLocalPlayer].index && i==mostRecentPlayer && j!=6 && j!=7 && !state.renderedScore[i*16+j])) {
             drawTextAlt(i4-len,scoreY[j],tempBuffer);
             if (scoreCursorY==0 ) {
               scoreCursorY=scoreY[j];
@@ -252,6 +252,7 @@ void renderBoardNamesMessages() {
           } else {
             drawText(i4-len,scoreY[j],tempBuffer);
           }
+          state.renderedScore[i*16+j]=true;
         } else if (ignoreNewScore) {
           // Draw blank (just in case there was something there from a previous player)
           drawSpace(h,scoreY[j],3);
@@ -332,7 +333,7 @@ void renderBoardNamesMessages() {
         drawTextAlt(2,HEIGHT-1, tempBuffer);
       } 
 
-      // Visual hack - when playing multiple local players, put player's name + your turn
+      // Visual override - when playing multiple local players, put player's name + your turn
       if (state.localPlayerIsActive && prefs.localPlayerCount>1) {
         drawText(0,BOTTOM_PANEL_Y,"your turn");
         drawText(0,BOTTOM_PANEL_Y+1,state.players[state.activePlayer].name);
@@ -373,7 +374,7 @@ void handleAnimation() {
       state.playerMadeMove=false;
       prevCursorPos=5;
       cursorPos=1;
-      validX=17+state.activePlayer*4;
+      validX=SCORES_X+6+state.activePlayer*4;
 
 
       // If no rolls are remaining, default the cursorPos on the highest score
@@ -499,7 +500,7 @@ void processInput() {
 void waitOnPlayerMove() {
   static int jifsPerSecond;
   static bool foundValidLocation;
-  static uint8_t waitCount, frames;
+  static uint8_t waitCount, frames; 
   
   resetTimer();
 
@@ -598,6 +599,8 @@ void waitOnPlayerMove() {
         // Select score
         i=cursorPos-10;
 
+        state.renderedScore[state.activePlayer*16+i]=true;
+
         // Cursor select animation 
         drawCursor(validX,scoreY[cursorPos-10],1);soundScore();
         
@@ -617,7 +620,7 @@ void waitOnPlayerMove() {
         sendMove(tempBuffer);
 
         state.playerMadeMove = true;
-        //soundScore();
+
         return;
       } else if (cursorPos>0) {
         // Toggle kept state of die
@@ -680,7 +683,7 @@ void waitOnPlayerMove() {
   for (j=0;j<15;j++) {
     if (i==0 && state.validScores[j]>-1) {
       itoa(state.validScores[j], tempBuffer, 10);
-      drawTextAlt(20-strlen(tempBuffer),scoreY[j],tempBuffer);
+      drawTextAlt(validX+3-strlen(tempBuffer),scoreY[j],tempBuffer);
       i=1;
     } else if (state.validScores[j]>0) {
       drawSpace(validX,scoreY[j],3);
@@ -695,6 +698,7 @@ void clearRenderState() {
   state.prevActivePlayer = state.prevRound = 99;
   state.prevPlayerCount = 0;
   forceReadyUpdates = true;
+  memset(state.renderedScore, 0, 16*6);
 }
 
 /// @brief Convenience function to draw text centered at row Y

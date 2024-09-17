@@ -57,8 +57,6 @@ void main(void)
 {
   uint8_t failedApiCalls=0;
   
-  //soundMyTurn();
-  //soundRollButton();
   //toneFinder();
 
   initGraphics(); 

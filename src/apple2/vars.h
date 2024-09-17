@@ -14,6 +14,9 @@
 #define ROLL_FRAMES 10 // How many roll frames to play
 #define SCORE_CURSOR_ALT 2 // Alternate score cursor color
 #define BOTTOM_HEIGHT 3 // How high the bottom panel is
+#define SCORES_X 10 // X start of scoreboard
+
+#define COLOR_TOGGLE // Rather than multiple colors, platform only supports toggling color mode on/off
 
 /**
  * Platform specific key map for common input

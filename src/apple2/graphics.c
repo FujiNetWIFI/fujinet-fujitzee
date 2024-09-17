@@ -8,11 +8,11 @@
 #include "hires.h"
 #include "text.h"
 #include <peekpoke.h>
-#include <string.h>
+#include <string.h> 
 #include "../platform-specific/graphics.h"
 #include "../platform-specific/sound.h"
-#include "../misc.h"
-
+#include "../misc.h"  
+   
 extern unsigned char charset[];
 
 #define OFFSET_Y 4
@@ -44,27 +44,7 @@ const unsigned char diceChars[] = {
   // "Roll" button
   0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, // 13 - Empty space
   0x01, 0x00, 0x02, 0x0E, 0x0F, 0x10, 0x03, 0x1A, 0x04, // 14 - 1 Roll left
-  0x01, 0x00, 0x02, 0x0E, 0x0F, 0x10, 0x03, 0x15, 0x04, // 15 - 2 Rolls left
-  
-  // "Roll" button pushed
-  0x01, 0x00, 0x02, 0x0E, 0x0F, 0x10, 0x03, 0x1A, 0x04, // 16 - 1 Roll left
-  0x01, 0x00, 0x02, 0x0E, 0x0F, 0x10, 0x03, 0x15, 0x04, // 17 - 2 Rolls left
-  
-  // Alternate color
-  0xC1, 0xC0, 0xC2, 0xC0, 0xC5, 0xC0, 0xC3, 0xC0, 0xC4, // 1
-  0xC1, 0xC0, 0xC7, 0xC0, 0xC0, 0xC0, 0xC8, 0xC0, 0xC4, // 2
-  0xC1, 0xC0, 0xC7, 0xC0, 0xC5, 0xC0, 0xC8, 0xC0, 0xC4, // 3
-  0xC6, 0xC0, 0xC7, 0xC0, 0xC0, 0xC0, 0xC8, 0xC0, 0xC9, // 4
-  0xC6, 0xC0, 0xC7, 0xC0, 0xC5, 0xC0, 0xC8, 0xC0, 0xC9, // 5
-  0xC6, 0xC0, 0xC7, 0xCA, 0xC0, 0xCB, 0xC8, 0xC0, 0xC9, // 6
-
-  // Kept Alternate dice
-  0xA1, 0xCC, 0xA2, 0xA0, 0xA5, 0xA0, 0xA3, 0xCD, 0xA4, // 1
-  0xA1, 0xCC, 0xA7, 0xA0, 0xA0, 0xA0, 0xA8, 0xCD, 0xA4, // 2
-  0xA1, 0xCC, 0xA7, 0xA0, 0xA5, 0xA0, 0xA8, 0xCD, 0xA4, // 3
-  0xA6, 0xCC, 0xA7, 0xA0, 0xA0, 0xA0, 0xA8, 0xCD, 0xA9, // 4
-  0xA6, 0xCC, 0xA7, 0xA0, 0xA5, 0xA0, 0xA8, 0xCD, 0xA9, // 5
-  0xA6, 0xCC, 0xA7, 0xAA, 0xA0, 0xAB, 0xA8, 0xCD, 0xA9 // 6
+  0x01, 0x00, 0x02, 0x0E, 0x0F, 0x10, 0x03, 0x15, 0x04 // 15 - 2 Rolls left
 
 };
 
@@ -122,14 +102,6 @@ void restoreScreen() {
 
 void drawText(unsigned char x, unsigned char y, char* s) {
   static unsigned char c;
-  // static unsigned char* pos;
-
-  // pos = xypos(x,y);
-
-  // while(c=*s++) {
-  //   if (c<65 && c>=32) c-=32;
-  //   *pos++ = c;
-  // }  
   if (y==HEIGHT-1) {
     y=182;
   } else {
@@ -138,7 +110,7 @@ void drawText(unsigned char x, unsigned char y, char* s) {
 
   while(*s) {
     c=*s++;
-    if (c>=97 && c<=122) c=c-32;
+    if (c>=97 && c<=122) c=c-32; 
     hires_putc(x++,y,ROP_CPY,c);
   }  
 }
@@ -149,18 +121,45 @@ void drawChar(unsigned char x, unsigned char y, char c) {
 }
 
 void drawCharAlt(unsigned char x, unsigned char y, char c) {
-  drawChar(x,y,c);
-  // if (c<65 && c>=32) c-=32;
-  // if (c<65 || c> 90)
-  //   c+=128;
-  // else      
-  //   c+=32;
-
-  // POKE(xypos(x,y), c);
+  static unsigned char rop_index;
+  if (y==HEIGHT-1) {
+    y=182;
+  } else {
+    y=y*8-OFFSET_Y;
+  }
+  
+  if (!colorMode && (c<65 || c> 90)) {
+      rop_index = 3-(x % 2);
+    } else {
+      rop_index=0;
+    }
+    if (c>=97 && c<=122)
+      c=c-32; 
+      
+  hires_putc(x++,y,diceRop[rop_index],c);
 }
 
 void drawTextAlt(unsigned char x, unsigned char y, char* s) {
-  drawText(x,y,s);
+ static unsigned char c, rop_index;
+  if (y==HEIGHT-1) {
+    y=182;
+  } else {
+    y=y*8-OFFSET_Y;
+  }
+
+  while(*s) {
+    c=*s++;
+    if (!colorMode && (c<65 || c> 90)) {
+      rop_index = 3-(x % 2);
+    } else {
+      rop_index=0;
+    }
+    if (c>=97 && c<=122)
+      c=c-32; 
+      
+    hires_putc(x++,y,diceRop[rop_index],c);
+  }  
+
   // static unsigned char c;
   // static unsigned char* pos;
 
@@ -215,15 +214,13 @@ void drawDie(unsigned char x, unsigned char y, unsigned char s, bool isSelected,
   if (isHighlighted)
    diceRopIndex=2;
   
-  
-    //source+=153;
 
   // Draw the dice to the screen
-  y=y*8; //-OFFSET_Y;
+  y=y*8;
 
   // If drawing the bottom dice, offset them lower to make room
   if (y==160) {
-    y+=6;
+    y=165;
   }
 
   for (i=0;i<3;i++) {
@@ -234,7 +231,7 @@ void drawDie(unsigned char x, unsigned char y, unsigned char s, bool isSelected,
   }
 }
 
-
+ 
 void drawMark(unsigned char x, unsigned char y) {
   //POKE(xypos(x,y),0x1D); // 0x21
   hires_putc(x,y*8-OFFSET_Y,ROP_CPY, 0x22);
@@ -242,7 +239,7 @@ void drawMark(unsigned char x, unsigned char y) {
 
 void drawAltMark(unsigned char x, unsigned char y) {
   //POKE(xypos(x,y),0x1C);
-  hires_putc(x,y*8-OFFSET_Y,ROP_INV, 0x22); 
+  hires_putc(x,y*8-OFFSET_Y,ROP_AND(0b11010101), 0x22); 
 }
 
 void drawClock(unsigned char x, unsigned char y) {
@@ -252,7 +249,11 @@ void drawClock(unsigned char x, unsigned char y) {
 
 void drawSpec(unsigned char x, unsigned char y) {
   //POKE(xypos(x,y),0xDC);
-  hires_putc(x,y*8-OFFSET_Y,ROP_CPY, 0x28);
+  if (y==HEIGHT-1)
+    y=182;
+  else 
+    y=y*8-OFFSET_Y;
+  hires_putc(x,y,ROP_CPY, 0x28);
 }
 
 void drawBlank(unsigned char x, unsigned char y) {
@@ -273,11 +274,6 @@ void drawCursor(unsigned char x, unsigned char y, unsigned char i) {
   //POKE(xypos(x,y),i+0xBE);
   hires_putc(x,y*8-OFFSET_Y,ROP_CPY, 0x29+i);
 }
- 
-/// @brief Returns true if the screen location is empty
-bool isEmpty(unsigned char x, unsigned char y) {
-  return true; //PEEK(xypos(x,y))==0;
-}
 
 void clearBelowBoard() {
   //memset(xypos(0,HEIGHT-5),0,200);
@@ -288,78 +284,43 @@ void drawBoard() {
   static uint8_t y,x,c;
   static unsigned char *dest;
 
-  // // Vertical lines
-  for (x=20;x<40;x+=4) {
-    hires_Mask(x,0,1,160,0xa988);
+  // Vertical lines
+  for (x=SCORES_X+9;x<40;x+=4) {
+    hires_Mask(x,0,1,160,0xa984);
   }
 
-  // // Main scores box
-  drawBox(16,0,23,1);
-  drawBox(10,2,5,17);
+  // Main scores box
+  drawBox(SCORES_X+5,0,23,19);
+  drawBox(SCORES_X-1,2,5,17); 
+ 
+  // Fix overlapping box corners 
+  drawChar(SCORES_X-1,2, 0x24);
 
-  
- 
- 
   // // Thin horz ines
-  hires_Mask(11,9*8,29,1, 0xa9ff); 
-  hires_Mask(11,12*8,29,1, 0xa9ff);
-  hires_Mask(0,5*8,10,1, 0xa9ff);  
+  hires_Mask(SCORES_X,9*8,29,1, 0xa9ff); 
+  hires_Mask(SCORES_X,12*8,29,1, 0xa9ff);
+  hires_Mask(0,5*8,SCORES_X-1,1, 0xa9ff);  
   
 
   // // Thick horz lines
-  // memset(xypos(17,0),82,23);
-  // memset(xypos(11,2),82,29);
-  // memset(xypos(11,20),82,29);
+  hires_Mask(SCORES_X,2*8,29,2, 0xa9ff); 
+  hires_Mask(SCORES_X,20*8-1,29,2, 0xa9ff); 
   
-  //hires_Mask(17,0,23,2, 0xa9ff); 
-  hires_Mask(11,2*8,29,2, 0xa9ff); 
-  hires_Mask(11,20*8-1,29,2, 0xa9ff); 
-  
-
-
-  // c=91;
-  // dest = xypos(16,0);
-  // for (y=0;y<20;y++) {
-  //   for (x=0;x<24;x+=4) {
-  //     *(dest+x)=c;
-  //   }
-  //   c=124;
-  //   dest+=40;
-  // }
-
-  // // Cross sections
-  // dest = xypos(10,9);
-  // for (x=0;x<7;x++) {
-  //   if (x) {
-  //     POKE(dest-40*7,86);
-  //     POKE(dest+40*11,88);
-  //   }
-  //   *dest=*(dest+40*3)=83;
-    
-  //   if (x)
-  //     dest+=4;
-  //   else
-  //     dest+=6;
-  // }
-  
-  // POKE(xypos(16,0),81);
-
-  // // Set 2 missles that are the rightmost vertical line
-  // POKEW(0xd005, 0xd0d0); // Right side missile location
-  // missleLineVisible=1;
 
   // // Score names (16 for end game score)
-  for(y = 0; y<14; y++) {
-    drawTextAlt(11,scoreY[y],scores[y]);
-  }
+  for(y = 0; y<14; y++) { 
+    drawTextAlt(SCORES_X,scoreY[y],scores[y]);
+  } 
   
   // // Fujitzee score text
-  // drawFujzee(10,scoreY[14]);
-  drawText(11,scoreY[14],"fuji!");
+  drawFujzee(SCORES_X,scoreY[14]);
 }
 
 void drawFujzee(unsigned char x, unsigned char y) {
-  //memcpy(xypos(x,y),&"89:;<=",6); // "/|\TZEE"
+  y=y*8-OFFSET_Y+1;
+  hires_putcc(x,y,ROP_CPY, 0x1b1c); 
+  hires_putcc(x+2,y,ROP_CPY, 0x1d1e);  
+  hires_putc(x+4,y,ROP_CPY, 0x1e);
 }
 
 
@@ -409,25 +370,25 @@ void drawBox(unsigned char x, unsigned char y, unsigned char w, unsigned char h)
 
 void drawDiceCursor(unsigned char x) {
   // Top / Bottom
-  hires_Mask(x,190-26,3,1, 0xa955); 
-  hires_Mask(x,191,3,1, 0xa955);
+  hires_Mask(x,190-28,3,2, 0xa955); 
+  hires_Mask(x,190,3,2, 0xa955);
 
-  hires_Mask(x+1,190-26,1,1, 0xa92A); 
-  hires_Mask(x+1,191,1,1, 0xa92A);
+  hires_Mask(x+1,190-28,1,2, 0xa92A); 
+  hires_Mask(x+1,190,1,2, 0xa92A);
   
   // Sides
-  hires_Mask(x-1,190-26,1,28,0xa920);
-  hires_Mask(x+3,190-26,1,28,0xa902);
+  hires_Mask(x-1,190-27,1,28,0xa920);
+  hires_Mask(x+3,190-27,1,28,0xa902);
 }
 
 void hideDiceCursor(unsigned char x) {
   //drawDiceCursorInternal(x,5);
-  hires_Mask(x,190-26,3,1, 0xa900); 
-  hires_Mask(x,191,3,1, 0xa900); 
+  hires_Mask(x,190-28,3,2, 0xa900); 
+  hires_Mask(x,190,3,2, 0xa900); 
   
   // Sides
-  hires_Mask(x-1,190-26,1,28,0xa900);
-  hires_Mask(x+3,190-26,1,28,0xa900);
+  hires_Mask(x-1,190-27,1,28,0xa900);
+  hires_Mask(x+3,190-27,1,28,0xa900);
 }
 
 void resetGraphics() {}

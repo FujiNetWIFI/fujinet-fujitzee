@@ -97,7 +97,7 @@ typedef struct {
   int8_t currentLocalPlayer;
   bool localPlayerIsActive;
   LocalPlayerState localPlayer[4];
-
+  bool renderedScore[16*6];
   
 } GameState;
 

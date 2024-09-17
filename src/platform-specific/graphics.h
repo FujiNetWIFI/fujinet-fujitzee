@@ -24,7 +24,6 @@ void drawText(unsigned char x, unsigned char y, char* s);
 void drawTextAlt(unsigned char x, unsigned char y, char* s);
 void drawTextcursorPos(unsigned char x, unsigned char y);
 void drawTextVert(unsigned char x, unsigned char y, char* s);
-bool isEmpty(unsigned char x, unsigned char y);
 
 void clearBelowBoard();
 

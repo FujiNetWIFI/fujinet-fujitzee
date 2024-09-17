@@ -24,19 +24,19 @@ void tone(uint16_t period, uint8_t dur, uint8_t wait) {
 }
 
 // Keeping this here in case I need it
-void toneFinder() {
-  clearCommonInput();
-  while (input.key != KEY_RETURN || i<2) {
-    while (!kbhit());
-    input.key = cgetc();
-    if (input.key == KEY_DOWN_ARROW)
-      i-=1;
-    if (input.key == KEY_UP_ARROW)
-      i+=1;
-      cprintf("%i ",i);
-    tone(i,50,0);
-  }
-}
+// void toneFinder() {
+//   clearCommonInput();
+//   while (input.key != KEY_RETURN || i<2) {
+//     while (!kbhit());
+//     input.key = cgetc();
+//     if (input.key == KEY_DOWN_ARROW)
+//       i-=1;
+//     if (input.key == KEY_UP_ARROW)
+//       i+=1;
+//       cprintf("%i ",i);
+//     tone(i,50,0);
+//   }
+// }
 
 void initSound() {
  
@@ -49,23 +49,29 @@ void soundJoinGame() {
 }
 
 void soundFujitzee() {
-  tone(83,70,20);
-  tone(79,70,30);
-  tone(65,70,20);
-  tone(61,70,50);
+  tone(146,20,0);
+  tone(109,28,0);
+  tone(86,35,0);
+
+  tone(109,6,0);
+  tone(72,42,100);
+
+  tone(86,30,0);
+
+  tone(109,6,0);
+  tone(72,120,250);
 }
 
 void soundMyTurn() {
   tone(36,50,60);
   tone(36,80,0);
-  
 }
 
 void soundGameDone() {
-  tone(83,20,20);
-  tone(79,50,30);
-  tone(65,20,20);
-  tone(61,40,50);
+  tone(60,70,130);
+  tone(45,230,200);
+  tone(39,90,130);
+  tone(35,250,0);
 }
 
 

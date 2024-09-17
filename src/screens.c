@@ -107,9 +107,6 @@ void showHelpScreen() {
   y+=1;drawTextAlt(4,y, "      - 5 OF A KIND");
   drawFujzee(4,y);
 
-  y+=3;
-    y+=3;
-  
   centerStatusText("press any key to close");
 
   clearCommonInput();
@@ -154,7 +151,7 @@ void showPlayerGroupScreen() {
 
   centerTextAlt(10,"PRESS 1-4 TO EDIT PLAYER");
 
-  centerTextAlt(HEIGHT-2,"press TRIGGER/SPACE when done");
+  centerTextAlt(HEIGHT-1,"press TRIGGER/SPACE when done");
   
   clearCommonInput();
   showPlayers = true;
@@ -180,7 +177,7 @@ void showPlayerGroupScreen() {
     }
 
     // Add new player
-    if (input.key == 'a') {
+    if (input.key == 'a' || input.key == 'A') {
       if (prefs.localPlayerCount<4) {
         // Make sure new name is empty
         memset(&prefs.localPlayer[prefs.localPlayerCount],0,9);
@@ -401,8 +398,9 @@ void showTableSelectionScreen() {
       centerTextAlt(18, tempBuffer);
       centerTextAlt(20, "PRESS p TO ADD LOCAL PLAYERS");
       
-      #if __APPLE2__ // Trying to avoid ifdefs, this is a temp hack to underline the keys to press
-      drawLine(12,21,1); // P
+      #ifdef COLOR_TOGGLE
+      if (prefs.color)
+        drawLine(12,21,1); // P
       #endif
 
     } else {
@@ -443,12 +441,13 @@ void showTableSelectionScreen() {
 
     centerStatusText("Refresh  Help  Players  Quit");
     
-    // Trying to avoid ifdefs, this is a temp hack to underline the keys to press
-    #if __APPLE2__
-    drawLine(6,HEIGHT,1); // R
-    drawLine(15,HEIGHT,1); // H
-    drawLine(21,HEIGHT,1); // P
-    drawLine(30,HEIGHT,1); // Q
+    #ifdef COLOR_TOGGLE
+    if (prefs.color) {
+      drawLine(6,HEIGHT,1); // R
+      drawLine(15,HEIGHT,1); // H
+      drawLine(21,HEIGHT,1); // P
+      drawLine(30,HEIGHT,1); // Q
+    }
     #endif
     
     shownChip=!state.tableCount;
@@ -586,7 +585,7 @@ void showInGameMenuScreen() {
     drawBox(INGAME_MENU_X-3,y-2,21,9);
     drawTextAlt(INGAME_MENU_X,y,    "  Q: quit table");
     drawTextAlt(INGAME_MENU_X,y+=2, "  H: how to play"); 
-    drawTextAlt(INGAME_MENU_X,y+=2, "  C: color toggle");
+    //drawTextAlt(INGAME_MENU_X,y+=2, "  C: color toggle");
     drawTextAlt(INGAME_MENU_X,y+=2, "ESC: keep playing"); 
     
     strcpy(tempBuffer,  "CURRENTLY AT ");

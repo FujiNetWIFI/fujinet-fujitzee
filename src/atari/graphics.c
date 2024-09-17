@@ -329,16 +329,11 @@ void drawCursor(unsigned char x, unsigned char y, unsigned char i) {
   POKE(xypos(x,y),i+0xBE);
 }
 
-/// @brief Returns true if the screen location is empty
-bool isEmpty(unsigned char x, unsigned char y) {
-  return PEEK(xypos(x,y))==0;
-}
-
 void clearBelowBoard() {
   memset(xypos(0,HEIGHT-5),0,200);
 }
 
-void drawBoard() {
+void drawBoard() { 
   static uint8_t y,x,c;
   static unsigned char *dest;
 
