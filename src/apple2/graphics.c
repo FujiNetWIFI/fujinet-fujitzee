@@ -66,7 +66,8 @@ void initGraphics() {
 } 
 
 //uint8_t highlight[] = {0x23,0x5b,0x3f,0x5b}; 
-uint8_t highlight[] = {0b100,0b1010,0b11100,0b1010}; 
+//uint8_t highlight[] = {0b100,0b1010,0b11100,0b1010}; 
+uint16_t highlight[] = {0xA980|0b100, 0xA900|0b1010, 0xA980|0b11100, 0xA900|0b1010}; 
 
 void setHighlight(int8_t player, bool isThisPlayer, uint8_t flash ) {
   static uint8_t i;
@@ -80,8 +81,8 @@ void setHighlight(int8_t player, bool isThisPlayer, uint8_t flash ) {
   for(i=0;i<2;i++) {
     if (highlightX>=0) {
 
-      hires_Mask(SCORES_X+5+highlightX*4,4,1,19*8+1,ROP_CONST(highlight[i+(highlightX==0)*2]));
-      hires_Mask(SCORES_X+9+highlightX*4,4,1,19*8+1,ROP_CONST(highlight[i+(highlightX==5)*2]));
+      hires_Mask(SCORES_X+5+highlightX*4,4,1,19*8+1,highlight[i+(highlightX==0)*2]);
+      hires_Mask(SCORES_X+9+highlightX*4,4,1,19*8+1,highlight[i+(highlightX==5)*2]);
 
       if (i==0) {
         hires_Mask(SCORES_X,2*8,29,2, 0xa9ff); 
@@ -125,7 +126,7 @@ void drawChar(unsigned char x, unsigned char y, char c) {
 }
 
 void drawCharAlt(unsigned char x, unsigned char y, char c) {
-  static uint16_t rop_index;
+  static uint16_t rop;
   if (y==HEIGHT-1) {
     y=182;
   } else {
@@ -133,15 +134,14 @@ void drawCharAlt(unsigned char x, unsigned char y, char c) {
   }
   
   if (!colorMode && (c<65 || c> 90)) {
-      //rop_index = 3-(x % 2);
-      rop_index = ROP_AND(0b11010101); //1;
+      rop = ROP_COLORS;
     } else {
-      rop_index=ROP_CPY;
+      rop=ROP_CPY;
     }
     if (c>=97 && c<=122)
       c=c-32; 
       
-  hires_putc(x++,y,rop_index,c);
+  hires_putc(x++,y,rop,c);
 }
 
 void drawTextAlt(unsigned char x, unsigned char y, char* s) {
@@ -156,14 +156,12 @@ void drawTextAlt(unsigned char x, unsigned char y, char* s) {
     y=y*8-OFFSET_Y;
   }
 
-  
-
   while(*s) {
     c=*s++;
     if (mustAlt) {
       rop = diceRop[3+x%2];
     } else if (!colorMode && (c<65 || c> 90)) {
-      rop = ROP_AND(0b11010101); //1;
+      rop = ROP_COLORS; 
     } else {
       rop=ROP_CPY;
     }
@@ -205,8 +203,6 @@ void drawTextVert(unsigned char x, unsigned char y, char* s) {
 }
 
 void resetScreen() { 
-  //setHighlight(-1,0,0);
-
   // Clear screen memory
   hires_Mask(0,0,40,192,0xa900);
 }

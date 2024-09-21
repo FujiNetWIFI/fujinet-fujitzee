@@ -378,18 +378,10 @@ void showTableSelectionScreen() {
   static Table* table;
   state.inGame=tableIndex=altChip=0;
   
+  resetScreenWithBorder();
+
   // An empty query means a table needs to be selected
   while (strlen(query)==0) {
-
-    // Show the status immediately before retrival
-    resetScreenWithBorder();
-    drawLogo(WIDTH/2-5,0);
-    centerStatusText("refreshing game list..");
-    centerText(4, "choose a game to join");
-    drawText(6,7, "game");
-    drawText(WIDTH-13,7, "players");
-    drawLine(6,8,WIDTH-12);
-
     // Show names of local player(s)
   
     if (prefs.localPlayerCount==1) {
@@ -415,7 +407,21 @@ void showTableSelectionScreen() {
       centerText(20, tempBuffer);
     }
 
+    if (state.tableCount>0) {
+      for(i=0;i<state.tableCount;++i) {
+        drawSpace(6,9+i*2,WIDTH-8);
+      }
+    }
     waitvsync();
+    centerText(12, "      refreshing game list..      ");
+    drawLogo(WIDTH/2-5,0);
+    
+    centerText(4, "choose a game to join");
+    drawText(6,7, "game");
+    drawText(WIDTH-13,7, "players");
+    drawLine(6,8,WIDTH-12);
+    
+    //waitvsync();
 
     state.tableCount = 0;
     if (apiCall("tables")) { 
@@ -423,6 +429,7 @@ void showTableSelectionScreen() {
     }
 
     if (state.tableCount>0) {
+      drawSpace(6,12, WIDTH-12);
       for(i=0;i<state.tableCount;++i) {
         table = &state.tables[i];        
         j=9+i*2;
@@ -436,7 +443,7 @@ void showTableSelectionScreen() {
         }
       }
     } else {
-      centerTextAlt(12, "sorry, no servers are available");
+      centerText(12, "sorry, no servers are available");
     }
 
     centerStatusText("Refresh  Help  Players  Quit");
@@ -476,8 +483,13 @@ void showTableSelectionScreen() {
         prefs.color = cycleNextColor();
         savePrefs();
         break;
-        } else if (input.key == 'p' || input.key =='P') {
+      } else if (input.key == 's' || input.key =='S') {
+        prefs.disableSound = !prefs.disableSound;  
+        soundCursor();
+        savePrefs();
+      } else if (input.key == 'p' || input.key =='P') {
         showPlayerGroupScreen();
+        resetScreenWithBorder();
         break;
       } else if (input.key == 'q' || input.key =='Q') {
         quit();

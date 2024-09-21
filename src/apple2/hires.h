@@ -18,6 +18,8 @@
 #define ROP_AND(val)            ROP_A|(val)
 #define ROP_OR(val)             ROP_O|(val)
 
+#define ROP_COLORS              1 // alternate is ROP_AND(0b11010101);
+
 
 
 /* char rop_Line[2][7] = {{0x00, 0x01, 0x03, 0x07, 0x0F, 0x1F, 0x3F}, */
