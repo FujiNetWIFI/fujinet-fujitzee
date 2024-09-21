@@ -14,9 +14,12 @@
 uint16_t ii;
 
 void tone(uint16_t period, uint8_t dur, uint8_t wait) {
-  while (dur--) {
-    for (ii=0; ii<period; ii++) ;
-    CLICK;
+
+  if (!prefs.disableSound) {   
+    while (dur--) {
+      for (ii=0; ii<period; ii++) ;
+      CLICK;
+    }
   }
 
   while (wait--)
@@ -38,9 +41,7 @@ void tone(uint16_t period, uint8_t dur, uint8_t wait) {
 //   }
 // }
 
-void initSound() {
- 
-}
+void initSound() {}
 
 void soundJoinGame() {
   tone(36,50,50);
@@ -76,7 +77,6 @@ void soundGameDone() {
 
 
 void soundRollDice() {
- // _sound(0, 150+ (rand() % 20)*5,8,8);
  tone(50+(rand() % 20)*5,3,0);
 }
 
@@ -94,8 +94,8 @@ void soundScoreCursor() {
 }
 
 void soundKeep() {
-  for (i=88;i>=78;i--)
-    tone(i,3,0);
+  tone(88,10,0);
+  tone(84,10,0);
   tone(77,10,0);
 }
 

@@ -16,7 +16,8 @@
 extern unsigned char charset[];
 
 #define OFFSET_Y 4
-unsigned char colorMode=0, oldChbas=0, highlightX=0, prevHighlightX=0, missleLineVisible=0, prevMissleLineVisible=0, colIndex=0;
+unsigned char colorMode=0, oldChbas=0, missleLineVisible=0, prevMissleLineVisible=0, colIndex=0;
+int8_t highlightX=-1;
 
 uint8_t own_player;
 
@@ -48,8 +49,6 @@ const unsigned char diceChars[] = {
 
 };
 
-uint8_t cursorUpper[] = {177,182,182,182,178,0,0,0,0,0};
-uint8_t cursorLower[] = {179,182,182,182,180,0,0,0,0,0};
 
 unsigned char cycleNextColor() {
   ++colorMode;
@@ -64,40 +63,45 @@ void setColorMode(unsigned char mode) {
 
 void initGraphics() {
    hires_Init();
-}
+} 
+
+//uint8_t highlight[] = {0x23,0x5b,0x3f,0x5b}; 
+uint8_t highlight[] = {0b100,0b1010,0b11100,0b1010}; 
 
 void setHighlight(int8_t player, bool isThisPlayer, uint8_t flash ) {
-  highlightX=player;
-  // POKE(0xd000,player>-1 ? player*16+112 : 0);
-  // if (isThisPlayer) {
-  //   OS.pcolr0 = colors[colIndex] + flash; 
-  // } else {
-  //   setColorMode(colorMode);
-  // }
+  static uint8_t i;
+  if (state.drawBoard) {
+    highlightX=player;
+    return;
+  }
+  if (flash || highlightX==player)  
+    return;   
+  
+  for(i=0;i<2;i++) {
+    if (highlightX>=0) {
+
+      hires_Mask(SCORES_X+5+highlightX*4,4,1,19*8+1,ROP_CONST(highlight[i+(highlightX==0)*2]));
+      hires_Mask(SCORES_X+9+highlightX*4,4,1,19*8+1,ROP_CONST(highlight[i+(highlightX==5)*2]));
+
+      if (i==0) {
+        hires_Mask(SCORES_X,2*8,29,2, 0xa9ff); 
+        hires_Mask(SCORES_X,9*8,29,1, 0xa9ff); 
+        hires_Mask(SCORES_X,12*8,29,1, 0xa9ff);
+      }
+    }
+
+    highlightX=player;
+  }
 }
 
 void saveScreen() {
   memcpy(0x1000,0x2000,0x1000);
   memcpy(0x4000,0x3000,0x1000);
-  // memcpy(SCREEN_BAK, SCREEN_LOC, WIDTH*HEIGHT);
-  // prevMissleLineVisible = missleLineVisible;
-  prevHighlightX = highlightX;
 }
 
 void restoreScreen() {
   memcpy(0x2000,0x1000,0x1000);
   memcpy(0x3000,0x4000,0x1000);
-  
-  // waitvsync();
-  // memcpy(SCREEN_LOC, SCREEN_BAK, WIDTH*HEIGHT);
-  // if (prevHighlightX) {
-  //   setHighlight(prevHighlightX, state.localPlayerIsActive, 0);
-  // }
-  
-  // if (prevMissleLineVisible) {
-  //   POKEW(0xd005, 0xd0d0); // Right side missile location
-  //   missleLineVisible=1;
-  // }
 }
 
 void drawText(unsigned char x, unsigned char y, char* s) {
@@ -121,7 +125,7 @@ void drawChar(unsigned char x, unsigned char y, char c) {
 }
 
 void drawCharAlt(unsigned char x, unsigned char y, char c) {
-  static unsigned char rop_index;
+  static uint16_t rop_index;
   if (y==HEIGHT-1) {
     y=182;
   } else {
@@ -129,35 +133,48 @@ void drawCharAlt(unsigned char x, unsigned char y, char c) {
   }
   
   if (!colorMode && (c<65 || c> 90)) {
-      rop_index = 3-(x % 2);
+      //rop_index = 3-(x % 2);
+      rop_index = ROP_AND(0b11010101); //1;
     } else {
-      rop_index=0;
+      rop_index=ROP_CPY;
     }
     if (c>=97 && c<=122)
       c=c-32; 
       
-  hires_putc(x++,y,diceRop[rop_index],c);
+  hires_putc(x++,y,rop_index,c);
 }
 
 void drawTextAlt(unsigned char x, unsigned char y, char* s) {
- static unsigned char c, rop_index;
+  static unsigned char c, mustAlt;
+  static uint16_t rop;
+
+  mustAlt = state.inGame && (x>SCORES_X+5 || y==HEIGHT-BOTTOM_HEIGHT);
+ 
   if (y==HEIGHT-1) {
     y=182;
   } else {
     y=y*8-OFFSET_Y;
   }
 
+  
+
   while(*s) {
     c=*s++;
-    if (!colorMode && (c<65 || c> 90)) {
-      rop_index = 3-(x % 2);
+    if (mustAlt) {
+      rop = diceRop[3+x%2];
+    } else if (!colorMode && (c<65 || c> 90)) {
+      rop = ROP_AND(0b11010101); //1;
     } else {
-      rop_index=0;
+      rop=ROP_CPY;
     }
+    
+    //if (y==2*8-OFFSET_Y) 
+      //rop_index = 2;
+    
     if (c>=97 && c<=122)
       c=c-32; 
       
-    hires_putc(x++,y,diceRop[rop_index],c);
+    hires_putc(x++,y,rop,c);
   }  
 
   // static unsigned char c;
@@ -188,7 +205,7 @@ void drawTextVert(unsigned char x, unsigned char y, char* s) {
 }
 
 void resetScreen() { 
-  setHighlight(-1,0,0);
+  //setHighlight(-1,0,0);
 
   // Clear screen memory
   hires_Mask(0,0,40,192,0xa900);
@@ -233,22 +250,18 @@ void drawDie(unsigned char x, unsigned char y, unsigned char s, bool isSelected,
 
  
 void drawMark(unsigned char x, unsigned char y) {
-  //POKE(xypos(x,y),0x1D); // 0x21
   hires_putc(x,y*8-OFFSET_Y,ROP_CPY, 0x22);
 }
 
 void drawAltMark(unsigned char x, unsigned char y) {
-  //POKE(xypos(x,y),0x1C);
   hires_putc(x,y*8-OFFSET_Y,ROP_AND(0b11010101), 0x22); 
 }
 
 void drawClock(unsigned char x, unsigned char y) {
-  //POKE(xypos(x,y),0x37);
   hires_putcc(x,y*8-OFFSET_Y,ROP_CPY, 0x2526);
 }
 
 void drawSpec(unsigned char x, unsigned char y) {
-  //POKE(xypos(x,y),0xDC);
   if (y==HEIGHT-1)
     y=182;
   else 
@@ -257,7 +270,6 @@ void drawSpec(unsigned char x, unsigned char y) {
 }
 
 void drawBlank(unsigned char x, unsigned char y) {
-  //POKE(xypos(x,y),0);
   hires_putc(x,y*8-OFFSET_Y,ROP_CPY, 0x20);
 }
 
@@ -266,17 +278,14 @@ void drawSpace(unsigned char x, unsigned char y, unsigned char w) {
 }
 
 void drawTextcursorPos(unsigned char x, unsigned char y) {
-  //POKE(xypos(x,y),0xD9);
   hires_putc(x,y*8-OFFSET_Y,ROP_CPY, 0x22);
 }
  
 void drawCursor(unsigned char x, unsigned char y, unsigned char i) {
-  //POKE(xypos(x,y),i+0xBE);
   hires_putc(x,y*8-OFFSET_Y,ROP_CPY, 0x29+i);
 }
 
 void clearBelowBoard() {
-  //memset(xypos(0,HEIGHT-5),0,200);
   hires_Mask(0,161,40,31,0xa900);
 }
 

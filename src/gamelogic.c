@@ -13,7 +13,7 @@
 #define PLAYER_LIST_Y_OFFSET 5
 #define BOTTOM_PANEL_Y HEIGHT-BOTTOM_HEIGHT
 
-uint8_t chat[20]="";
+uint8_t chat[20]=""; 
 //uint8_t scoreY[] = {1,2,3,4,5,6, 8, 9,11,12,13,14,15,16,17,19};
 uint8_t scoreY[] =   {3,4,5,6,7,8,10,11,13,14,15,16,17,18,19,21};
 char* scores[]={"one","two","three","four","five","six","total","bonus","set 3","set 4","house","s run","l run","count"};
@@ -308,12 +308,12 @@ void renderBoardNamesMessages() {
 
       // Clear active indicators
       drawTextVert(0,PLAYER_LIST_Y_OFFSET+1,"            ");
-      centerText(HEIGHT-3, state.prompt);
+      centerText(GAMEOVER_PROMPT_Y, state.prompt);
 
       if (state.round != state.prevRound) {
         soundGameDone();
 
-        pause(120);
+        pause(180);
         centerTextAlt(HEIGHT-1,"press TRIGGER/SPACE to continue");
         state.waitingOnEndGameContinue = true;
         state.countdownStarted = false;
@@ -356,7 +356,7 @@ void renderBoardNamesMessages() {
 
 void handleAnimation() {
   static bool isThisPlayer;
-  static uint8_t highScoreIndex, isFujitzee, i4;
+  static uint8_t highScoreIndex, isFujitzee, i4, keptCountChanged;
   static int16_t score;
 
   waitvsync();  
@@ -370,6 +370,12 @@ void handleAnimation() {
   // Setup the player input details if this is a new roll
   if (state.rollsLeft != state.prevRollsLeft || state.activePlayer != state.prevActivePlayer )  {
     state.rollFrames=ROLL_FRAMES;
+    
+    if (state.rollsLeft==2) {
+      strcpy(state.prevKept,"11111");
+      strcpy(state.prevDice,state.dice);
+    }
+
     if (isThisPlayer) {
       state.playerMadeMove=false;
       prevCursorPos=5;
@@ -397,6 +403,7 @@ void handleAnimation() {
   // Check for Fujitzee roll (all 5 dice match each other)
   // To display special animation
   if (state.rollFrames==0) {
+    strcpy(state.prevDice,state.dice);
     for (i=1;i<5;i++) {
       if (state.dice[i]!=state.dice[0])
         break;
@@ -411,6 +418,8 @@ void handleAnimation() {
     soundRollDice();
 
 
+  keptCountChanged=state.rollFrames == ROLL_FRAMES-1 && !isThisPlayer && strcmp(state.prevKept, state.keepRoll);
+
   for(j=0;j<=isFujitzee;j++) {
 
     // Play fujitzee sound when rolled, then clear flag so dice return to white
@@ -421,15 +430,21 @@ void handleAnimation() {
     for(i=0;i<5;i++) {
       i4=20+4*i;
       if (state.rollFrames && state.keepRoll[i]=='1' ) {
-        // Draw a random die
-        drawDie(i4,HEIGHT-4,rand()%6+1,0,isFujitzee);
+        // Draw a random die after the first frame
+        drawDie(i4,HEIGHT-4,state.rollFrames < ROLL_FRAMES-1 ? rand()%6+1 : state.prevDice[i]-48,0,isFujitzee);
       } else {
         // Draw the kept die
         drawDie(i4,HEIGHT-4,state.dice[i]-48,(state.rollFrames || state.rollsLeft>0) && state.keepRoll[i]=='0', isFujitzee);
       }
     }
-
+    
     soundStop();
+
+    // Pause a bit on the first render of a roll to show kept dice
+    if (keptCountChanged) {
+      strcpy(state.prevKept,state.keepRoll);
+      pause(30);
+    }
   }
 
 
@@ -631,21 +646,25 @@ void waitOnPlayerMove() {
         else 
           soundRelease();
       } else {
-        // Request another roll
+        // Request another roll, assuming at least one dice is not kept
+        if (strcmp(state.keepRoll,"00000")) {
+          // Highlight the roll die in green
+          drawDie(15,HEIGHT-4,state.rollsLeft+15,0,0);
+          soundRollButton();
+          
+          strcpy(tempBuffer, "roll/");
+          strcat(tempBuffer, state.keepRoll);
+          sendMove(tempBuffer);
 
-        // Highlight the roll die in green
-        drawDie(15,HEIGHT-4,state.rollsLeft+15,0,0);
-        soundRollButton();
-        
-        strcpy(tempBuffer, "roll/");
-        strcat(tempBuffer, state.keepRoll);
-        sendMove(tempBuffer);
-
-        state.playerMadeMove = true;
-        hideDiceCursor(4*prevCursorPos-(prevCursorPos==0)+16);
-        // Clear clock
-        drawSpace(10,BOTTOM_PANEL_Y,4);
-        return;
+          state.playerMadeMove = true;
+          hideDiceCursor(4*prevCursorPos-(prevCursorPos==0)+16);
+          // Clear clock
+          drawSpace(10,BOTTOM_PANEL_Y,4);
+          return;
+        } else {
+          // If all 5 dice are kept, there is nothing to roll!
+          soundScoreCursor();
+        }
       }
     }
     

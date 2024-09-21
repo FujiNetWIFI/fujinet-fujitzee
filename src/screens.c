@@ -376,7 +376,7 @@ void showTableSelectionScreen() {
   static uint8_t shownChip, tableIndex, altChip;
   static char* localQuery;
   static Table* table;
-  tableIndex=altChip=0;
+  state.inGame=tableIndex=altChip=0;
   
   // An empty query means a table needs to be selected
   while (strlen(query)==0) {
@@ -570,11 +570,15 @@ void showTableSelectionScreen() {
   
   // Reduce wait count for an immediate call
   state.apiCallWait=0;
+
+  state.inGame=true;
 }
 
 /// @brief shows in-game menu
 void showInGameMenuScreen() {
+  static uint8_t y;
   saveScreen();
+  state.inGame =false;
   i=1;
   while (i) {
     
@@ -582,10 +586,11 @@ void showInGameMenuScreen() {
     
     y = HEIGHT/2-5;
       
-    drawBox(INGAME_MENU_X-3,y-2,21,9);
+    drawBox(INGAME_MENU_X-3,y-2,21,11);
     drawTextAlt(INGAME_MENU_X,y,    "  Q: quit table");
     drawTextAlt(INGAME_MENU_X,y+=2, "  H: how to play"); 
-    //drawTextAlt(INGAME_MENU_X,y+=2, "  C: color toggle");
+    drawTextAlt(INGAME_MENU_X,y+=2, "  C: color mode");
+    drawTextAlt(INGAME_MENU_X,y+=2, prefs.disableSound ?  "  S: sound OFF" : "  S: sound ON");
     drawTextAlt(INGAME_MENU_X,y+=2, "ESC: keep playing"); 
     
     strcpy(tempBuffer,  "CURRENTLY AT ");
@@ -598,9 +603,17 @@ void showInGameMenuScreen() {
     while (i==1) {
       readCommonInput();
       switch (input.key) {
+        case 's':
+        case 'S':
+          prefs.disableSound = !prefs.disableSound;
+          drawTextAlt(INGAME_MENU_X,y-2, prefs.disableSound ?  "  S: sound OFF" : "  S: sound ON ");
+          soundScore();
+          savePrefs();
+          break;
         case 'c':
         case 'C':
             prefs.color = cycleNextColor();
+            state.drawBoard = true;
             savePrefs();
             i=2;
             break;
@@ -632,8 +645,17 @@ void showInGameMenuScreen() {
   }
 
   // Show game screen again before returning
+  
   clearCommonInput();
-  restoreScreen();
+  
+  state.inGame =true;
+  if (state.drawBoard) {
+    clearRenderState();
+    setHighlight(-1,0,0);
+    processStateChange();
+  } else {
+    restoreScreen();
+  }
 }
 
 

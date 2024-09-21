@@ -98,6 +98,9 @@ typedef struct {
   bool localPlayerIsActive;
   LocalPlayerState localPlayer[4];
   bool renderedScore[16*6];
+  bool inGame;
+  char prevKept[6];
+  char prevDice[6];
   
 } GameState;
 
@@ -121,6 +124,7 @@ typedef struct {
   uint8_t debugFlag; // 0xFF to use localhost instead of server
   uint8_t localPlayerCount;
   LocalPlayer localPlayer[4];
+  uint8_t disableSound;
 } PrefsStruct;
 
 
