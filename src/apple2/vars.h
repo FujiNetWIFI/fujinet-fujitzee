@@ -43,7 +43,7 @@
 #define KEY_ESCAPE       0x1B
 #define KEY_ESCAPE_ALT   0x03
 #define KEY_SPACEBAR     0x20
-#define KEY_BACKSPACE    0x08
+#define KEY_BACKSPACE    0x7F
 
 /*
   Mapping for converting incoming ALT letters to a standard case

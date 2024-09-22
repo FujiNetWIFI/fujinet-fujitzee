@@ -45,7 +45,8 @@ const unsigned char diceChars[] = {
   // "Roll" button
   0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, // 13 - Empty space
   0x01, 0x00, 0x02, 0x0E, 0x0F, 0x10, 0x03, 0x1A, 0x04, // 14 - 1 Roll left
-  0x01, 0x00, 0x02, 0x0E, 0x0F, 0x10, 0x03, 0x15, 0x04 // 15 - 2 Rolls left
+  0x01, 0x00, 0x02, 0x0E, 0x0F, 0x10, 0x03, 0x15, 0x04, // 15 - 2 Rolls left
+  0x01, 0x00, 0x02, 0x0E, 0x0F, 0x10, 0x03, 0x1F, 0x04  // 16 - Cannot Roll
 
 };
 
@@ -211,11 +212,7 @@ void drawDie(unsigned char x, unsigned char y, unsigned char s, bool isSelected,
   static unsigned char i,j,diceRopIndex;
   static unsigned char *source;
   diceRopIndex=0;
-  
-  if (s==16 || s==17) {
-    s=s-2;
-    diceRopIndex=3;
-  }
+
   // Locate the diceChar index for this die number
   source=diceChars + (s-1)*9 ; 
   
@@ -224,8 +221,11 @@ void drawDie(unsigned char x, unsigned char y, unsigned char s, bool isSelected,
     source+=54;
 
   // Change the dice color
-  if (isHighlighted)
+  if (isHighlighted) {
    diceRopIndex=2;
+   if (s>13)
+    diceRopIndex++;
+  }
   
 
   // Draw the dice to the screen

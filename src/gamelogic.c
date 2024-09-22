@@ -527,85 +527,9 @@ void waitOnPlayerMove() {
   
   // Move selection loop
   while (state.moveTime>0) {
-      frames=(frames+1) % 30;
-      waitvsync();
-        
-      // Update horizontal cursorPos location - dice: 0 = roll, 1-5 equal select dice at that index
-      if (input.dirX !=0 && state.rollsLeft) {
-        // If cursorPos was selecting a score, bring it back down
-        if (cursorPos>9)
-          cursorPos = 1;
-
-        cursorPos+=input.dirX;
-
-        // Bounds check
-        if (cursorPos>5)
-          cursorPos = prevCursorPos;
-      } else if (input.dirY == 1 && cursorPos<10) {
-        // If pressing down on dice cursor, navigate directly to roll button.
-        cursorPos=0;
-        
-        // Update vertical cursorPos location - scores: 10-24 represent the possible scoring locations
-      }else if (input.dirY != 0) {
-        // If cursorPos was selecting dice, bring it up
-        if (cursorPos<10)
-          cursorPos=25;
-        
-        while (1) {
-          cursorPos+=input.dirY;
-          
-          // Bounds checks
-          foundValidLocation=true;
-          if (cursorPos<10 || (cursorPos>24 && state.rollsLeft==0))
-            cursorPos = prevCursorPos;
-          else if (cursorPos>24)
-            cursorPos=prevCursorPos <10 ? prevCursorPos : 1;
-          else {
-            // Skip over invalid scores
-            if (state.validScores[cursorPos-10]<0)
-              foundValidLocation=false;
-          }
-
-          // Break once we are at a valid location
-          if (foundValidLocation)
-            break;
-        }
-      }
-     
+    frames=(frames+1) % 30;
     waitvsync();
 
-    // Draw cursorPos
-    if (cursorPos != prevCursorPos) {
-      
-      // Hide cursorPos 
-      if (prevCursorPos < 6)
-        hideDiceCursor(4*prevCursorPos-(prevCursorPos==0)+16);
-      else {
-        h=prevCursorPos-10;
-        drawBlank(validX,scoreY[h]);
-        if (state.validScores[h]==0) {
-          drawBlank(validX+2,scoreY[h]);
-        }
-      }
-
-      // Draw cursorPos
-      if (cursorPos < 6) {
-        drawDiceCursor(4*cursorPos-(cursorPos==0)+16);
-        soundCursor();
-      } else {
-        h=cursorPos-10;
-        drawCursor(validX,scoreY[h],0);
-        if (state.validScores[h]==0) {
-          drawTextAlt(validX+2,scoreY[h],"0");
-        }
-        soundScoreCursor();
-      }
-      prevCursorPos = cursorPos;
-      
-      
-    } else if (cursorPos>9){ 
-      drawCursor(validX,scoreY[cursorPos-10],(frames<2)*SCORE_CURSOR_ALT);
-    }
 
     // Handle trigger press
     if (input.trigger) {
@@ -645,11 +569,13 @@ void waitOnPlayerMove() {
           soundKeep();
         else 
           soundRelease();
+        
+        drawDie(15,HEIGHT-4,13+ (strcmp(state.keepRoll,"00000") ? state.rollsLeft : 3),0,0);
       } else {
         // Request another roll, assuming at least one dice is not kept
         if (strcmp(state.keepRoll,"00000")) {
           // Highlight the roll die in green
-          drawDie(15,HEIGHT-4,state.rollsLeft+15,0,0);
+          drawDie(15,HEIGHT-4,state.rollsLeft+13,0,1);
           soundRollButton();
           
           strcpy(tempBuffer, "roll/");
@@ -662,10 +588,98 @@ void waitOnPlayerMove() {
           drawSpace(10,BOTTOM_PANEL_Y,4);
           return;
         } else {
-          // If all 5 dice are kept, there is nothing to roll!
-          soundScoreCursor();
+          // If all 5 dice are kept, there is nothing to roll. 
+          // Flash all dice, then move cursor up
+          for (j=1;j<255;j--) {
+            drawDie(15,HEIGHT-4,16,0,j);
+            for(i=0;i<6;i++) {
+              drawDie(20+4*i,HEIGHT-4,state.dice[i]-48,1,j);
+            }
+            soundRelease();
+            pause(6);
+          }
+          
+          input.dirY=-1;
+          input.dirX=0;
         }
       }
+    }
+      
+    // Update horizontal cursorPos location - dice: 0 = roll, 1-5 equal select dice at that index
+    if (input.dirX !=0 && state.rollsLeft) {
+      // If cursorPos was selecting a score, bring it back down
+      if (cursorPos>9)
+        cursorPos = 1;
+
+      cursorPos+=input.dirX;
+
+      // Bounds check
+      if (cursorPos>5)
+        cursorPos = prevCursorPos;
+    } else if (input.dirY == 1 && cursorPos<10) {
+      // If pressing down on dice cursor, navigate directly to roll button.
+      cursorPos=0;
+      
+      // Update vertical cursorPos location - scores: 10-24 represent the possible scoring locations
+    }else if (input.dirY != 0) {
+      // If cursorPos was selecting dice, bring it up
+      if (cursorPos<10)
+        cursorPos=25;
+      
+      while (1) {
+        cursorPos+=input.dirY;
+        
+        // Bounds checks
+        foundValidLocation=true;
+        if (cursorPos<10 || (cursorPos>24 && state.rollsLeft==0))
+          cursorPos = prevCursorPos;
+        else if (cursorPos>24)
+          cursorPos=prevCursorPos <10 ? prevCursorPos : 1;
+        else {
+          // Skip over invalid scores
+          if (state.validScores[cursorPos-10]<0)
+            foundValidLocation=false;
+        }
+
+        // Break once we are at a valid location
+        if (foundValidLocation)
+          break;
+      }
+    }
+     
+    waitvsync();
+
+    // Draw cursorPos
+    if (cursorPos != prevCursorPos) {
+      
+      // Hide cursorPos 
+      if (prevCursorPos < 6)
+        hideDiceCursor(4*prevCursorPos-(prevCursorPos==0)+16);
+      else {
+        h=prevCursorPos-10;
+        drawBlank(validX,scoreY[h]);
+        if (state.validScores[h]==0) {
+          drawBlank(validX+2,scoreY[h]);
+        }
+      }
+
+      // Draw cursorPos
+      if (cursorPos < 6) {
+        drawDiceCursor(4*cursorPos-(cursorPos==0)+16);
+        soundCursor();
+      } else {
+        h=cursorPos-10;
+        drawCursor(validX,scoreY[h],0);
+        if (state.validScores[h]==0) {
+          drawTextAlt(validX+2,scoreY[h],"0");
+        }
+        soundScoreCursor();
+      }
+      prevCursorPos = cursorPos;
+      
+      
+    } else if (cursorPos>9){ 
+      drawCursor(validX,scoreY[cursorPos-10],(frames<2)*SCORE_CURSOR_ALT);
     }
     
     // Tick counter once per second   
@@ -696,7 +710,7 @@ void waitOnPlayerMove() {
 
   // Timed out, so hide all scores
   clearBelowBoard();
-  centerText(HEIGHT-3,"you timed out. scoring first free row.");
+  centerText(BOTTOM_PANEL_Y+1,"you timed out. scoring first free row.");
   state.playerMadeMove=1;
   i=0;
   for (j=0;j<15;j++) {
@@ -773,13 +787,13 @@ bool inputFieldCycle(uint8_t x, uint8_t y, uint8_t max, char* buffer) {
     input.key = cgetc();
 
     // Debugging - See what key was pressed
-    // itoa(input.key, tempBuffer, 10);drawText(0,0, tempBuffer);
+    //itoa(input.key, tempBuffer, 10);drawText(0,0, tempBuffer);
 
     if (input.key == KEY_RETURN && curx>1) {
       inputField_done=1;
       // remove cursor
       drawBlank(x+curx,y);
-    } else if (input.key == KEY_BACKSPACE && curx>0) {
+    } else if ((input.key == KEY_BACKSPACE || input.key == KEY_LEFT_ARROW) && curx>0) {
       buffer[--curx]=0;
       drawText(x+1+curx,y," ");
     } else if (
