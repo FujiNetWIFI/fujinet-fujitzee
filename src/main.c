@@ -89,7 +89,7 @@ void main(void)
           
           // After consequitive failures, let the player know we are experiencing technical difficulties
           if (failedApiCalls>1) {
-            drawTextAlt(0, HEIGHT-1, "#$reconnecting..");
+            drawTextAlt(0, HEIGHT-1, "#$reconnecting..  ");
           }
           break;
      
@@ -109,7 +109,10 @@ void main(void)
     }
 
     // Animation and input
-    handleAnimation();
+    if (failedApiCalls==0) {
+      handleAnimation();
+    }
+
     processInput();
   }
 

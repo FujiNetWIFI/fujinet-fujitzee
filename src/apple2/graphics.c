@@ -97,13 +97,13 @@ void setHighlight(int8_t player, bool isThisPlayer, uint8_t flash ) {
 }
 
 void saveScreen() {
-  memcpy(0x1000,0x2000,0x1000);
-  memcpy(0x4000,0x3000,0x1000);
+  memcpy(0x840,0x2000,0x17C0);
+  memcpy(0x4000,0x37C0,0x840);
 }
 
 void restoreScreen() {
-  memcpy(0x2000,0x1000,0x1000);
-  memcpy(0x3000,0x4000,0x1000);
+  memcpy(0x2000,0x840,0x17C0);
+  memcpy(0x37C0,0x4000,0x840);
 }
 
 void drawText(unsigned char x, unsigned char y, char* s) {
@@ -211,6 +211,9 @@ void resetScreen() {
 void drawDie(unsigned char x, unsigned char y, unsigned char s, bool isSelected, bool isHighlighted) {
   static unsigned char i,j,diceRopIndex;
   static unsigned char *source;
+  if (!s || s>16)
+    return;
+    
   diceRopIndex=0;
 
   // Locate the diceChar index for this die number

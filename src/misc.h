@@ -125,6 +125,7 @@ typedef struct {
   uint8_t localPlayerCount;
   LocalPlayer localPlayer[4];
   uint8_t disableSound;
+  bool hasPlayed;
 } PrefsStruct;
 
 

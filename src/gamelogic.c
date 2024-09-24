@@ -18,6 +18,7 @@ uint8_t chat[20]="";
 uint8_t scoreY[] =   {3,4,5,6,7,8,10,11,13,14,15,16,17,18,19,21};
 char* scores[]={"one","two","three","four","five","six","total","bonus","set 3","set 4","house","s run","l run","count"};
 uint8_t cursorPos, prevCursorPos, spectators, inputField_done, validX;
+bool currentlyShowingHelp = 0;
 
 void progressAnim(unsigned char y) {
   for(i=0;i<3;++i) {
@@ -37,6 +38,12 @@ void processStateChange() {
   state.prevRound = state.round;
 }
 
+// 43495
+void clearScores(uint8_t x) {
+  for(j=0;j<15;j++)  {
+    drawSpace(x, scoreY[j], 3);
+  }
+}
 
 void renderBoardNamesMessages() {
   static bool redraw;
@@ -87,9 +94,7 @@ void renderBoardNamesMessages() {
   if (redraw && state.round==0) {    
       // Clear score locations
     for (i=SCORES_X+6;i<41;i+=4) {
-      for(j=0;j<15;j++)  {
-        drawSpace(i, scoreY[j], 3);
-      }
+      clearScores(i);
     }
     
     clearBelowBoard();
@@ -117,17 +122,18 @@ void renderBoardNamesMessages() {
         // Clear initial/scoreboard for this player index if they were not previously viewing
         if (!player->isViewing && i<7) {
           drawBlank(x,1);
-          for(j=0;j<15;j++)  {
-            drawSpace(x-1, scoreY[j], 3);
-          }
+          clearScores(x-1);
+          
           player->isViewing=true;
         }
       } else { 
         player->isViewing=false;
         if (state.round>0 && state.activePlayer != i-1)
           drawBlank(0,y);
-          // Player initials across top of screen
-        drawCharAlt(x,1,c);
+        
+        // Player initials across top of screen
+        if (!currentlyShowingHelp)
+          drawCharAlt(x,1,c);
       }
       for (j=0;j<player->alias;j++) {
         drawChar(1+j,y,player->name[j]);
@@ -145,15 +151,11 @@ void renderBoardNamesMessages() {
       // Blank scoreboard
       if (i<7) {
         drawBlank(x,1);
-        for(j=0;j<15;j++)  {
-          drawSpace(x-1, scoreY[j], 3);
-        }
+        clearScores(x-1);
       }
     }
 
   }
-
-
 
   // Round 0 (waiting to start) checks, or going into round 1
   if (state.round ==0 || (state.round == 1 && state.prevRound==0)) {
@@ -512,6 +514,44 @@ void processInput() {
     }    
 }
 
+void hideInGameHelp() {
+  if (!currentlyShowingHelp)
+    return;
+
+  restoreScreen();
+  currentlyShowingHelp = false;
+}
+
+void showInGameHelp() {
+  if (state.activePlayer!=0)
+    return;
+
+  currentlyShowingHelp=true;
+  saveScreen();
+  
+  for(y=0;y<BOTTOM_PANEL_Y;y++) {
+    drawSpace(SCORES_X+10,y,WIDTH-SCORES_X-10);
+  }
+  
+  drawBox(21,1,WIDTH-SCORES_X-13,BOTTOM_PANEL_Y-4);
+  
+  drawText(22+(WIDTH-SCORES_X-12-14)/2, 3,"it's your turn");
+                                                  //123456789012345678
+  drawText(22+(WIDTH-SCORES_X-12-18)/2, 5,"move up/down to");
+  drawText(22+(WIDTH-SCORES_X-12-18)/2, 6,"choose a score on");
+  drawText(22+(WIDTH-SCORES_X-12-18)/2, 7,"the left based on");
+  drawText(22+(WIDTH-SCORES_X-12-18)/2, 8,"your dice.");
+
+  drawText(22+(WIDTH-SCORES_X-12-18)/2,10,"before you score,");
+  drawText(22+(WIDTH-SCORES_X-12-18)/2,11,"you may re-roll ");
+  drawText(22+(WIDTH-SCORES_X-12-18)/2,12,"any of your dice");
+  drawText(22+(WIDTH-SCORES_X-12-18)/2,13,"up to two times.");
+
+  drawText(22+(WIDTH-SCORES_X-12-18)/2,15,"move left/right,");
+  drawText(22+(WIDTH-SCORES_X-12-18)/2,16,"and pick dice to");
+  drawText(22+(WIDTH-SCORES_X-12-18)/2,17,"keep, then roll.");
+}
+
 void waitOnPlayerMove() {
   static int jifsPerSecond;
   static bool foundValidLocation;
@@ -525,6 +565,13 @@ void waitOnPlayerMove() {
   maxJifs = jifsPerSecond*state.moveTime;
   waitCount=frames=0;
   
+  // If this is the player's first time playing, show instructions
+  if (!prefs.hasPlayed) {
+    prefs.hasPlayed=true;
+    showInGameHelp();
+    savePrefs();
+  }
+
   // Move selection loop
   while (state.moveTime>0) {
     frames=(frames+1) % 30;
@@ -543,7 +590,7 @@ void waitOnPlayerMove() {
         // Cursor select animation 
         drawCursor(validX,scoreY[cursorPos-10],1);soundScore();
         
-        // First, hide all scores but the main score
+        // First, hide all score options but the chosen score
         for (j=0;j<15;j++) {
           if (state.validScores[j]>0) {
             if (j != i)
@@ -558,6 +605,7 @@ void waitOnPlayerMove() {
         itoa(i, tempBuffer+6, 10);
         sendMove(tempBuffer);
 
+        hideInGameHelp();
         state.playerMadeMove = true;
 
         return;
@@ -698,8 +746,15 @@ void waitOnPlayerMove() {
 
     // Pressed Esc
     switch (input.key) { 
+      case 'h':case 'H':
+        if (currentlyShowingHelp)
+          hideInGameHelp();
+        else
+          showInGameHelp();
+        break;
       case KEY_ESCAPE:
       case KEY_ESCAPE_ALT:
+        hideInGameHelp();
         showInGameMenuScreen();
         return;
     }
@@ -709,17 +764,21 @@ void waitOnPlayerMove() {
   }
 
   // Timed out, so hide all scores
+  hideInGameHelp();
   clearBelowBoard();
+  
   centerText(BOTTOM_PANEL_Y+1,"you timed out. scoring first free row.");
   state.playerMadeMove=1;
   i=0;
   for (j=0;j<15;j++) {
-    if (i==0 && state.validScores[j]>-1) {
-      itoa(state.validScores[j], tempBuffer, 10);
-      drawTextAlt(validX+3-strlen(tempBuffer),scoreY[j],tempBuffer);
-      i=1;
-    } else if (state.validScores[j]>0) {
-      drawSpace(validX,scoreY[j],3);
+    if (state.validScores[j]>-1) {
+      if (!i) {
+        itoa(state.validScores[j], tempBuffer, 10);
+        drawTextAlt(validX+3-strlen(tempBuffer),scoreY[j],tempBuffer);
+        i=1;
+      } else {
+        drawSpace(validX,scoreY[j],3);
+      }
     }
   }
 
