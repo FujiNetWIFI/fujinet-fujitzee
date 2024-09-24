@@ -529,27 +529,27 @@ void showInGameHelp() {
   currentlyShowingHelp=true;
   saveScreen();
   
-  for(y=0;y<BOTTOM_PANEL_Y;y++) {
+  for(y=1;y<20 ;y++) {
     drawSpace(SCORES_X+10,y,WIDTH-SCORES_X-10);
   }
   
-  drawBox(21,1,WIDTH-SCORES_X-13,BOTTOM_PANEL_Y-4);
+  drawBox(21,1,WIDTH-10-13, 17);
   
-  drawText(22+(WIDTH-SCORES_X-12-14)/2, 3,"it's your turn");
+  drawText(22+(WIDTH-10-12-14)/2, 3,"it's your turn");
                                                   //123456789012345678
-  drawText(22+(WIDTH-SCORES_X-12-18)/2, 5,"move up/down to");
-  drawText(22+(WIDTH-SCORES_X-12-18)/2, 6,"choose a score on");
-  drawText(22+(WIDTH-SCORES_X-12-18)/2, 7,"the left based on");
-  drawText(22+(WIDTH-SCORES_X-12-18)/2, 8,"your dice.");
+  drawText(22+(WIDTH-10-12-18)/2, 5,"move up/down to");
+  drawText(22+(WIDTH-10-12-18)/2, 6,"choose a score on");
+  drawText(22+(WIDTH-10-12-18)/2, 7,"the left based on");
+  drawText(22+(WIDTH-10-12-18)/2, 8,"your dice.");
 
-  drawText(22+(WIDTH-SCORES_X-12-18)/2,10,"before you score,");
-  drawText(22+(WIDTH-SCORES_X-12-18)/2,11,"you may re-roll ");
-  drawText(22+(WIDTH-SCORES_X-12-18)/2,12,"any of your dice");
-  drawText(22+(WIDTH-SCORES_X-12-18)/2,13,"up to two times.");
+  drawText(22+(WIDTH-10-12-18)/2,10,"before you score,");
+  drawText(22+(WIDTH-10-12-18)/2,11,"you may re-roll ");
+  drawText(22+(WIDTH-10-12-18)/2,12,"any of your dice");
+  drawText(22+(WIDTH-10-12-18)/2,13,"up to two times.");
 
-  drawText(22+(WIDTH-SCORES_X-12-18)/2,15,"move left/right,");
-  drawText(22+(WIDTH-SCORES_X-12-18)/2,16,"and pick dice to");
-  drawText(22+(WIDTH-SCORES_X-12-18)/2,17,"keep, then roll.");
+  drawText(22+(WIDTH-10-12-18)/2,15,"move left/right,");
+  drawText(22+(WIDTH-10-12-18)/2,16,"and pick dice to");
+  drawText(22+(WIDTH-10-12-18)/2,17,"keep, then roll.");
 }
 
 void waitOnPlayerMove() {

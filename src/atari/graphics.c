@@ -19,11 +19,13 @@ extern unsigned char charset[];
 // On graphics initialization, I turn off BASIC, freeing up this space.
 
 // There are two startup scenarios for XL/XE that must be considered:
-// 1. If BASIC is disabled, the cc65 Stack will grow down from $BC1F, so to leave 1024 bytes for stack,
-//    that gives us $A000-$B81F to use.
+// 1. If BASIC is disabled, the cc65 Stack will grow down from $BC1F, so to leave 512 bytes for stack,
+//    so, I'm allowing $A000-$BA1F for charset, screen/buf, and pmgraphics.
 
-// 2. If BASIC is enabled, the stack grows down from $9C1F. So, again allowing for 1024 byte stack,
-//    $981F is as high as we want to allow the program to reach without needing custom cc65 configs/segments
+// 2. If BASIC is enabled, the stack grows down from $9C1F. So, again allowing for 512 byte stack,
+//    $9A1F is as high as we want to allow the program to reach without needing custom cc65 configs/segments
+
+// Bottom line, program+vars needs to stay below $9A1F
 
 #define CHARSET_LOC 0xB000
 #define SCREEN_LOC ((uint8_t*)0xB400)
@@ -75,15 +77,20 @@ const unsigned char diceChars[] = {
   0x26, 0x4C, 0x27, 0x20, 0x25, 0x20, 0x28, 0x4D, 0x29, // 5
   0x26, 0x4C, 0x27, 0x2A, 0x20, 0x2B, 0x28, 0x4D, 0x29, // 6
 
-  // "Roll" button
+
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 13 - Empty space
+    
+  // "Roll" button
   0x41, 0x40, 0x42, 0x2C, 0x2D, 0x2E, 0x43, 0x30, 0x44, // 14 - 1 Roll left
   0x41, 0x40, 0x42, 0x2C, 0x2D, 0x2E, 0x43, 0x2F, 0x44, // 15 - 2 Rolls left
+  0x41, 0x40, 0x42, 0x2C, 0x2D, 0x2E, 0x43, 0x50, 0x44, // 16 - Cannot roll
   
   // "Roll" button pushed
-  0xC1, 0xC0, 0xC2, 0xAC, 0xAD, 0xAE, 0xC3, 0xB0, 0xC4, // 16 - 1 Roll left
-  0xC1, 0xC0, 0xC2, 0xAC, 0xAD, 0xAE, 0xC3, 0xAF, 0xC4,  // 17 - 2 Rolls left
+  0xC1, 0xC0, 0xC2, 0xAC, 0xAD, 0xAE, 0xC3, 0xB0, 0xC4, // 17 - 1 Roll left
+  0xC1, 0xC0, 0xC2, 0xAC, 0xAD, 0xAE, 0xC3, 0xAF, 0xC4, // 18 - 2 Rolls left
+  0xC1, 0xC0, 0xC2, 0xAC, 0xAD, 0xAE, 0xC3, 0xD0, 0xC4, // 19 - Cannot roll
   
+
   // Alternate color
   0xC1, 0xC0, 0xC2, 0xC0, 0xC5, 0xC0, 0xC3, 0xC0, 0xC4, // 1
   0xC1, 0xC0, 0xC7, 0xC0, 0xC0, 0xC0, 0xC8, 0xC0, 0xC4, // 2
@@ -277,17 +284,23 @@ void resetScreen() {
 
 void drawDie(unsigned char x, unsigned char y, unsigned char s, bool isSelected, bool isHighlighted) {
   static unsigned char *source, *dest;
-  
+  if (!s || s>16)
+    return;
+
   // Locate the diceChar index for this die number
   source=diceChars + (s-1)*9 ; 
   
-  // Change the dice color
+  // Is die being kept?
   if (isSelected)
     source+=54;
 
   // Change the dice color
-  if (isHighlighted)
-    source+=153;
+  if (isHighlighted) {
+    if (s<14)
+      source+=171;
+    else
+      source+=27;
+  }
 
   // Draw the dice to the screen
   dest = xypos(x,y);
