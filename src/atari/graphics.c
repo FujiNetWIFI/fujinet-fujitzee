@@ -137,7 +137,7 @@ void initGraphics() {
     memset(PM_BASE,0, 0x800);
   }
 
-  resetScreen();
+  resetScreen(false);
   if (PEEK(53268)==1) {
     colIndex=10;
   }
@@ -196,13 +196,13 @@ void setHighlight(int8_t player, bool isThisPlayer, uint8_t flash ) {
   }
 }
 
-void saveScreen() {
+void saveScreenBuffer() {
   memcpy(SCREEN_BAK, SCREEN_LOC, WIDTH*HEIGHT);
   prevMissleLineVisible = missleLineVisible;
   prevHighlightX = highlightX;
 }
 
-void restoreScreen() {
+void restoreScreenBuffer() {
   waitvsync();
   memcpy(SCREEN_LOC, SCREEN_BAK, WIDTH*HEIGHT);
   if (prevHighlightX) {
@@ -227,18 +227,14 @@ void drawText(unsigned char x, unsigned char y, char* s) {
   }  
 }
 
-void drawChar(unsigned char x, unsigned char y, char c) {
+void drawChar(unsigned char x, unsigned char y, char c, unsigned char alt) {
   if (c<65 && c>=32) c-=32;
-  POKE(xypos(x,y), c);
-}
-
-void drawCharAlt(unsigned char x, unsigned char y, char c) {
-  if (c<65 && c>=32) c-=32;
-  if (c<65 || c> 90)
-    c+=128;
-  else      
-    c+=32;
-
+  if (alt) {
+    if (c<65 || c> 90)
+      c+=128;
+    else      
+      c+=32;
+  }
   POKE(xypos(x,y), c);
 }
 
@@ -272,14 +268,22 @@ void drawTextVert(unsigned char x, unsigned char y, char* s) {
   }  
 }
 
-void resetScreen() { 
+void resetScreen(bool forBorderScreen) { 
+  static uint8_t i;
   waitvsync();
   setHighlight(-1,0,0);
   POKEW(0xd005,0);  // Right side missile location
   missleLineVisible=false;
-
   // Clear screen memory
-  memset((void*)SCREEN_LOC,0,WIDTH*HEIGHT);
+  if (!forBorderScreen) {
+    memset((void*)SCREEN_LOC,0,WIDTH*HEIGHT);
+  } else {
+    memset(xypos(0,3),0,40*(HEIGHT-6));
+    for(i=0;i<3;i++) {
+      memset(xypos(3,i),0,WIDTH-6);
+      memset(xypos(3,HEIGHT-i),0,WIDTH-6);
+    }
+  }
 }
 
 void drawDie(unsigned char x, unsigned char y, unsigned char s, bool isSelected, bool isHighlighted) {
@@ -309,21 +313,8 @@ void drawDie(unsigned char x, unsigned char y, unsigned char s, bool isSelected,
   memcpy(dest+80, source+6, 3);
 }
 
-
-void drawMark(unsigned char x, unsigned char y) {
-  POKE(xypos(x,y),0x1D); // 0x21
-}
-
-void drawAltMark(unsigned char x, unsigned char y) {
-  POKE(xypos(x,y),0x1C);
-}
-
-void drawClock(unsigned char x, unsigned char y) {
-  POKE(xypos(x,y),0x37);
-}
-
-void drawSpec(unsigned char x, unsigned char y) {
-  POKE(xypos(x,y),0xDC);
+void drawIcon(unsigned char x, unsigned char y, unsigned char icon) {
+  POKE(xypos(x,y),icon);
 }
 
 void drawBlank(unsigned char x, unsigned char y) {
@@ -334,12 +325,8 @@ void drawSpace(unsigned char x, unsigned char y, unsigned char w) {
   memset(xypos(x,y),0,w);
 }
 
-void drawTextcursorPos(unsigned char x, unsigned char y) {
-  POKE(xypos(x,y),0xD9);
-}
-
-void drawCursor(unsigned char x, unsigned char y, unsigned char i) {
-  POKE(xypos(x,y),i+0xBE);
+void drawClock(unsigned char x, unsigned char y) {
+  POKE(xypos(x,y),0x37);
 }
 
 void clearBelowBoard() {
@@ -401,11 +388,12 @@ void drawBoard() {
   }
   
   // Fujitzee score text
-  drawFujzee(10,scoreY[14]);
+  drawFujzee(11,scoreY[14]);
+  POKE(xypos(10,scoreY[14]),5);
 }
 
 void drawFujzee(unsigned char x, unsigned char y) {
-  memcpy(xypos(x,y),&"89:;<=",6); // "/|\TZEE"
+  memcpy(xypos(x-1,y),&"89:;<=",6); // "/|\TZEE"
 }
 
 void drawLine(unsigned char x, unsigned char y, unsigned char w) {

@@ -18,25 +18,22 @@ extern uint8_t scoreY[];
 extern char* scores[];
 
 // Call to clear the screen to an empty table
-void resetScreen();
+void resetScreen(bool forBorderScreen);
 
 void drawText(unsigned char x, unsigned char y, char* s);
 void drawTextAlt(unsigned char x, unsigned char y, char* s);
-void drawTextcursorPos(unsigned char x, unsigned char y);
 void drawTextVert(unsigned char x, unsigned char y, char* s);
 
 void clearBelowBoard();
 
-void drawChar(unsigned char x, unsigned char y, char c);
-void drawCharAlt(unsigned char, unsigned char y, char c);
+void drawChar(unsigned char x, unsigned char y, char c, unsigned char alt);
+
+void drawIcon(unsigned char x, unsigned char y, unsigned char icon);
 
 void drawFujzee(unsigned char x, unsigned char y);
 void drawDie(unsigned char x, unsigned char y, unsigned char s, bool isSelected, bool isHighlighted);
-void drawMark(unsigned char x, unsigned char y);
-void drawAltMark(unsigned char x, unsigned char y);
+
 void drawClock(unsigned char x, unsigned char y);
-void drawSpec(unsigned char x, unsigned char y);
-void drawCursor(unsigned char x, unsigned char y, unsigned char i); 
 void drawBlank(unsigned char x, unsigned char y);
 void drawSpace(unsigned char x, unsigned char y, unsigned char w);
 void drawLine(unsigned char x, unsigned char y, unsigned char w);
@@ -46,8 +43,8 @@ void drawBoard();
 void drawDiceCursor(unsigned char x);
 void hideDiceCursor(unsigned char x);
 
-void saveScreen();
-void restoreScreen();
+void saveScreenBuffer();
+void restoreScreenBuffer();
 
 void setHighlight(int8_t player, bool isThisPlayer, uint8_t flash );
 

@@ -20,19 +20,40 @@
 #define INGAME_MENU_X WIDTH/2-8
 
 char query[20] = "";
+bool inBorderedScreen=false, prevBorderedScreen=false;
+
+
+void saveScreen() {
+  prevBorderedScreen=inBorderedScreen;
+  saveScreenBuffer();
+}
+
+void restoreScreen() {
+  inBorderedScreen=prevBorderedScreen;
+  restoreScreenBuffer();
+}
+
+void resetScreenNoBorder() {
+  inBorderedScreen=false;
+  resetScreen(inBorderedScreen);
+}
 
 /// @brief Convenience function to reset screen and draw border
 void resetScreenWithBorder() {
-  resetScreen();
   
-  // Draw dice corners
-  drawDie(0,0,1, 0,0);
-  //drawDie(0,HEIGHT/2-2,"5", 0);
-  drawDie(0,HEIGHT-3,3, 0,0);
+  resetScreen(inBorderedScreen);
+  
+  if (!inBorderedScreen) {
+    // Draw dice corners
+    drawDie(0,0,1, 0,0);
+    //drawDie(0,HEIGHT/2-2,"5", 0);
+    drawDie(0,HEIGHT-3,3, 0,0);
 
-  drawDie(WIDTH-3,0,2, 0,0);
-  //drawDie(WIDTH-3,HEIGHT/2-2,"6", 0);
-  drawDie(WIDTH-3,HEIGHT-3,4, 0,0);
+    drawDie(WIDTH-3,0,2, 0,0);
+    //drawDie(WIDTH-3,HEIGHT/2-2,"6", 0);
+    drawDie(WIDTH-3,HEIGHT-3,4, 0,0);
+    inBorderedScreen=true;
+  }
 }
 
 /// @brief Shows information about the game
@@ -167,7 +188,6 @@ void showPlayerGroupScreen() {
     if (input.key >= '1' && input.key <= '4') {
       i = input.key-'0';
       if (i<=prefs.localPlayerCount) {
-        saveScreen();
         showPlayerNameScreen(i);
         restoreScreen();
         showPlayers=true;
@@ -182,7 +202,6 @@ void showPlayerGroupScreen() {
         // Make sure new name is empty
         memset(&prefs.localPlayer[prefs.localPlayerCount],0,9);
         prefs.localPlayerCount++;
-        saveScreen();
         showPlayerNameScreen(prefs.localPlayerCount);
         restoreScreen();
         showPlayers=true;
@@ -194,9 +213,6 @@ void showPlayerGroupScreen() {
     waitvsync();
     if (showPlayers) {
       showPlayers = false;
-
-      for (i=PLAYER_BOX_TOP;i<PLAYER_BOX_TOP+10;i++)
-        drawSpace(WIDTH/2-8,i,16);
 
       drawBox(WIDTH/2-8,PLAYER_BOX_TOP,14,2+prefs.localPlayerCount + (prefs.localPlayerCount<4 ? 2:0));
       for(i=0;i<prefs.localPlayerCount;i++) {
@@ -215,6 +231,10 @@ void showPlayerGroupScreen() {
 void showPlayerNameScreen(uint8_t p) {
   static char* playerName;
   static bool canDelete, canCancel, duplicateNames;
+
+  for (i=PLAYER_BOX_TOP;i<PLAYER_BOX_TOP+10;i++)
+    drawSpace(WIDTH/2-8,i,16);
+  saveScreen();
   resetScreenWithBorder();
 
   canDelete = prefs.localPlayerCount>1;
@@ -439,7 +459,7 @@ void showTableSelectionScreen() {
         drawTextAlt(6,j, table->name);
         
         if (table->players[0]>'0') {
-          drawText(k-2, j, "*");
+          drawIcon(k-2, j, ICON_PLAYER); //, "*");
         }
       }
     } else {
@@ -463,10 +483,7 @@ void showTableSelectionScreen() {
     while (!input.trigger || !state.tableCount) {
 
       if (state.tableCount) {
-        if (altChip<50)
-          drawMark(4,9+tableIndex*2);
-        else
-          drawAltMark(4,9+tableIndex*2);
+        drawIcon(4,9+tableIndex*2, altChip<50 ? ICON_MARK : ICON_MARK_ALT);
       } 
 
       waitvsync();
@@ -478,6 +495,7 @@ void showTableSelectionScreen() {
         showHelpScreen();
         restoreScreen();
       } else if (input.key == 'r' || input.key =='R') {
+        drawBlank(4,9+tableIndex*2);
         break;
       } else if (input.key == 'c' || input.key =='C') {
         prefs.color = cycleNextColor();
@@ -512,7 +530,7 @@ void showTableSelectionScreen() {
         // Visually select new table
         table = &state.tables[tableIndex];
         j=9+tableIndex*2;
-        drawMark(4,j);
+        drawIcon(4,j, ICON_MARK);
         drawText(6,j, table->name);
         drawText(WIDTH-6-strlen(table->players), j, table->players);
 

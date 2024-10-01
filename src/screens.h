@@ -3,8 +3,17 @@
 
 extern uint8_t inputField[20];
 
-/// @brief Convenience function to reset screen and draw border
+/// @brief Save screen to memory for quick recall
+void saveScreen();
+
+/// @brief Restore screen
+void restoreScreen();
+
+/// @brief Reset screen and draw border
 void resetScreenWithBorder();
+
+/// @brief Reset entire screen
+void resetScreenNoBorder();
 
 /// @brief Shows information about the game
 void showHelpScreen();

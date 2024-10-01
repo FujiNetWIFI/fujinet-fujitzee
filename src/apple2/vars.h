@@ -12,12 +12,23 @@
 
 #define ROLL_SOUND_MOD 1 // How often to play roll sound
 #define ROLL_FRAMES 10 // How many roll frames to play
-#define SCORE_CURSOR_ALT 2 // Alternate score cursor color
+//#define SCORE_CURSOR_ALT 2 // Alternate score cursor color
 #define BOTTOM_HEIGHT 3 // How high the bottom panel is
 #define SCORES_X 10 // X start of scoreboard
 #define GAMEOVER_PROMPT_Y HEIGHT-1
 
 #define COLOR_TOGGLE // Rather than multiple colors, platform only supports toggling color mode on/off
+
+
+// Icons
+#define ICON_TEXT_CURSOR  0x22
+#define ICON_MARK         0x22
+#define ICON_MARK_ALT     0x5B
+#define ICON_PLAYER       0x23
+#define ICON_SPEC         0x28
+#define ICON_CURSOR       0x29
+#define ICON_CURSOR_ALT   0x2A
+#define ICON_CURSOR_BLIP  0x2B
 
 /**
  * Platform specific key map for common input

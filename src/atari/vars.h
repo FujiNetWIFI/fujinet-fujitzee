@@ -17,6 +17,17 @@
 #define SCORES_X 11 // X start of scoreboard
 #define GAMEOVER_PROMPT_Y HEIGHT-3  
 
+// Icons
+#define ICON_TEXT_CURSOR  0xD9
+#define ICON_MARK         0x1D
+#define ICON_MARK_ALT     0x1C
+#define ICON_PLAYER       0x23
+#define ICON_SPEC         0xDC
+#define ICON_CURSOR       0xBE
+#define ICON_CURSOR_ALT   0xBF
+#define ICON_CURSOR_BLIP  0x3E
+
+
 /**
  * Platform specific key map for common input
  */

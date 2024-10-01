@@ -16,10 +16,11 @@
 extern unsigned char charset[];
 
 #define OFFSET_Y 4
+
 unsigned char colorMode=0, oldChbas=0, missleLineVisible=0, prevMissleLineVisible=0, colIndex=0;
 int8_t highlightX=-1;
-
 uint8_t own_player;
+bool inBorderScreen=false;
 
 const uint16_t diceRop[] = {
   ROP_CPY, ROP_CPY, ROP_AND(0b11010101), ROP_AND(0b10101010), ROP_AND(0b11010101)
@@ -96,121 +97,85 @@ void setHighlight(int8_t player, bool isThisPlayer, uint8_t flash ) {
   }
 }
 
-void saveScreen() {
+void saveScreenBuffer() {
   memcpy(0x840,0x2000,0x17C0);
   memcpy(0x4000,0x37C0,0x840);
 }
 
-void restoreScreen() {
+void restoreScreenBuffer() {
   memcpy(0x2000,0x840,0x17C0);
   memcpy(0x37C0,0x4000,0x840);
 }
 
 void drawText(unsigned char x, unsigned char y, char* s) {
   static unsigned char c;
-  if (y==HEIGHT-1) {
+  y=y*8-OFFSET_Y; 
+  if (y==8*(HEIGHT-1)-OFFSET_Y) {
     y=182;
-  } else {
-    y=y*8-OFFSET_Y;
-  }
+  } 
 
-  while(*s) {
-    c=*s++;
-    if (c>=97 && c<=122) c=c-32; 
+  while(c=*s++) {
+    if (c>=97 && c<=122) c-=32; 
     hires_putc(x++,y,ROP_CPY,c);
   }  
 }
 
-void drawChar(unsigned char x, unsigned char y, char c) {
-  if (c>=97 && c<=122) c=c-32;
-  hires_putc(x,y*8-OFFSET_Y,ROP_CPY,c);
-}
-
-void drawCharAlt(unsigned char x, unsigned char y, char c) {
-  static uint16_t rop;
-  if (y==HEIGHT-1) {
-    y=182;
-  } else {
-    y=y*8-OFFSET_Y;
-  }
-  
-  if (!colorMode && (c<65 || c> 90)) {
-      rop = ROP_COLORS;
-    } else {
-      rop=ROP_CPY;
-    }
-    if (c>=97 && c<=122)
-      c=c-32; 
-      
-  hires_putc(x++,y,rop,c);
+void drawChar(unsigned char x, unsigned char y, char c, unsigned char alt) {
+  if (c>=97 && c<=122) c-=32;
+  hires_putc(x,y*8-OFFSET_Y,alt ? diceRop[3+x%2] : ROP_CPY,c);
 }
 
 void drawTextAlt(unsigned char x, unsigned char y, char* s) {
   static unsigned char c, mustAlt;
   static uint16_t rop;
 
-  mustAlt = state.inGame && (x>SCORES_X+5 || y==HEIGHT-BOTTOM_HEIGHT);
+  mustAlt = state.inGame && x>SCORES_X+5 && y<21;
  
-  if (y==HEIGHT-1) {
+  y=y*8-OFFSET_Y; 
+  if (y==8*(HEIGHT-1)-OFFSET_Y) {
     y=182;
-  } else {
-    y=y*8-OFFSET_Y;
-  }
+  } 
 
-  while(*s) {
-    c=*s++;
+  while(c=*s++) {
     if (mustAlt) {
       rop = diceRop[3+x%2];
-    } else if (!colorMode && (c<65 || c> 90)) {
+    } else if (y!=21*8-OFFSET_Y && !colorMode && (c<65 || c> 90)) {
       rop = ROP_COLORS; 
     } else {
       rop=ROP_CPY;
     }
     
-    //if (y==2*8-OFFSET_Y) 
-      //rop_index = 2;
-    
-    if (c>=97 && c<=122)
-      c=c-32; 
-      
+    if (c>=97 && c<=122) c-=32; 
     hires_putc(x++,y,rop,c);
   }  
-
-  // static unsigned char c;
-  // static unsigned char* pos;
-
-  // pos = xypos(x,y);
-
-  // while(c=*s++) {
-  //   if (c<65 && c>=32) c-=32;
-  //   if (c<65 || c> 90)
-  //     c+=128;
-  //   else      
-  //     c+=32;
-
-  //   *pos++ = c;
-  // }  
 }
 
 void drawTextVert(unsigned char x, unsigned char y, char* s) {
   static unsigned char c;
   y=y*8-OFFSET_Y;
   while(c=*s++) {
-    //if (c<65 && c>=32) c-=32;
-    //*pos = c;
-    if (c>=97 && c<=122) c=c-32;
+    if (c>=97 && c<=122) c-=32;
     hires_putc(x,y+=8,ROP_CPY,c);
   }  
 }
 
-void resetScreen() { 
-  // Clear screen memory
-  hires_Mask(0,0,40,192,0xa900);
+void resetScreen(bool forBorderScreen) { 
+  if (!forBorderScreen) {
+    // Clear entire screen
+    hires_Mask(0,0,40,192,0xa900);
+  } else {
+    // Moving from one border screen to next - just clear non border area
+     hires_Mask(3,0,34,24,0xa900);
+     hires_Mask(0,24,40,144,0xa900);     
+     hires_Mask(3,168,34,24,0xa900);
+  }
 }
 
 void drawDie(unsigned char x, unsigned char y, unsigned char s, bool isSelected, bool isHighlighted) {
   static unsigned char i,j,diceRopIndex;
   static unsigned char *source;
+
+  // Don't draw die if invalid index passed in
   if (!s || s>16)
     return;
     
@@ -229,10 +194,9 @@ void drawDie(unsigned char x, unsigned char y, unsigned char s, bool isSelected,
    if (s>13)
     diceRopIndex++;
   }
-  
 
   // Draw the dice to the screen
-  y=y*8;
+  y*=8;
 
   // If drawing the bottom dice, offset them lower to make room
   if (y==160) {
@@ -247,25 +211,16 @@ void drawDie(unsigned char x, unsigned char y, unsigned char s, bool isSelected,
   }
 }
 
- 
-void drawMark(unsigned char x, unsigned char y) {
-  hires_putc(x,y*8-OFFSET_Y,ROP_CPY, 0x22);
-}
-
-void drawAltMark(unsigned char x, unsigned char y) {
-  hires_putc(x,y*8-OFFSET_Y,ROP_AND(0b11010101), 0x22); 
+void drawIcon(unsigned char x, unsigned char y, unsigned char icon) {
+  hires_putc(x,y==HEIGHT-1 ? 182 : y*8-OFFSET_Y,ROP_CPY, icon);
 }
 
 void drawClock(unsigned char x, unsigned char y) {
   hires_putcc(x,y*8-OFFSET_Y,ROP_CPY, 0x2526);
 }
 
-void drawSpec(unsigned char x, unsigned char y) {
-  if (y==HEIGHT-1)
-    y=182;
-  else 
-    y=y*8-OFFSET_Y;
-  hires_putc(x,y,ROP_CPY, 0x28);
+void clearBelowBoard() {
+  hires_Mask(0,161,40,31,0xa900);
 }
 
 void drawBlank(unsigned char x, unsigned char y) {
@@ -274,18 +229,6 @@ void drawBlank(unsigned char x, unsigned char y) {
 
 void drawSpace(unsigned char x, unsigned char y, unsigned char w) {
   hires_Mask(x,y*8-OFFSET_Y,w,8,0xa900);
-}
-
-void drawTextcursorPos(unsigned char x, unsigned char y) {
-  hires_putc(x,y*8-OFFSET_Y,ROP_CPY, 0x22);
-}
- 
-void drawCursor(unsigned char x, unsigned char y, unsigned char i) {
-  hires_putc(x,y*8-OFFSET_Y,ROP_CPY, 0x29+i);
-}
-
-void clearBelowBoard() {
-  hires_Mask(0,161,40,31,0xa900);
 }
 
 void drawBoard() {
@@ -302,7 +245,7 @@ void drawBoard() {
   drawBox(SCORES_X-1,2,5,17); 
  
   // Fix overlapping box corners 
-  drawChar(SCORES_X-1,2, 0x24);
+  drawChar(SCORES_X-1,2, 0x24, 0);
 
   // // Thin horz ines
   hires_Mask(SCORES_X,9*8,29,1, 0xa9ff); 
@@ -333,7 +276,6 @@ void drawFujzee(unsigned char x, unsigned char y) {
 
 
 void drawLine(unsigned char x, unsigned char y, unsigned char w) {
-  //memset(xypos(x,y),82,w);
   if (y==HEIGHT) {
     y=191;
   } else {
@@ -365,15 +307,9 @@ void drawBox(unsigned char x, unsigned char y, unsigned char w, unsigned char h)
     hires_putc(x,y,ROP_CPY, 0x3f);
     hires_putc(x+w+1,y,ROP_CPY, 0x3f);
   }
-  
-    // Accents if height > 1
-  // if (h>1) {
-  //   hires_putc(x+w,y,ROP_CPY, 4);
-  // }
 
-  y+=7;
   // Bottom Corners
-  hires_putc(x,y,ROP_CPY, 0x3d);hires_putc(x+w+1,y,ROP_CPY, 0x3e);
+  hires_putc(x,y+7,ROP_CPY, 0x3d);hires_putc(x+w+1,y+7,ROP_CPY, 0x3e);
 }
 
 void drawDiceCursor(unsigned char x) {
@@ -404,7 +340,7 @@ void resetGraphics() {}
 void waitvsync() {
   static uint16_t i;
   // Aproximate a jiffy for the timer countdown
-  for ( i=0;i<630;i++);
+  for ( i=0;i<628;i++);
 }
 
 #endif /* __APPLE2__ */

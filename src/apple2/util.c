@@ -28,4 +28,8 @@ void housekeeping() {
   // Not applicable on Apple
 }
 
+uint8_t getJiffiesPerSecond() {
+  return 60;
+}
+
 #endif /* __APPLE2__ */

@@ -23,7 +23,7 @@ bool currentlyShowingHelp = 0;
 void progressAnim(unsigned char y) {
   for(i=0;i<3;++i) {
     pause(10);
-    drawMark(WIDTH/2-2+i*2,y);
+    drawIcon(WIDTH/2-2+i*2,y, ICON_MARK);
   }
 }
 
@@ -52,7 +52,7 @@ void renderBoardNamesMessages() {
   static int16_t score;
   
   if (state.drawBoard) {
-    resetScreen();
+    resetScreenNoBorder();
     drawLogo(0,0);
     drawBoard();
     drawTextAlt(1,4,"players");
@@ -117,7 +117,7 @@ void renderBoardNamesMessages() {
       
       if (player->scores[0]==-2) {
         // Draw spec icon in front of name 
-        drawSpec(0,y);
+        drawIcon(0,y, ICON_SPEC);
         spectators++;
         // Clear initial/scoreboard for this player index if they were not previously viewing
         if (!player->isViewing && i<7) {
@@ -133,12 +133,16 @@ void renderBoardNamesMessages() {
         
         // Player initials across top of screen
         if (!currentlyShowingHelp)
-          drawCharAlt(x,1,c);
+          drawChar(x,1,c,1);
       }
+      
+      // Draw player's name, highlighting the alias as green
+      // 41435
       for (j=0;j<player->alias;j++) {
-        drawChar(1+j,y,player->name[j]);
+        drawChar(1+j,y,player->name[j], 0);
       }
-      drawCharAlt(1+player->alias,y,c);
+      drawChar(1+j,y,player->name[j], 1);
+      //drawCharAlt(1+player->alias,y,c);
       drawText(2+player->alias,y,player->name+player->alias+1);
       if (len<8) {
         drawSpace(1+len, y, 8-len);
@@ -177,7 +181,7 @@ void renderBoardNamesMessages() {
         i4=SCORES_X+7+i*4;
         if (i<state.playerCount && state.players[i].scores[0]==1) {
           drawTextVert(i4,3,"ready");
-          drawMark(0,i+PLAYER_LIST_Y_OFFSET+1);
+          drawIcon(0,i+PLAYER_LIST_Y_OFFSET+1, ICON_MARK);
         } else {
           drawTextVert(i4,3,"     ");
           // Only clear the dice if it is still round LOBBY
@@ -266,12 +270,12 @@ void renderBoardNamesMessages() {
 
     // Animate arrow showing newly added score
     if (!redraw && state.round<99 && scoreCursorY>0 && newScoreFound) {
-      drawCursor(scoreCursorX,scoreCursorY, 0);
+      drawIcon(scoreCursorX,scoreCursorY, ICON_CURSOR);
       pause(25);
-      drawCursor(scoreCursorX,scoreCursorY, 1);
+      drawIcon(scoreCursorX,scoreCursorY, ICON_CURSOR_ALT);
       soundScore();
       pause(5);
-      drawCursor(scoreCursorX,scoreCursorY, 0);
+      drawIcon(scoreCursorX,scoreCursorY, ICON_CURSOR);
       pause(30);
       drawBlank(scoreCursorX,scoreCursorY);
     }
@@ -282,7 +286,7 @@ void renderBoardNamesMessages() {
     
     // Draw new active player indicator
     if (state.activePlayer>-1) {
-      drawMark(0,state.activePlayer+PLAYER_LIST_Y_OFFSET+1);
+      drawIcon(0,state.activePlayer+PLAYER_LIST_Y_OFFSET+1, ICON_MARK);
       //if (state.activePlayer != 0)
       setHighlight(state.activePlayer, state.localPlayerIsActive, 0);
     } else {
@@ -315,7 +319,7 @@ void renderBoardNamesMessages() {
       if (state.round != state.prevRound) {
         soundGameDone();
 
-        pause(180);
+        pause(255);
         centerTextAlt(HEIGHT-1,"press TRIGGER/SPACE to continue");
         state.waitingOnEndGameContinue = true;
         state.countdownStarted = false;
@@ -331,7 +335,7 @@ void renderBoardNamesMessages() {
       if (spectators>0) {
         itoa(spectators, tempBuffer, 10);
         strcat(tempBuffer," watching");
-        drawSpec(0,HEIGHT-1);
+        drawIcon(0,HEIGHT-1, ICON_SPEC);
         drawTextAlt(2,HEIGHT-1, tempBuffer);
       } 
 
@@ -553,15 +557,13 @@ void showInGameHelp() {
 }
 
 void waitOnPlayerMove() {
-  static int jifsPerSecond;
   static bool foundValidLocation;
-  static uint8_t waitCount, frames; 
+  static uint8_t waitCount, frames, jifsPerSecond; 
   
   resetTimer();
 
   // Determine max jiffies for PAL and NTS
-  jifsPerSecond=PEEK(0xD014)==1 ? 50 : 60;
-
+  jifsPerSecond=getJiffiesPerSecond();
   maxJifs = jifsPerSecond*state.moveTime;
   waitCount=frames=0;
   
@@ -577,7 +579,6 @@ void waitOnPlayerMove() {
     frames=(frames+1) % 30;
     waitvsync();
 
-
     // Handle trigger press
     if (input.trigger) {
       
@@ -588,7 +589,7 @@ void waitOnPlayerMove() {
         state.renderedScore[state.activePlayer*16+i]=true;
 
         // Cursor select animation 
-        drawCursor(validX,scoreY[cursorPos-10],1);soundScore();
+        drawIcon(validX,scoreY[cursorPos-10],ICON_CURSOR_ALT);soundScore();
         
         // First, hide all score options but the chosen score
         for (j=0;j<15;j++) {
@@ -598,7 +599,7 @@ void waitOnPlayerMove() {
           }
         }
 
-        pause(5);drawCursor(validX,scoreY[cursorPos-10],0);; pause(10);
+        pause(5);drawIcon(validX,scoreY[cursorPos-10],ICON_CURSOR);; pause(10);
 
         // Send command to score this value
         strcpy(tempBuffer, "score/");
@@ -606,6 +607,7 @@ void waitOnPlayerMove() {
         sendMove(tempBuffer);
 
         hideInGameHelp();
+        clearBelowBoard();
         state.playerMadeMove = true;
 
         return;
@@ -663,7 +665,8 @@ void waitOnPlayerMove() {
 
       // Bounds check
       if (cursorPos>5)
-        cursorPos = prevCursorPos;
+        cursorPos= cursorPos==255?5:0;
+      
     } else if (input.dirY == 1 && cursorPos<10) {
       // If pressing down on dice cursor, navigate directly to roll button.
       cursorPos=0;
@@ -717,7 +720,7 @@ void waitOnPlayerMove() {
         soundCursor();
       } else {
         h=cursorPos-10;
-        drawCursor(validX,scoreY[h],0);
+        drawIcon(validX,scoreY[h],ICON_CURSOR);
         if (state.validScores[h]==0) {
           drawTextAlt(validX+2,scoreY[h],"0");
         }
@@ -727,7 +730,7 @@ void waitOnPlayerMove() {
       
       
     } else if (cursorPos>9){ 
-      drawCursor(validX,scoreY[cursorPos-10],(frames<2)*SCORE_CURSOR_ALT);
+      drawIcon(validX,scoreY[cursorPos-10],(frames<2)? ICON_CURSOR_BLIP : ICON_CURSOR);
     }
     
     // Tick counter once per second   
@@ -835,7 +838,7 @@ bool inputFieldCycle(uint8_t x, uint8_t y, uint8_t max, char* buffer) {
     lastY=y;
     curx = strlen(buffer);
     drawTextAlt(x,y, buffer);
-    drawTextcursorPos(x+curx,y);
+    drawIcon(x+curx,y, ICON_TEXT_CURSOR);
     enableKeySounds();
   }
 
@@ -871,7 +874,7 @@ bool inputFieldCycle(uint8_t x, uint8_t y, uint8_t max, char* buffer) {
     if (inputField_done) 
       disableKeySounds();
     else 
-      drawTextcursorPos(x+curx,y);
+      drawIcon(x+curx,y, ICON_TEXT_CURSOR);
 
     return inputField_done;
   }
