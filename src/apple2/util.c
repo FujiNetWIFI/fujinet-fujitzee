@@ -19,6 +19,7 @@ int getTime() {
 
 void quit() {
   // Possible to revert screen to boot normals
+  joy_uninstall();
   resetGraphics();
   exit(0);
 }
