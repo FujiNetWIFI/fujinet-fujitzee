@@ -822,8 +822,7 @@ void centerStatusText(char * text) {
 }
 
 /// @brief Init/reset the input field for display
-/// @return 
-bool resetInputField() {
+void resetInputField() {
   inputField_done = 1;
   disableKeySounds();
 }

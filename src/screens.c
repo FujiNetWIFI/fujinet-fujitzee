@@ -262,7 +262,7 @@ void showPlayerNameScreen(uint8_t p) {
   drawBox(15,10,PLAYER_NAME_MAX+1,1);
 
   // Copy name to local buffer in case 
-  playerName=&prefs.localPlayer[p].name;
+  playerName=prefs.localPlayer[p].name;
   strcpy(tempBuffer, playerName);
   
   resetInputField();
@@ -282,8 +282,8 @@ void showPlayerNameScreen(uint8_t p) {
 
         // Shuffle downward player to take place if available
         for (i=p+1;i<prefs.localPlayerCount;i++) {
-          strcpy(&prefs.localPlayer[i-1].name, &prefs.localPlayer[i].name);
-          memset(&prefs.localPlayer[i].name,0,9);
+          strcpy(prefs.localPlayer[i-1].name, prefs.localPlayer[i].name);
+          memset(prefs.localPlayer[i].name,0,9);
         }
         prefs.localPlayerCount--;
         break;
@@ -344,27 +344,24 @@ void showPlayerNameScreen(uint8_t p) {
 
 /// @brief Action called in Welcome Screen to verify player has a name
 void welcomeActionVerifyPlayerName() {
-  static char* playerName;
+  static char *playerName;
   playerName = prefs.localPlayer[0].name;
 
   // Read player's name from app key
-  read_appkey(AK_LOBBY_CREATOR_ID,  AK_LOBBY_APP_ID, AK_LOBBY_KEY_USERNAME, tempBuffer);  
+  read_appkey(AK_LOBBY_CREATOR_ID,  AK_LOBBY_APP_ID, AK_LOBBY_KEY_USERNAME, tempBuffer);
   tempBuffer[8]=0;
   strcpy(playerName,tempBuffer);
 
+  // Capture username if player didn't come in from the lobby
+  if (!playerName[0]) {
+    showPlayerNameScreen(0);
+  } 
 
   // Convert to lowercase
-  for(i=0;i<strlen(playerName);i++) {
-    if (playerName[i] >=65 && playerName[i]<=90)
-      playerName[i]+=32;
-  }
-  
-  // Capture username if player didn't come in from the lobby
-  if (strlen(playerName) == 0) {
-    showPlayerNameScreen(0);
-  } else {
-    // Set the app key player name with first player in the local player list
-    strcpy(prefs.localPlayer[0].name, playerName);
+  while (*playerName) {
+    if (*playerName>=65 && *playerName<=90)
+      *playerName+=32;
+    playerName++;
   }
 }
 
@@ -459,7 +456,7 @@ void showTableSelectionScreen() {
         drawTextAlt(6,j, table->name);
         
         if (table->players[0]>'0') {
-          drawIcon(k-2, j, ICON_PLAYER); //, "*");
+          drawIcon(k-2, j, ICON_PLAYER);
         }
       }
     } else {
@@ -574,7 +571,7 @@ void showTableSelectionScreen() {
 
   // Build the queries for each local player
   for(i=0;i<prefs.localPlayerCount;i++) {
-    localQuery = &state.localPlayer[i].query;
+    localQuery = state.localPlayer[i].query;
     // Append the table
     strcpy(localQuery, query);
 

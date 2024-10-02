@@ -13,7 +13,7 @@
 #include "../platform-specific/sound.h"
 #include "../misc.h"  
    
-extern unsigned char charset[];
+extern char charset[];
 
 #define OFFSET_Y 4
 
@@ -98,13 +98,13 @@ void setHighlight(int8_t player, bool isThisPlayer, uint8_t flash ) {
 }
 
 void saveScreenBuffer() {
-  memcpy(0x840,0x2000,0x17C0);
-  memcpy(0x4000,0x37C0,0x840);
+  memcpy((void*)0x840,(void*)0x2000,0x17C0);
+  memcpy((void*)0x4000,(void*)0x37C0,0x840);
 }
 
 void restoreScreenBuffer() {
-  memcpy(0x2000,0x840,0x17C0);
-  memcpy(0x37C0,0x4000,0x840);
+  memcpy((void*)0x2000,(void*)0x840,0x17C0);
+  memcpy((void*)0x37C0,(void*)0x4000,0x840);
 }
 
 void drawText(unsigned char x, unsigned char y, char* s) {
@@ -173,7 +173,7 @@ void resetScreen(bool forBorderScreen) {
 
 void drawDie(unsigned char x, unsigned char y, unsigned char s, bool isSelected, bool isHighlighted) {
   static unsigned char i,j,diceRopIndex;
-  static unsigned char *source;
+  static const unsigned char *source;
 
   // Don't draw die if invalid index passed in
   if (!s || s>16)
@@ -232,8 +232,7 @@ void drawSpace(unsigned char x, unsigned char y, unsigned char w) {
 }
 
 void drawBoard() {
-  static uint8_t y,x,c;
-  static unsigned char *dest;
+  static uint8_t y,x;
 
   // Vertical lines
   for (x=SCORES_X+9;x<40;x+=4) {

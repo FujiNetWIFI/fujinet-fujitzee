@@ -25,7 +25,6 @@ void updateState(bool isTables) {
   static char *line, *nextLine, *end, *key, *value, *parent, *arrayPart;
   static bool isKey, inArray;
   static unsigned int i;
-  static int16_t *score;
   static Table * table;
   table=&state.tables[0];
   // Reset state and vars
@@ -191,13 +190,13 @@ void updateState(bool isTables) {
 */
 uint8_t apiCall(char *path) {
   static int16_t n;
-  static uint8_t* buf;
+  static char* buf;
   static char *query;
 
   strcpy(url, "n:");
   strcat(url, serverEndpoint);
   strcat(url, path);
-  query = &state.localPlayer[state.currentLocalPlayer].query;
+  query = state.localPlayer[state.currentLocalPlayer].query;
   strcat(url, query );
   strcat(url, query[0] ? "&raw=1&lc=1" : "?raw=1&lc=1");
   
@@ -209,7 +208,7 @@ uint8_t apiCall(char *path) {
     return API_CALL_ERROR;
   }
 
-  n = network_read(url, rx_buf, sizeof(rx_buf));
+  n = network_read(url, (uint8_t*)rx_buf, sizeof(rx_buf));
   network_close(url);
 
   if (n<=0) {

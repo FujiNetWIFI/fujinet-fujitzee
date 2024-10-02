@@ -27,10 +27,8 @@ unsigned char _lastJoy, _joy, _joySameCount=10;
 bool _buttonReleased=true;
 
 void pause(unsigned char frames) {
-  static uint8_t i;
-  for(i=0;i<frames;i++) {
-      waitvsync();
-  }
+  while(frames--)
+    waitvsync();
 }
 
 void clearCommonInput() {
@@ -141,16 +139,16 @@ uint16_t read_appkey(uint16_t creator_id, uint8_t app_id, uint8_t key_id, char* 
   static uint16_t read;
 
   fuji_set_appkey_details(creator_id, app_id, DEFAULT);
-  if (!fuji_read_appkey(key_id, &read, destination))
+  if (!fuji_read_appkey(key_id, &read, (uint8_t*)destination))
     read=0;
 
   // Add string terminator after the data ends in case it is being interpreted as a string
   destination[read] = 0;
   return read;
 }
-
+ 
 void write_appkey(uint16_t creator_id, uint8_t app_id, uint8_t key_id,  uint16_t count, char *data)
 {
- fuji_set_appkey_details(creator_id, app_id, DEFAULT);
- fuji_write_appkey(key_id, count, data);
+  fuji_set_appkey_details(creator_id, app_id, DEFAULT);
+  fuji_write_appkey(key_id, count, (uint8_t*)data);
 }
