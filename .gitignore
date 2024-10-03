@@ -24,7 +24,6 @@ AppleWin.log
 # Download-on-demand dependencies
 *.jar
 *.dsk
-fujinet-lib/
 _libs
 
 # Generated files
@@ -33,6 +32,7 @@ _libs
 *.prg
 *.map
 *.lbl
+*.po
 
 # Project specific ignores
 gen/gencharset
