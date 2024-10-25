@@ -31,13 +31,12 @@ void processStateChange() {
   renderBoardNamesMessages();
   handleAnimation();
 
-  state.prevPlayerCount=state.playerCount;
-  state.prevActivePlayer = state.activePlayer;
-  state.prevRollsLeft = state.rollsLeft;
-  state.prevRound = state.round;
+  state.prevPlayerCount=clientState.game.playerCount;
+  state.prevActivePlayer = clientState.game.activePlayer;
+  state.prevRollsLeft = clientState.game.rollsLeft;
+  state.prevRound = clientState.game.round;
 }
 
-// 43495
 void clearScores(uint8_t x) {
   for(j=0;j<15;j++)  {
     drawSpace(x, scoreY[j], 3);
@@ -62,10 +61,10 @@ void renderBoardNamesMessages() {
   // If player is waiting on end game screen, auto-ready up if the game is starting
   
   // Redraw the entire board on a new game
-  redraw = state.round < state.prevRound;
+  redraw = clientState.game.round < state.prevRound;
 
   if (state.waitingOnEndGameContinue) {
-    if (state.round == 1) {
+    if (clientState.game.round == 1) {
       state.waitingOnEndGameContinue =false;
       // Force a redraw since the player waited on the end game screen until start
       redraw = true;
@@ -73,16 +72,16 @@ void renderBoardNamesMessages() {
     } else {
       
       if (state.countdownStarted)
-        centerTextWide(HEIGHT-3,state.prompt);
+        centerTextWide(HEIGHT-3,clientState.game.prompt);
 
-      if (!state.countdownStarted && state.prompt[0]== 's') {
+      if (!state.countdownStarted && clientState.game.prompt[0]== 's') {
           soundJoinGame();
-          if (state.players[0].scores[0] < 1) {
+          if (clientState.game.players[0].scores[0] < 1) {
             apiCallForAll("ready");
           }
           
           state.countdownStarted = true;
-        } else if (state.countdownStarted && state.prompt[0]!= 's') {
+        } else if (state.countdownStarted && clientState.game.prompt[0]!= 's') {
           state.countdownStarted = false;
         }
       return;
@@ -90,7 +89,7 @@ void renderBoardNamesMessages() {
   }
   
   // Clear score board if a new round
-  if (redraw && state.round==0) {    
+  if (redraw && clientState.game.round==0) {    
       // Clear score locations
     for (i=SCORES_X+6;i<41;i+=4) {
       clearScores(i);
@@ -108,9 +107,9 @@ void renderBoardNamesMessages() {
     y=i+PLAYER_LIST_Y_OFFSET;
     x=SCORES_X+3+i*4;
     
-    if (i<=state.playerCount) {
+    if (i<=clientState.game.playerCount) {
       
-      player = &state.players[i-1]; 
+      player = &clientState.game.players[i-1]; 
       c= player->name[player->alias];
       len = (uint8_t)strlen(player->name);
       
@@ -119,15 +118,15 @@ void renderBoardNamesMessages() {
         drawIcon(0,y, ICON_SPEC);
         spectators++;
         // Clear initial/scoreboard for this player index if they were not previously viewing
-        if (!player->isViewing && i<7) {
+        if (i<7 && !state.isViewing[i]) {
           drawBlank(x,1);
           clearScores(x-1);
           
-          player->isViewing=true;
+          state.isViewing[i]=true;
         }
       } else { 
-        player->isViewing=false;
-        if (state.round>0 && state.activePlayer != i-1)
+        state.isViewing[i]=false;
+        if (clientState.game.round>0 && clientState.game.activePlayer != i-1)
           drawBlank(0,y);
         
         // Player initials across top of screen
@@ -161,45 +160,41 @@ void renderBoardNamesMessages() {
   }
 
   // Round 0 (waiting to start) checks, or going into round 1
-  if (state.round ==0 || (state.round == 1 && state.prevRound==0)) {
+  if (clientState.game.round ==0 || (clientState.game.round == 1 && state.prevRound==0)) {
     // Display "waiting for players" prompt if changed in ready mode
-    if (state.round==0 && state.promptChanged) {
-        centerTextWide(HEIGHT-3,state.prompt);
-        state.promptChanged = false;
-      if (!state.countdownStarted && state.prompt[0]== 's') {
+    if (clientState.game.round==0) {
+        centerTextWide(HEIGHT-3,clientState.game.prompt);
+      if (!state.countdownStarted && clientState.game.prompt[0]== 's') {
         soundJoinGame();
         state.countdownStarted = true;
-      } else if (state.prompt[0]!= 's') {
+      } else if (clientState.game.prompt[0]!= 's') {
         state.countdownStarted = false;
       }
     }
 
-    // Show players that are ready to start
-    if (forceReadyUpdates) {
-      for(i=0;i<6;i++) {
-        i4=SCORES_X+7+i*4;
-        if (i<state.playerCount && state.players[i].scores[0]==1) {
-          drawTextVert(i4,3,"ready");
-          drawIcon(0,i+PLAYER_LIST_Y_OFFSET+1, ICON_MARK);
-        } else {
-          drawTextVert(i4,3,"     ");
-          // Only clear the dice if it is still round LOBBY
-          if (state.round == 0) {
-            drawBlank(0,i+PLAYER_LIST_Y_OFFSET+1);
-          }
+    // Show players that are ready to start  
+    for(i=0;i<6;i++) {
+      i4=SCORES_X+7+i*4;
+      if (i<clientState.game.playerCount && clientState.game.players[i].scores[0]==1) {
+        drawTextVert(i4,3,"ready");
+        drawIcon(0,i+PLAYER_LIST_Y_OFFSET+1, ICON_MARK);
+      } else {
+        drawTextVert(i4,3,"     ");
+        // Only clear the dice if it is still round LOBBY
+        if (clientState.game.round == 0) {
+          drawBlank(0,i+PLAYER_LIST_Y_OFFSET+1);
         }
       }
-
-      forceReadyUpdates = 0;
     }
+
   }
 
   // Exit early as below text is for rounds > 0 
-  if (state.round == 0)
+  if (clientState.game.round == 0)
     return;
 
   // Scoreboard and prompt - refresh if the active player changed, or round changed
-  if (state.activePlayer != state.prevActivePlayer || state.round != state.prevRound || state.playerCount != state.prevPlayerCount) {
+  if (clientState.game.activePlayer != state.prevActivePlayer || clientState.game.round != state.prevRound || clientState.game.playerCount != state.prevPlayerCount) {
     
     // Remove score cursorPos
     if (cursorPos>10 && cursorPos<99) {
@@ -207,11 +202,11 @@ void renderBoardNamesMessages() {
       cursorPos = 99;
     }
 
-    if (state.round == 99) {
+    if (clientState.game.round == 99) {
       clearBelowBoard();
 
       // Only specify scores header if there are scores (game not aborted early)
-      if (state.players[0].scores[15]>0) {
+      if (clientState.game.players[0].scores[15]>0) {
         drawText(SCORES_X,21,"score");
       }
       setHighlight(-1,0,0);
@@ -223,24 +218,24 @@ void renderBoardNamesMessages() {
     scoreCursorY=0;
    
     // Skip ahead to drawing the second round if the player hasn't changed
-    ignoreNewScore= state.activePlayer == state.prevActivePlayer || redraw;
+    ignoreNewScore= clientState.game.activePlayer == state.prevActivePlayer || redraw;
     
     // In case this client is lagging behind (multiple players scored since)
     // only animate the most recent player's score
-    mostRecentPlayer = (state.activePlayer+state.playerCount-1) % state.playerCount;
-    while (state.players[mostRecentPlayer].scores[0]==-2) {
-      mostRecentPlayer = (mostRecentPlayer+state.playerCount-1) % state.playerCount;
+    mostRecentPlayer = (clientState.game.activePlayer+clientState.game.playerCount-1) % clientState.game.playerCount;
+    while (clientState.game.players[mostRecentPlayer].scores[0]==-2) {
+      mostRecentPlayer = (mostRecentPlayer+clientState.game.playerCount-1) % clientState.game.playerCount;
     }
 
-    for (i=state.playerCount-1;i<255;i--) {
+    for (i=clientState.game.playerCount-1;i<255;i--) {
       // Skip spectators or going beyond 6 players
-      if (i>5 || state.players[i].scores[0]==-2)
+      if (i>5 || clientState.game.players[i].scores[0]==-2)
         continue;
       h=SCORES_X+6+i*4;
       i4=h+3;
-      maxScoreY= state.round<99 ? 15 : 16;
+      maxScoreY= clientState.game.round<99 ? 15 : 16;
       for (j=0;j<maxScoreY;j++) {
-        score = state.players[i].scores[j];
+        score = clientState.game.players[i].scores[j];
         if (score>-1) {
           itoa(score, tempBuffer, 10);
           len=(uint8_t)strlen(tempBuffer);
@@ -268,7 +263,7 @@ void renderBoardNamesMessages() {
     }
 
     // Animate arrow showing newly added score
-    if (!redraw && state.round<99 && scoreCursorY>0 && newScoreFound) {
+    if (!redraw && clientState.game.round<99 && scoreCursorY>0 && newScoreFound) {
       drawIcon(scoreCursorX,scoreCursorY, ICON_CURSOR);
       pause(25);
       drawIcon(scoreCursorX,scoreCursorY, ICON_CURSOR_ALT);
@@ -284,23 +279,23 @@ void renderBoardNamesMessages() {
       drawBlank(0,state.prevActivePlayer+PLAYER_LIST_Y_OFFSET+1);
     
     // Draw new active player indicator
-    if (state.activePlayer>-1) {
-      drawIcon(0,state.activePlayer+PLAYER_LIST_Y_OFFSET+1, ICON_MARK);
-      //if (state.activePlayer != 0)
-      setHighlight(state.activePlayer, state.localPlayerIsActive, 0);
+    if (clientState.game.activePlayer>-1) {
+      drawIcon(0,clientState.game.activePlayer+PLAYER_LIST_Y_OFFSET+1, ICON_MARK);
+      //if (clientState.game.activePlayer != 0)
+      setHighlight(clientState.game.activePlayer, state.localPlayerIsActive, 0);
     } else {
       setHighlight(-1,0,0);
     }
 
     // Display current round
-    if (state.round != state.prevRound) {
-      if (state.round>0 && state.round< 14) {
+    if (clientState.game.round != state.prevRound) {
+      if (clientState.game.round>0 && clientState.game.round< 14) {
         // Display static round details
         drawTextAlt(1,3,"round ");
         drawTextAlt(1,4,"   of ");
         drawText(7,4,"13"); 
-        itoa(state.round, tempBuffer, 10);
-        drawText(8-(state.round>9),3,tempBuffer);
+        itoa(clientState.game.round, tempBuffer, 10);
+        drawText(8-(clientState.game.round>9),3,tempBuffer);
       } else {
         drawSpace(1,3,8);
         drawTextAlt(1,4,"players ");
@@ -309,13 +304,13 @@ void renderBoardNamesMessages() {
     
       
     // Handle end of game
-    if (state.round == 99) { 
+    if (clientState.game.round == 99) { 
 
       // Clear active indicators
       drawTextVert(0,PLAYER_LIST_Y_OFFSET+1,"            ");
-      centerText(GAMEOVER_PROMPT_Y, state.prompt);
+      centerText(GAMEOVER_PROMPT_Y, clientState.game.prompt);
 
-      if (state.round != state.prevRound) {
+      if (clientState.game.round != state.prevRound) {
         soundGameDone();
 
         pause(255);
@@ -341,20 +336,20 @@ void renderBoardNamesMessages() {
       // Visual override - when playing multiple local players, put player's name + your turn
       if (state.localPlayerIsActive && prefs.localPlayerCount>1) {
         drawText(0,BOTTOM_PANEL_Y,"your turn");
-        drawText(0,BOTTOM_PANEL_Y+1,state.players[state.activePlayer].name);
+        drawText(0,BOTTOM_PANEL_Y+1,clientState.game.players[clientState.game.activePlayer].name);
       } else {
-        drawText(0,BOTTOM_PANEL_Y, state.prompt); 
+        drawText(0,BOTTOM_PANEL_Y, clientState.game.prompt); 
       }
       
       pause(30);
     }
 
-    if (state.localPlayerIsActive && !state.viewing) {
-      setHighlight(state.activePlayer, true, 2);
+    if (state.localPlayerIsActive && !clientState.game.viewing) {
+      setHighlight(clientState.game.activePlayer, true, 2);
       pause(5);
       soundMyTurn();
       pause(5);
-      setHighlight(state.activePlayer, true, 0);
+      setHighlight(clientState.game.activePlayer, true, 0);
     }
   }
 }
@@ -370,29 +365,29 @@ void handleAnimation() {
   if (state.waitingOnEndGameContinue)
     return;
 
-  isThisPlayer = !state.viewing && state.localPlayerIsActive;
+  isThisPlayer = !clientState.game.viewing && state.localPlayerIsActive;
 
   // Setup the player input details if this is a new roll
-  if (state.rollsLeft != state.prevRollsLeft || state.activePlayer != state.prevActivePlayer )  {
+  if (clientState.game.rollsLeft != state.prevRollsLeft || clientState.game.activePlayer != state.prevActivePlayer )  {
     state.rollFrames=ROLL_FRAMES;
     
-    if (state.rollsLeft==2) {
+    if (clientState.game.rollsLeft==2) {
       strcpy(state.prevKept,"11111");
-      strcpy(state.prevDice,state.dice);
+      strcpy(state.prevDice,clientState.game.dice);
     }
 
     if (isThisPlayer) {
       state.playerMadeMove=false;
       prevCursorPos=5;
       cursorPos=1;
-      validX=SCORES_X+6+state.activePlayer*4;
+      validX=SCORES_X+6+clientState.game.activePlayer*4;
 
 
       // If no rolls are remaining, default the cursorPos on the highest score
-      if (state.rollsLeft==0) {
+      if (clientState.game.rollsLeft==0) {
         highScoreIndex = 0;
         for (j=1;j<15;j++) {
-          if (state.validScores[j]>state.validScores[highScoreIndex])
+          if (clientState.game.validScores[j]>clientState.game.validScores[highScoreIndex])
             highScoreIndex = j;
         }
         cursorPos=10+highScoreIndex;
@@ -400,7 +395,7 @@ void handleAnimation() {
     }
   }
 
-  if (state.activePlayer<0 || !state.rollFrames)
+  if (clientState.game.activePlayer<0 || !state.rollFrames)
     return;
 
   state.rollFrames--;
@@ -408,9 +403,9 @@ void handleAnimation() {
   // Check for Fujitzee roll (all 5 dice match each other)
   // To display special animation
   if (state.rollFrames==0) {
-    strcpy(state.prevDice,state.dice);
+    strcpy(state.prevDice,clientState.game.dice);
     for (i=1;i<5;i++) {
-      if (state.dice[i]!=state.dice[0])
+      if (clientState.game.dice[i]!=clientState.game.dice[0])
         break;
     }
     isFujitzee=i==5;
@@ -423,7 +418,7 @@ void handleAnimation() {
     soundRollDice();
 
 
-  keptCountChanged=state.rollFrames == ROLL_FRAMES-1 && !isThisPlayer && strcmp(state.prevKept, state.keepRoll);
+  keptCountChanged=state.rollFrames == ROLL_FRAMES-1 && !isThisPlayer && strcmp(state.prevKept, clientState.game.keepRoll);
 
   for(j=0;j<=isFujitzee;j++) {
 
@@ -434,12 +429,12 @@ void handleAnimation() {
     }
     for(i=0;i<5;i++) {
       i4=20+4*i;
-      if (state.rollFrames && state.keepRoll[i]=='1' ) {
+      if (state.rollFrames && clientState.game.keepRoll[i]=='1' ) {
         // Draw a random die after the first frame
         drawDie(i4,HEIGHT-4,state.rollFrames < ROLL_FRAMES-1 ? rand()%6+1 : state.prevDice[i]-48,0,isFujitzee);
       } else {
         // Draw the kept die
-        drawDie(i4,HEIGHT-4,state.dice[i]-48,(state.rollFrames || state.rollsLeft>0) && state.keepRoll[i]=='0', isFujitzee);
+        drawDie(i4,HEIGHT-4,clientState.game.dice[i]-48,(state.rollFrames || clientState.game.rollsLeft>0) && clientState.game.keepRoll[i]=='0', isFujitzee);
       }
     }
     
@@ -447,7 +442,7 @@ void handleAnimation() {
 
     // Pause a bit on the first render of a roll to show kept dice
     if (keptCountChanged) {
-      strcpy(state.prevKept,state.keepRoll);
+      strcpy(state.prevKept,clientState.game.keepRoll);
       pause(30);
     }
   }
@@ -458,7 +453,7 @@ void handleAnimation() {
 
     // Display the potential scores for this player
     for (j=0;j<15;j++) {
-      score= state.validScores[j];
+      score= clientState.game.validScores[j];
       if (score>=0) {
         if (score>0) {
           itoa(score, tempBuffer, 10);
@@ -472,7 +467,7 @@ void handleAnimation() {
     }
 
     // Draw "Rolls" die if this player's turn and there are rolls left
-    drawDie(15,HEIGHT-4,state.rollsLeft+13,0,0);
+    drawDie(15,HEIGHT-4,clientState.game.rollsLeft+13,0,0);
   }
 }
 
@@ -485,16 +480,15 @@ void processInput() {
       clearBelowBoard();
       clearRenderState();
     }
-  } else if (!state.viewing) {
+  } else if (!clientState.game.viewing) {
     // Toggle readiness if waiting to start game
-    if (state.round == 0 && input.trigger) {
-      j=!state.players[0].scores[0];
+    if (clientState.game.round == 0 && input.trigger) {
+      j=!clientState.game.players[0].scores[0];
       for(i=0;i<prefs.localPlayerCount;i++) {
-        state.players[state.localPlayer[i].index].scores[0] = j;
+        clientState.game.players[state.localPlayer[i].index].scores[0] = j;
       }
-      forceReadyUpdates=true;
       renderBoardNamesMessages();
-      if (state.players[0].scores[0]) 
+      if (clientState.game.players[0].scores[0]) 
         soundScore();
       else
         soundScoreCursor();
@@ -504,7 +498,7 @@ void processInput() {
     }
 
     // Wait on this player to make roll decisions
-    if (!state.rollFrames && state.localPlayerIsActive && !state.playerMadeMove && state.round>0) {
+    if (!state.rollFrames && state.localPlayerIsActive && !state.playerMadeMove && clientState.game.round>0) {
       waitOnPlayerMove();
     }
   }
@@ -526,7 +520,7 @@ void hideInGameHelp() {
 }
 
 void showInGameHelp() {
-  if (state.activePlayer!=0)
+  if (clientState.game.activePlayer!=0)
     return;
 
   currentlyShowingHelp=true;
@@ -563,7 +557,7 @@ void waitOnPlayerMove() {
 
   // Determine max jiffies for PAL and NTS
   jifsPerSecond=getJiffiesPerSecond();
-  maxJifs = jifsPerSecond*state.moveTime;
+  maxJifs = jifsPerSecond*clientState.game.moveTime;
   waitCount=frames=0;
   
   // If this is the player's first time playing, show instructions
@@ -574,7 +568,7 @@ void waitOnPlayerMove() {
   }
 
   // Move selection loop
-  while (state.moveTime>0) {
+  while (clientState.game.moveTime>0) {
     frames=(frames+1) % 30;
     waitvsync();
 
@@ -585,14 +579,14 @@ void waitOnPlayerMove() {
         // Select score
         i=cursorPos-10;
 
-        state.renderedScore[state.activePlayer*16+i]=true;
+        state.renderedScore[clientState.game.activePlayer*16+i]=true;
 
         // Cursor select animation 
         drawIcon(validX,scoreY[cursorPos-10],ICON_CURSOR_ALT);soundScore();
         
         // First, hide all score options but the chosen score
         for (j=0;j<15;j++) {
-          if (state.validScores[j]>0) {
+          if (clientState.game.validScores[j]>0) {
             if (j != i)
               drawSpace(validX,scoreY[j],3);
           }
@@ -612,23 +606,23 @@ void waitOnPlayerMove() {
         return;
       } else if (cursorPos>0) {
         // Toggle kept state of die
-        i = state.keepRoll[cursorPos-1]= state.keepRoll[cursorPos-1]=='1' ? '0' : '1';
-        drawDie(16+cursorPos*4,HEIGHT-4,state.dice[cursorPos-1]-48,i == '0', 0);
+        i = clientState.game.keepRoll[cursorPos-1]= clientState.game.keepRoll[cursorPos-1]=='1' ? '0' : '1';
+        drawDie(16+cursorPos*4,HEIGHT-4,clientState.game.dice[cursorPos-1]-48,i == '0', 0);
         if (i=='0')
           soundKeep();
         else 
           soundRelease();
         
-        drawDie(15,HEIGHT-4,13+ (strcmp(state.keepRoll,"00000") ? state.rollsLeft : 3),0,0);
+        drawDie(15,HEIGHT-4,13+ (strcmp(clientState.game.keepRoll,"00000") ? clientState.game.rollsLeft : 3),0,0);
       } else {
         // Request another roll, assuming at least one dice is not kept
-        if (strcmp(state.keepRoll,"00000")) {
+        if (strcmp(clientState.game.keepRoll,"00000")) {
           // Highlight the roll die in green
-          drawDie(15,HEIGHT-4,state.rollsLeft+13,0,1);
+          drawDie(15,HEIGHT-4,clientState.game.rollsLeft+13,0,1);
           soundRollButton();
           
           strcpy(tempBuffer, "roll/");
-          strcat(tempBuffer, state.keepRoll);
+          strcat(tempBuffer, clientState.game.keepRoll);
           sendMove(tempBuffer);
 
           state.playerMadeMove = true;
@@ -642,7 +636,7 @@ void waitOnPlayerMove() {
           for (j=1;j<255;j--) {
             drawDie(15,HEIGHT-4,16,0,j);
             for(i=0;i<6;i++) {
-              drawDie(20+4*i,HEIGHT-4,state.dice[i]-48,1,j);
+              drawDie(20+4*i,HEIGHT-4,clientState.game.dice[i]-48,1,j);
             }
             soundRelease();
             pause(6);
@@ -655,7 +649,7 @@ void waitOnPlayerMove() {
     }
       
     // Update horizontal cursorPos location - dice: 0 = roll, 1-5 equal select dice at that index
-    if (input.dirX !=0 && state.rollsLeft) {
+    if (input.dirX !=0 && clientState.game.rollsLeft) {
       // If cursorPos was selecting a score, bring it back down
       if (cursorPos>9)
         cursorPos = 1;
@@ -681,13 +675,13 @@ void waitOnPlayerMove() {
         
         // Bounds checks
         foundValidLocation=true;
-        if (cursorPos<10 || (cursorPos>24 && state.rollsLeft==0))
+        if (cursorPos<10 || (cursorPos>24 && clientState.game.rollsLeft==0))
           cursorPos = prevCursorPos;
         else if (cursorPos>24)
           cursorPos=prevCursorPos <10 ? prevCursorPos : 1;
         else {
           // Skip over invalid scores
-          if (state.validScores[cursorPos-10]<0)
+          if (clientState.game.validScores[cursorPos-10]<0)
             foundValidLocation=false;
         }
 
@@ -708,7 +702,7 @@ void waitOnPlayerMove() {
       else {
         h=prevCursorPos-10;
         drawBlank(validX,scoreY[h]);
-        if (state.validScores[h]==0) {
+        if (clientState.game.validScores[h]==0) {
           drawBlank(validX+2,scoreY[h]);
         }
       }
@@ -720,7 +714,7 @@ void waitOnPlayerMove() {
       } else {
         h=cursorPos-10;
         drawIcon(validX,scoreY[h],ICON_CURSOR);
-        if (state.validScores[h]==0) {
+        if (clientState.game.validScores[h]==0) {
           drawTextAlt(validX+2,scoreY[h],"0");
         }
         soundScoreCursor();
@@ -736,8 +730,8 @@ void waitOnPlayerMove() {
     if (++waitCount>5) {
       waitCount=0;
       i = (maxJifs-getTime())/jifsPerSecond;
-      if (i<=15 && i != state.moveTime) {
-        state.moveTime = i;
+      if (i<=15 && i != clientState.game.moveTime) {
+        clientState.game.moveTime = i;
         tempBuffer[0]=' ';
         itoa(i, tempBuffer+1, 10);
         drawTextAlt(12-strlen(tempBuffer), BOTTOM_PANEL_Y, tempBuffer);
@@ -773,9 +767,9 @@ void waitOnPlayerMove() {
   state.playerMadeMove=1;
   i=0;
   for (j=0;j<15;j++) {
-    if (state.validScores[j]>-1) {
+    if (clientState.game.validScores[j]>-1) {
       if (!i) {
-        itoa(state.validScores[j], tempBuffer, 10);
+        itoa(clientState.game.validScores[j], tempBuffer, 10);
         drawTextAlt(validX+3-strlen(tempBuffer),scoreY[j],tempBuffer);
         i=1;
       } else {
@@ -791,7 +785,6 @@ void waitOnPlayerMove() {
 void clearRenderState() {
   state.prevActivePlayer = state.prevRound = 99;
   state.prevPlayerCount = 0;
-  forceReadyUpdates = true;
   memset(state.renderedScore, 0, 16*6);
 }
 

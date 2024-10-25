@@ -24,24 +24,46 @@
 #define FUJITZEE_SCORE 14
 
 //todo - binary enable state
+// 23397 Atari size pre binary
+// 21275
 
 typedef struct {
-  char* table;
-  char* name;
-  char players[6];
+  char table    [9];
+  char name     [21];
+  char players  [6];
 } Table;
 
 typedef struct {
-  char* name;
+  char name[9];
   uint8_t alias;
   int16_t scores[16];
-  bool isViewing;
 } Player;
 
 typedef struct {
-  char* move;
-  char* name; 
-} ValidMove;
+  union {
+    struct {
+      uint8_t count;
+      Table table[10];
+    } tables;
+
+    struct {
+      uint8_t playerCount;
+      char serverName [21];
+      char prompt     [41];
+      uint8_t round;
+      uint8_t rollsLeft;
+      int8_t activePlayer;
+      uint8_t moveTime;
+      uint8_t viewing;
+      char dice     [6];
+      char keepRoll [6];
+      int8_t validScores[15];
+      Player players[PLAYER_MAX];
+    } game;
+  };
+} ClientStateT;
+
+
 
 typedef struct {
   char query[50]; //?table=12345678&pov=12345678&player=12345678
@@ -50,25 +72,8 @@ typedef struct {
 
 typedef struct {
 
-  // State received from server
-  char* prompt;
-  uint8_t round;
-  uint8_t rollsLeft;
-  int8_t activePlayer;
-  uint8_t moveTime;
-  uint8_t viewing;
-  char* dice;
-  char* keepRoll;
-  Player players[PLAYER_MAX];
-  int16_t validScores[15];
-  char serverName[20];
-
-  // Table info
-  Table tables[10];
-  uint8_t tableCount;
-
+  
   // Internal game state
-  uint8_t playerCount;
   uint8_t rollFrames;
 
   uint8_t prevRollsLeft;
@@ -80,10 +85,11 @@ typedef struct {
   int8_t prevActivePlayer;
   
   bool playerMadeMove;
-  bool promptChanged;
+
   bool countdownStarted;
   bool waitingOnEndGameContinue;
   bool drawBoard;
+  bool isViewing[PLAYER_MAX];
 
   int8_t currentLocalPlayer;
   bool localPlayerIsActive;
@@ -107,8 +113,6 @@ typedef struct {
   char name[9];
 } LocalPlayer;
 
-
-
 typedef struct {
   bool seenHelp;
   uint8_t color;
@@ -120,12 +124,12 @@ typedef struct {
 } PrefsStruct;
 
 
-extern uint16_t rx_len, maxJifs;
-extern bool forceReadyUpdates;
+extern uint16_t maxJifs;
 extern char tempBuffer[128];
 extern char serverEndpoint[50];
 extern char localServer[];
 
+extern ClientStateT clientState;
 extern GameState state;
 extern InputStruct input;
 extern PrefsStruct prefs;

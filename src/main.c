@@ -30,12 +30,12 @@ char serverEndpoint[50] = "https://fujitzee.carr-designs.com/";
 // set 3rd byte in the e41c0300 appkey to 0xff, which will cause the below endpoing to be used
 char localServer[] = "http://127.0.0.1:8080/"; 
 
+ClientStateT clientState;
 GameState state;
 PrefsStruct prefs;
 
 // State helper vars
-uint16_t rx_len, maxJifs;
-bool forceReadyUpdates;
+uint16_t maxJifs;
 
 // Common local scope temp variables
 unsigned char h, i, j, k, x, y;

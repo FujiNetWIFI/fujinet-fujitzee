@@ -424,8 +424,8 @@ void showTableSelectionScreen() {
       centerText(20, tempBuffer);
     }
 
-    if (state.tableCount>0) {
-      for(i=0;i<state.tableCount;++i) {
+    if (clientState.tables.count>0) {
+      for(i=0;i<clientState.tables.count;++i) {
         drawSpace(6,9+i*2,WIDTH-8);
       }
     }
@@ -440,20 +440,18 @@ void showTableSelectionScreen() {
     
     //waitvsync();
 
-    state.tableCount = 0;
-    if (apiCall("tables")) { 
-      updateState(true);
-    }
+    clientState.tables.count = 0;
+    apiCall("tables");
 
-    if (state.tableCount>0) {
+    if (clientState.tables.count>0) {
       drawSpace(6,12, WIDTH-12);
-      for(i=0;i<state.tableCount;++i) {
-        table = &state.tables[i];        
+      for(i=0;i<clientState.tables.count;++i) {
+        table = &clientState.tables.table[i];        
         j=9+i*2;
-        k=WIDTH-6-strlen(table->players);
+        k=WIDTH/2+14-strlen(table->players);
         
         drawTextAlt(k, j, table->players);
-        drawTextAlt(6,j, table->name);
+        drawTextAlt(WIDTH/2-14,j, table->name);
         
         if (table->players[0]>'0') {
           drawIcon(k-2, j, ICON_PLAYER);
@@ -474,12 +472,12 @@ void showTableSelectionScreen() {
     }
     #endif
     
-    shownChip=!state.tableCount;
+    shownChip=!clientState.tables.count;
 
     clearCommonInput();
-    while (!input.trigger || !state.tableCount) {
+    while (!input.trigger || !clientState.tables.count) {
 
-      if (state.tableCount) {
+      if (clientState.tables.count) {
         drawIcon(4,9+tableIndex*2, altChip<50 ? ICON_MARK : ICON_MARK_ALT);
       } 
 
@@ -513,19 +511,19 @@ void showTableSelectionScreen() {
         drawStatusText(tempBuffer);
       }*/
       
-      if (!shownChip || (state.tableCount>0 && input.dirY)) {
+      if (!shownChip || (clientState.tables.count>0 && input.dirY)) {
         // Visually unselect old table
-        table = &state.tables[tableIndex];
+        table = &clientState.tables.table[tableIndex];
         j=9+tableIndex*2;
         drawBlank(4,j);
         drawTextAlt(6,j, table->name);
         drawTextAlt(WIDTH-6-strlen(table->players), j, table->players);
 
         // Move table index to new table
-        tableIndex = (input.dirY+tableIndex+state.tableCount) % state.tableCount;
+        tableIndex = (input.dirY+tableIndex+clientState.tables.count) % clientState.tables.count;
 
         // Visually select new table
-        table = &state.tables[tableIndex];
+        table = &clientState.tables.table[tableIndex];
         j=9+tableIndex*2;
         drawIcon(4,j, ICON_MARK);
         drawText(6,j, table->name);
@@ -545,10 +543,10 @@ void showTableSelectionScreen() {
 
       // Clear screen and write server name
       resetScreenWithBorder();
-      centerText(15, state.tables[tableIndex].name);
+      centerText(15, clientState.tables.table[tableIndex].name);
       
       strcpy(query, "?table=");
-      strcat(query, state.tables[tableIndex].table);
+      strcat(query, clientState.tables.table[tableIndex].table);
       strcpy(tempBuffer, serverEndpoint);
       strcat(tempBuffer, query);
 
@@ -621,7 +619,7 @@ void showInGameMenuScreen() {
     drawTextAlt(INGAME_MENU_X,y+=2, "ESC: keep playing"); 
     
     strcpy(tempBuffer,  "CURRENTLY AT ");
-    strcat(tempBuffer, state.serverName);
+    strcat(tempBuffer, clientState.game.serverName);
 
     centerTextAlt(y+6, tempBuffer);
 
