@@ -1,19 +1,10 @@
-#ifdef _CMOC_VERSION_
-#include <cmoc.h>
-#else
-#include <string.h>
-#endif /* CMOC_VERSION */
 #include <stdlib.h>
-#define POKE(addr,val)     (*(unsigned char*) (addr) = (val))
-#define POKEW(addr,val)    (*(unsigned*) (addr) = (val))
-#define PEEK(addr)         (*(unsigned char*) (addr))
-#define PEEKW(addr)        (*(unsigned*) (addr))
-#include<stdio.h>
+#include <string.h>
 #include "stateclient.h"
 #include "misc.h"
 #include "fujinet-network.h"
 
-char rx_buf[1024];     // buffer for payload
+char rx_buf[1024];   // buffer for payload
 
 // Internal to this file
 static char url[160];
@@ -21,7 +12,16 @@ static char url[160];
 //static uint16_t rx_pos=0;
 char *requestedMove;
 
+
+// Size: 23872-22322 = 1550
 void updateState(bool isTables) {
+  #ifdef _CMOC_VERSION_
+  uint16_t i;
+
+  for (i=0;i<512;i++) {
+    rx_buf[i] = i%256;
+  }
+  #else
   static char *line, *nextLine, *end, *key, *value, *parent, *arrayPart;
   static bool isKey, inArray;
   static unsigned int i;
@@ -178,6 +178,7 @@ void updateState(bool isTables) {
     isKey = !isKey;
     line=nextLine;
   }  
+  #endif
  
 }
 
@@ -192,6 +193,11 @@ uint8_t apiCall(char *path) {
   static int16_t n;
   static char* buf;
   static char *query;
+
+  #if _CMOC_VERSION_
+  rx_len=0;
+  return API_CALL_ERROR;
+  #endif
 
   strcpy(url, "n:");
   strcat(url, serverEndpoint);

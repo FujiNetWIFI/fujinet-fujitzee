@@ -1,19 +1,8 @@
 #ifndef MISC_H
 #define MISC_H
-/* 
- * Include CC65 style Joystick defines for Adam - There is a probably a better way to do this.
- */
 
-#ifdef _CMOC_VERSION_
-#include "coco/joystick.h"
-#else
-#ifdef __ADAM__
-#include "adam/joystick.h"
-#else
 #include <joystick.h>
 #include <conio.h>
-#endif /* __ADAM__ */
-#endif /* _CMOC_VERSION_ */
 #include "platform-specific/graphics.h"
 #include "platform-specific/input.h"
 #include <stdbool.h>
@@ -33,6 +22,8 @@
 #define PLAYER_MAX 12
 
 #define FUJITZEE_SCORE 14
+
+//todo - binary enable state
 
 typedef struct {
   char* table;

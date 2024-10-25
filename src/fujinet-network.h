@@ -7,13 +7,30 @@
 #ifndef FUJINET_NETWORK_H
 #define FUJINET_NETWORK_H
 
-#ifdef _CMOC_VERSION_
-#include <cmoc.h>
-#include <coco.h>
-#else
+
 #include <stdint.h>
 #include <stdbool.h>
-#endif /* _CMOC_VERSION_ */
+
+#ifdef __CBM__
+
+// For DATA transfers, we want to undo some of the charmap settings in CC65.
+// So map the characters in the range 5b-60, 7b-7f back to themselves, as we want to send them as-is to FujiNet.
+// This undoes some "look alike" character that move into 0x80+ range, which in FN are converted to 3 byte utf-8 chars incorrectly.
+
+#pragma charmap (0x5B, 0x5B)
+#pragma charmap (0x5C, 0x5C)
+#pragma charmap (0x5D, 0x5D)
+#pragma charmap (0x5E, 0x5E)
+#pragma charmap (0x5F, 0x5F)
+#pragma charmap (0x60, 0x60)
+#pragma charmap (0x7B, 0x7B)
+#pragma charmap (0x7C, 0x7C)
+#pragma charmap (0x7D, 0x7D)
+#pragma charmap (0x7E, 0x7E)
+#pragma charmap (0x7F, 0x7F)
+
+#endif
+
 
 /**
  * The number of bytes read in the last call to network_read().
@@ -82,12 +99,12 @@ uint8_t network_open(char* devicespec, uint8_t mode, uint8_t trans);
  * @brief  Non-blocking read from channel
  * 
  * The read will grab whatever is waiting in the FujiNet buffer. If fewer than the requested len, the return count will reflect this.
- * Errors are returned as the negative value of the error.
+ * Errors are returned as the negative value of the FUJI standard error. fn_network_error contains the device specific error code. fn_bytes_read will be 0 on errors.
  * 
  * @param  devicespec pointer to device specification, e.g. "N1:HTTPS://fujinet.online/"
  * @param  buf Buffer
  * @param  len length
- * @return Bytes read, or negative value of fujinet-network error code (See FN_ERR_* values)
+ * @return Bytes read, or negative value of fujinet-network error code (See FN_ERR_* values) with fn_network_error containing real error code
  */
 int16_t network_read_nb(char* devicespec, uint8_t *buf, uint16_t len);
 
@@ -96,12 +113,12 @@ int16_t network_read_nb(char* devicespec, uint8_t *buf, uint16_t len);
  * 
  * The read will block until it has read all the bytes requested from the device, or the EOF is hit.
  * This will block waiting for as much data as it can, so that the client does not need to handle counting.
- * Errors are returned as the negative value of the error.
+ * Errors are returned as the negative value of the error. fn_network_error contains the device specific error code. fn_bytes_read will contain the count of bytes read before error occurred.
  * 
  * @param  devicespec pointer to device specification, e.g. "N1:HTTPS://fujinet.online/"
  * @param  buf Buffer
  * @param  len length
- * @return Bytes read, or negative value of fujinet-network error code (See FN_ERR_* values)
+ * @return Bytes read, or negative value of fujinet-network error code (See FN_ERR_* values) with fn_network_error containing real error code
  */
 int16_t network_read(char* devicespec, uint8_t *buf, uint16_t len);
 
@@ -185,14 +202,26 @@ uint8_t network_http_add_header(char *devicespec, char *header);
 
 
 /**
- * @brief  Send POST HTTP request
+ * @brief  Send POST HTTP request - assumes data is a string with nul terminator. This will not be able to send the 00 byte
  * @param  devicespec pointer to device specification, e.g. "N1:HTTPS://fujinet.online/"
- * @param  data data to post
+ * @param  data text data to post
  * @return fujinet-network error code (See FN_ERR_* values)
  * 
  * Assumes an open connection.
  */
 uint8_t network_http_post(char *devicespec, char *data);
+
+
+/**
+ * @brief  Send POST HTTP request, sends binary data from data location for length len, which allows sending arbitrary binary data
+ * @param  devicespec pointer to device specification, e.g. "N1:HTTPS://fujinet.online/"
+ * @param  data binary data to post
+ * @param  len length of binary data to send
+ * @return fujinet-network error code (See FN_ERR_* values)
+ * 
+ * Assumes an open connection.
+ */
+uint8_t network_http_post_bin(char *devicespec, uint8_t *data, uint16_t len);
 
 /**
  * @brief  Send PUT HTTP request
@@ -214,6 +243,63 @@ uint8_t network_http_put(char *devicespec, char *data);
  */
 uint8_t network_http_delete(char *devicespec, uint8_t trans);
 
+/**
+ * @brief  Internal routine to get the network UNIT id from the devicespec, i.e. Nx: find the "x" value
+ * @param  devicespec pointer to device specification, e.g. "N1:HTTPS://fujinet.online/"
+ * @return unit number
+ * 
+ */
+uint8_t network_unit(char *devicespec);
+
+/**
+ * @brief Delete file from FS endpoint (e.g. TNFS, FTP, HTTPS, SMB)
+ * @param devicespec Pointer to device specification e.g. "N1:TNFS://TMA-2/foo.txt"
+ * @return fujinet-network error code (see FN_ERR_* values)
+ */
+uint8_t network_fs_delete(char *devicespec);
+
+/**
+ * @brief Rename file on FS endpoint (e.g. TNFS, FTP, HTTPS, SMB)
+ * @param devicespec Pointer to device specification, with new name after comma, e.g. "N1:TNFS://TMA-2/foo.txt,bar.txt"
+ * @return fujinet-network error code (see FN_ERR_* values)
+ */
+uint8_t network_fs_rename(char *devicespec);
+
+/**
+ * @brief Lock file (make read only) on FS (e.g. TNFS, FTP, HTTPS, SMB)
+ * @param devicespec Pointer to device specification "N1:TNFS://TMA-2/foo.txt"
+ * @return fujinet-network error code (see FN_ERR_* values)
+ */
+uint8_t network_fs_lock(char *devicespec);
+
+/**
+ * @brief Unlock file (make read/write) on FS (e.g. TNFS, FTP, HTTPS, SMB)
+ * @param devicespec Pointer to device specification "N1:TNFS://TMA-2/foo.txt"
+ * @return fujinet-network error code (see FN_ERR_* values)
+ */
+uint8_t network_fs_unlock(char *devicespec);
+
+/**
+ * @brief Make directory on FS (e.g. TNFS, FTP, HTTPS, SMB)
+ * @param devicespec pointer to devicespec "N1:TNFS://TMA-2/newdir"
+ * @return fujinet-network error code (see FN_ERR_* values)
+ */
+uint8_t network_fs_mkdir(char *devicespec);
+
+/**
+ * @brief Remove directory on FS (e.g. TNFS, FTP, HTTPS, SMB)
+ * @param devicespec pointer to devicespec "N1:TNFS://TMA-2/newdir"
+ * @return fujinet-network error code (see FN_ERR_* values)
+ * @verbose Directory must be empty!
+ */
+uint8_t network_fs_rmdir(char *devicespec);
+
+/**
+ * @brief Change directory on FS (e.g. TNFS, FTP, HTTPS, SMB)
+ * @param devicespec Pointer to devicespec "N1:TNFS://TMA-2/dir"
+ * @return fujinet-network error code (see FN_ERR_* values)
+ */
+uint8_t network_fs_cd(char *devicespec);
 
 #define FN_ERR_OK               (0x00)      /* No error */
 #define FN_ERR_IO_ERROR         (0x01)      /* There was IO error/issue with the device */
@@ -235,6 +321,8 @@ uint8_t network_http_delete(char *devicespec, uint8_t trans);
 #define OPEN_MODE_HTTP_PUT_H    (0x0E)
 #define OPEN_MODE_HTTP_DELETE   (0x05)
 #define OPEN_MODE_HTTP_DELETE_H (0x09)
+
+#define CHANNEL_MODE_JSON       (0xFC)
 
 #define OPEN_TRANS_NONE         (0x00)
 #define OPEN_TRANS_CR           (0x01)

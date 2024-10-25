@@ -3,19 +3,21 @@
 FUJINET_LIB_VERSION := 4.6.1
 
 # ///////////////////////////////////////////////////////////////////////////////
-
+CURRENT_TARGET ?=$(TARGET)
 FUJINET_LIB = ./_libs
 FUJINET_LIB_VERSION_DIR = $(FUJINET_LIB)/$(FUJINET_LIB_VERSION)-$(CURRENT_TARGET)
-FUJINET_LIB_PATH = $(FUJINET_LIB_VERSION_DIR)/fujinet-$(CURRENT_TARGET)-$(FUJINET_LIB_VERSION).lib
+FUJINET_LIB_NAME = fujinet-$(CURRENT_TARGET)-$(FUJINET_LIB_VERSION).lib
+FUJINET_LIB_PATH = $(FUJINET_LIB_VERSION_DIR)/$(FUJINET_LIB_NAME)
 
 FUJINET_LIB_DOWNLOAD_URL = https://github.com/FujiNetWIFI/fujinet-lib/releases/download/v$(FUJINET_LIB_VERSION)/fujinet-lib-$(CURRENT_TARGET)-$(FUJINET_LIB_VERSION).zip
 FUJINET_LIB_DOWNLOAD_FILE = $(FUJINET_LIB)/fujinet-lib-$(CURRENT_TARGET)-$(FUJINET_LIB_VERSION).zip
 
-
 ifneq ($(OS),Windows_NT) 
 	CHECK_LIB_AVAIL = $(shell curl -Is $(FUJINET_LIB_DOWNLOAD_URL) | head -n 1)
+	MKDIR = mkdir -p $1
 else
 	CHECK_LIB_AVAIL = $(shell curl -Is $(FUJINET_LIB_DOWNLOAD_URL) | find "HTTP/")
+	MKDIR = mkdir $(subst /,\,$1)
 endif
 
 IS_LIB_NOT_FOUND = $(if $(findstring 404,$(CHECK_LIB_AVAIL)),yes,no)

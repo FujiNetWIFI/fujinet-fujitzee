@@ -5,17 +5,11 @@
  * @verbose main
  */
 
-#ifdef _CMOC_VERSION_
-#include <cmoc.h>
-typedef unsigned char bool;
-#define false 0
-#define true 1
-#else
+
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
-#endif /* _CMOC_VERSION_ */
 
 #include "platform-specific/graphics.h"
 #include "platform-specific/util.h"
@@ -49,19 +43,14 @@ char tempBuffer[128];
 
 extern void toneFinder();
 
-#ifdef _CMOC_VERSION_
-int main(void)
-#else
 void main(void)
-#endif /* _CMOC_VERSION_ */
 {
   uint8_t failedApiCalls=0;
   
   //toneFinder();
-
+  
   initGraphics(); 
   initSound();
-  
   
   showWelcomeScreen();
   showTableSelectionScreen();
@@ -116,7 +105,4 @@ void main(void)
     processInput();
   }
 
-#ifdef _CMOC_VERSION_
-  return 0;
-#endif /* CMOC_VERSION_  */
 }

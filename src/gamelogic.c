@@ -7,7 +7,6 @@
 #include "misc.h"
 #include "stateclient.h"
 #include "screens.h"
-#include <stdio.h>
 #include <peekpoke.h>
 
 #define PLAYER_LIST_Y_OFFSET 5

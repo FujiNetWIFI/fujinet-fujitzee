@@ -1,0 +1,104 @@
+# NOTE: Update the CMOC_SRC to the cmoc source directory to include its own <..> header files
+
+CMOC_SRC := ~/Documents/projects/cmoc-0.1.88/src
+
+TARGET_EXEC = fujitzee
+VERSION = 1.0.0
+TARGET = coco
+
+BUILD_DIR ?= ./build
+SRC_DIRS ?= ./src
+
+CC=cmoc
+ASM=lwasm
+
+SRCS := $(shell ls $(SRC_DIRS)/*.c) $(shell find $(SRC_DIRS)/coco -name *.c) $(shell find $(SRC_DIRS)/coco -name *.s)
+OBJS := $(SRCS:%=$(BUILD_DIR)/%.o) 
+DEPS := $(OBJS:.o=.d)
+
+# Required libraries.
+
+# this downloads fujinet-lib and populates FUJINET_LIB_VERSION_DIR and FUJINET_LIB_NAME
+include fujinet-lib.mk
+
+LIBS = \
+	-L support/coco/bcontrol -lbcontrol \
+	-L $(FUJINET_LIB_VERSION_DIR) -l:$(FUJINET_LIB_NAME) 
+	
+
+ASFLAGS = 
+
+CFLAGS= \
+			-I $(CMOC_SRC) \
+			-I src/include \
+			-I $(FUJINET_LIB_VERSION_DIR) \
+			--$(TARGET) \
+			--intdir ./intermediates \
+			--stack-space=512 \
+			-fomit-frame-pointer \
+			-O2 \
+			--raw
+#			--check-null \
+#			-D_CMOC_CHECK_STACK_OVERFLOW_ --check-stack\
+
+
+LDFLAGS= 			--$(TARGET) \
+	-o$(TARGET_EXEC).app \
+	-I $(CMOC_SRC) \
+	--limit=7DFF \
+	--org=1A00
+
+
+LDFLAGS_TEST= 			--$(TARGET) \
+	-o$$(TARGET_EXEC).app
+
+INC_DIRS := $(shell find $(SRC_DIRS) -type d)
+INC_FLAGS := $(addprefix -I,$(INC_DIRS))
+
+DSK = $(TARGET_EXEC).dsk
+
+$(BUILD_DIR)/$(TARGET_EXEC): clean .get_fujinet_lib $(OBJS)
+	$(CC) $(LDFLAGS) $(OBJS) $(LIBS)
+	
+# Prepare Disk
+	$(RM) $(DSK)
+	decb dskini $(DSK)
+	install-coco-boot-loader $(DSK) support/coco/loader.bin
+#	split -a1 -n6 -d $(TARGET_EXEC).app $(TARGET_EXEC).aa
+#	for f in $(TARGET_EXEC).aa*; do writecocofile $(DSK) $$f; done
+	writecocofile $(DSK) $(TARGET_EXEC).app 
+
+# Normal Method without loader.bin
+#	decb copy -t -0 support/coco/autoexec.bas $(DSK),AUTOEXEC.BAS
+#	writecocofile $(DSK) $(TARGET_EXEC).bin
+
+	
+ifeq ($(OS),Windows_NT) 
+	@echo ........................................................................ & dir $(TARGET_EXEC).app | find "$(TARGET_EXEC).app" &echo ........................................................................
+else
+	@echo ........................................................................ ;ls -l $(TARGET_EXEC).app;echo ........................................................................
+endif
+#	cd ~/mame_coco;mame coco3 -window -debug -natural -autoboot_delay 1 -autoboot_command "dos\n" -flop1 $(CURDIR)/$(DSK)
+	cd ~/mame_coco;mame coco -window -natural -autoboot_delay 2 -autoboot_command "dos\n" -flop1 $(CURDIR)/$(DSK)
+#	-killall -q wine64-preloader;wine64 ~/Downloads/vcc-2.1.9.0/vcc.exe $(TARGET_EXEC).bin
+
+# c source
+$(BUILD_DIR)/%.c.o: %.c
+	$(MKDIR_P) intermediates
+	$(MKDIR_P) $(dir $@)
+	$(CC) $(CFLAGS) -o $@ -c $<
+
+# assy source
+$(BUILD_DIR)/%.s.o: %.s
+	$(MKDIR_P) $(dir $@)
+	$(ASM) $(ASFLAGS) -fobj --output=$@ $<
+
+.PHONY: clean
+
+clean:
+	$(RM) -r $(TARGET_EXEC).*
+	$(RM) -r $(BUILD_DIR)*
+
+-include $(DEPS)
+
+MKDIR_P ?= mkdir -p

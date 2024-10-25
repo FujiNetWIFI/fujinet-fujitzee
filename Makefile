@@ -13,7 +13,7 @@
 # Space or comma separated list of cc65 supported target platforms to build for.
 
 # Supported targets: atari c64 apple2 (lowercase!)
-TARGETS := apple2
+TARGETS := atari
  
 # Name of the final, single-file executable.
 # Default: name of the current dir with target name appended
@@ -374,7 +374,7 @@ ifeq ($(OS),Windows_NT)
 	cmd /c "start C:\Projects\apple-fujinet\fnpc-apple2\fujinet.exe"
 	copy support\apple2\dist\bootable.po support\apple2\dist\$(PROGRAM_STUB).po
 else
-	killall -q wine64-preloader
+	-killall -q wine64-preloader
 	cp $(APPLE2_DIST_PO) $(PROGRAM_STUB).po
 endif
 	java -jar "$(APPLE2_DIST_AC)" -p "$(PROGRAM_STUB).po" $(PROGRAM_STUB).system sys <"$(APPLE2_DIST_LOADER)"

@@ -58,16 +58,6 @@
 #undef KEY_RETURN
 #define KEY_RETURN       CH_ENTER
 
-/*
-  Mapping for converting incoming ALT letters to a standard case
-*/
-
-#define LINE_ENDING 0x0A
-#define ALT_LETTER_START 0x61
-#define ALT_LETTER_END 0x7A
-#define ALT_LETTER_AND 0x5f
-
-
 #endif /* KEYMAP_H */
 
 #endif /* __ATARI__ */

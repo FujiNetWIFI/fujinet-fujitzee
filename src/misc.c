@@ -1,18 +1,5 @@
-/* 
- * Include CC65 style Joystick defines for Adam - There is a probably a better way to do this.
- */
-
-#ifdef _CMOC_VERSION_
-#include "coco/joystick.h"
-#else
-#ifdef __ADAM__
-#include "adam/joystick.h"
-#else
 #include <joystick.h>
-#include <stdio.h>
 #include <string.h>
-#endif /* __ADAM__ */
-#endif /* _CMOC_VERSION_ */
 #include "platform-specific/graphics.h"
 #include "platform-specific/input.h"
 #include "platform-specific/sound.h"
@@ -25,6 +12,10 @@
 InputStruct input;
 unsigned char _lastJoy, _joy, _joySameCount=10;
 bool _buttonReleased=true;
+
+#ifndef JOY_BTN_2_MASK
+#define JOY_BTN_2_MASK JOY_BTN_1_MASK
+#endif
 
 void pause(unsigned char frames) {
   while(frames--)
@@ -59,7 +50,7 @@ void readCommonInput() {
       input.dirY = 1;
 
     // Trigger button press only if it was previously unpressed
-    if (JOY_BTN_1(_joy)) {
+    if (JOY_BTN_1(_joy) || JOY_BTN_2(_joy)) {
       if (_buttonReleased) {
         input.trigger=true;
         _buttonReleased=false;
@@ -136,11 +127,13 @@ void savePrefs() {
 
 
 uint16_t read_appkey(uint16_t creator_id, uint8_t app_id, uint8_t key_id, char* destination) {
-  static uint16_t read;
-
+  uint16_t read=0;
+  
+  #ifndef _CMOC_VERSION_
   fuji_set_appkey_details(creator_id, app_id, DEFAULT);
   if (!fuji_read_appkey(key_id, &read, (uint8_t*)destination))
     read=0;
+  #endif
 
   // Add string terminator after the data ends in case it is being interpreted as a string
   destination[read] = 0;
@@ -149,6 +142,8 @@ uint16_t read_appkey(uint16_t creator_id, uint8_t app_id, uint8_t key_id, char* 
  
 void write_appkey(uint16_t creator_id, uint8_t app_id, uint8_t key_id,  uint16_t count, char *data)
 {
+  #ifndef _CMOC_VERSION_
   fuji_set_appkey_details(creator_id, app_id, DEFAULT);
   fuji_write_appkey(key_id, count, (uint8_t*)data);
+  #endif
 }

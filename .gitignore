@@ -17,7 +17,6 @@ AppleWin.log
 
 # Libraries
 *.lib
-*.a
 *.la
 *.lo
 
@@ -27,12 +26,7 @@ AppleWin.log
 _libs
 
 # Generated files
-*.apl
-*.xex
-*.prg
-*.map
-*.lbl
-*.po
+fujitzee.*
 
 # Project specific ignores
 gen/gencharset

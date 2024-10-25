@@ -1,8 +1,4 @@
-#ifdef _CMOC_VERSION_
-#include <cmoc.h>
-#else
 #include <stdlib.h>
-#endif /* _CMOC_VERSION_ */
 #include "stateclient.h"
 #include "screens.h"
 #include "misc.h"
@@ -31,6 +27,7 @@ void saveScreen() {
 void restoreScreen() {
   inBorderedScreen=prevBorderedScreen;
   restoreScreenBuffer();
+  //TODO - handle lack of save/restore-
 }
 
 void resetScreenNoBorder() {
@@ -62,8 +59,8 @@ void showHelpScreen() {
   
   resetScreenWithBorder();
 
-  drawTextAlt(10,1,"how to play fujitzee");
-  drawLine(10,2,20);
+  drawTextAlt(WIDTH/2-10,1,"how to play fujiTZEE");
+  drawLine(WIDTH/2-10,2,20);
   y=3;
 
                    //1234567890123456789012345678901234567890
@@ -80,57 +77,59 @@ void showHelpScreen() {
   // y++;drawText(5,y, "score categories are filled, and");
   // y++;drawText(5,y, "the player with the highest total");
   // y++;drawText(5,y, "score at the end wins!");
+
+  // 1400 bytes or so
                       //1234567890123456789012345678901234567890
-  y++;drawTextAlt(3,y, "TAKE TURNS ROLLING DICE UP TO three");
-  y++;drawTextAlt(3,y, "TIMES PER turn TO GET COMBINATIONS");
-  y++;drawTextAlt(3,y, "LIKE A set, full house, OR run.");
-  y++;
-  y++;drawTextAlt(3,y, "score YOUR COMBO TO EARN POINTS.");
-  y++;
-  y++;drawTextAlt(3,y, "PLAY CONTINUES FOR 13 ROUNDS UNTIL");
-  y++;drawTextAlt(3,y, "THE SCORESHEET IS FILLED.");
+  // y++;drawTextAlt(3,y, "TAKE TURNS ROLLING DICE UP TO three");
+  // y++;drawTextAlt(3,y, "TIMES PER turn TO GET COMBINATIONS");
+  // y++;drawTextAlt(3,y, "LIKE A set, full house, OR run.");
+  // y++;
+  // y++;drawTextAlt(3,y, "score YOUR COMBO TO EARN POINTS.");
+  // y++;
+  // y++;drawTextAlt(3,y, "PLAY CONTINUES FOR 13 ROUNDS UNTIL");
+  // y++;drawTextAlt(3,y, "THE SCORESHEET IS FILLED.");
   
-  y++;
-  y++;drawTextAlt(3,y, "THE PLAYER WITH THE highest TOTAL");
-  y++;drawTextAlt(3,y, "SCORE WINS THE GAME!");
+  // y++;
+  // y++;drawTextAlt(3,y, "THE PLAYER WITH THE highest TOTAL");
+  // y++;drawTextAlt(3,y, "SCORE WINS THE GAME!");
 
-  y++;y++;
-  centerTextAlt(y, "turn steps");
+  // y++;y++;
+  // centerTextAlt(y, "turn steps");
 
-  y+=2;drawTextAlt(7,y, "1. SELECT ANY DICE TO keep");
-  y++;drawTextAlt(7,y, "2. roll TO GET NEW DICE");
-  y++;drawTextAlt(7,y, "3. YOU MAY REPEAT STEPS 1-2");
-  y++;drawTextAlt(7,y, "4. CHOOSE YOUR score");
+  // y+=2;drawTextAlt(7,y, "1. SELECT ANY DICE TO keep");
+  // y++;drawTextAlt(7,y, "2. roll TO GET NEW DICE");
+  // y++;drawTextAlt(7,y, "3. YOU MAY REPEAT STEPS 1-2");
+  // y++;drawTextAlt(7,y, "4. CHOOSE YOUR score");
 
-  centerStatusText("PRESS ANY KEY FOR score INFO");
+  // centerStatusText("PRESS ANY KEY FOR score INFO");
 
-  clearCommonInput();
-  cgetc();
+  // clearCommonInput();
+  // cgetc();
 
-  resetScreenWithBorder();
+  // resetScreenWithBorder();
 
-  drawTextAlt(11,1,"scoring your rolls");
-  drawLine(11,2,18);
+  // drawTextAlt(11,1,"scoring your rolls");
+  // drawLine(11,2,18);
   
-  y=4;centerTextAlt(y, "upper scores");
-  y+=2;drawText(5,y, "total all dice that match the");
-  y++;drawText(5,y, "number");
+  // y=4;centerTextAlt(y, "upper scores");
+  // y+=2;drawText(5,y, "total all dice that match the");
+  // y++;drawText(5,y, "number");
 
-  y+=2;centerTextAlt(y, "upper bonus");
-  y+=2;drawTextAlt(5,y, "IF UPPER TOTAL IS 63 OR HIGHER");
-  y++;drawTextAlt(5,y, "YOU SCORE A bonus 35 POINTS");
+  // y+=2;centerTextAlt(y, "upper bonus");
+  // y+=2;drawTextAlt(5,y, "IF UPPER TOTAL IS 63 OR HIGHER");
+  // y++;drawTextAlt(5,y, "YOU SCORE A bonus 35 POINTS");
 
-  y+=3;centerTextAlt(y, "bottom scores");
-  y+=2;drawTextAlt(4,y, "set   - x OF A KIND - ADD ALL DICE");
-  y+=1;drawTextAlt(4,y, "house - FULL HOUSE - SET OF 2 AND 3");
-  y+=1;drawTextAlt(4,y, "run   - RUN OF x - EXAMPLE 12345");
-  y+=1;drawTextAlt(4,y, "count - SCORE TOTAL OF ALL DICE");
-  y+=1;drawTextAlt(4,y, "      - 5 OF A KIND");
-  drawFujzee(4,y);
+  // y+=3;centerTextAlt(y, "bottom scores");
+  // y+=2;drawTextAlt(4,y, "set   - x OF A KIND - ADD ALL DICE");
+  // y+=1;drawTextAlt(4,y, "house - FULL HOUSE - SET OF 2 AND 3");
+  // y+=1;drawTextAlt(4,y, "run   - RUN OF x - EXAMPLE 12345");
+  // y+=1;drawTextAlt(4,y, "count - SCORE TOTAL OF ALL DICE");
+  // y+=1;drawTextAlt(4,y, "      - 5 OF A KIND");
+  // drawFujzee(4,y);
 
   centerStatusText("press any key to close");
 
-  clearCommonInput();
+  //clearCommonInput();
   cgetc();
 }
 
@@ -164,11 +163,11 @@ void drawLogo(uint8_t x, uint8_t y)
 void showPlayerGroupScreen() {
   static bool showPlayers;
   resetScreenWithBorder();
-  drawBox(5,0,28,1);
-  drawTextAlt(6,1,"fujiTZEE: LOCAL PLAYER SETUP");
+  drawBox(WIDTH/2-10,0,18,1);
+  drawTextAlt(WIDTH/2-9,1,"LOCAL PLAYER SETUP");
   
-  centerText(5,"up to 4 players can play from the");
-  centerText(7,"the same system, sharing controls");
+  centerText(5,"up to 4 players can play on");
+  centerText(7,"one system, sharing controls");
 
   centerTextAlt(10,"PRESS 1-4 TO EDIT PLAYER");
 
@@ -252,14 +251,15 @@ void showPlayerNameScreen(uint8_t p) {
   }
 
   centerText(7, "enter your name:");
-  centerText(17,  "name must be at least 2 letters.");
+  centerText(15,  "your name must be");
+  centerText(16,  "at least 2 letters.");
 
   if (canDelete) {
-    centerTextAlt(20,"to REMOVE this player, press  ");
-    drawText(WIDTH/2+14,20,"/"); 
+    centerTextAlt(20,"to REMOVE player, press  ");
+    drawText(WIDTH/2+12,20,"/"); 
   }
-
-  drawBox(15,10,PLAYER_NAME_MAX+1,1);
+  
+  drawBox(WIDTH/2-5,10,PLAYER_NAME_MAX+1,1);
 
   // Copy name to local buffer in case 
   playerName=prefs.localPlayer[p].name;
@@ -269,7 +269,7 @@ void showPlayerNameScreen(uint8_t p) {
   clearCommonInput();
   while (true) {
 
-    while (!inputFieldCycle(16, 11, PLAYER_NAME_MAX, tempBuffer)) {
+    while (!inputFieldCycle(WIDTH/2-4, 11, PLAYER_NAME_MAX, tempBuffer)) {
 
       // Check if we are deleting this player (hitting / or cancelling a new player)
       if (canDelete && (
@@ -310,7 +310,7 @@ void showPlayerNameScreen(uint8_t p) {
     duplicateNames=false;
     for(i=0;i<prefs.localPlayerCount;i++) {
       if (i != p && strcmp(tempBuffer, prefs.localPlayer[i].name)==0) {
-        centerTextAlt(14,  "that name already exists! pick another");
+        centerTextAlt(13,  "that name already exists!");
         soundRelease();
         duplicateNames=true;
         break;
@@ -370,7 +370,7 @@ void showWelcomeScreen() {
 
   // Load preferences
   loadPrefs();
-  
+
   // Retrieve the main player's name
   welcomeActionVerifyPlayerName();
   
@@ -460,7 +460,7 @@ void showTableSelectionScreen() {
         }
       }
     } else {
-      centerText(12, "sorry, no servers are available");
+      centerText(12, "no servers are available");
     }
 
     centerStatusText("Refresh  Help  Players  Quit");
