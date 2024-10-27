@@ -30,7 +30,7 @@ char serverEndpoint[50] = "https://fujitzee.carr-designs.com/";
 // set 3rd byte in the e41c0300 appkey to 0xff, which will cause the below endpoing to be used
 char localServer[] = "http://127.0.0.1:8080/"; 
 
-ClientStateT clientState;
+ClientState clientState;
 GameState state;
 PrefsStruct prefs;
 
@@ -46,9 +46,26 @@ extern void toneFinder();
 void main(void)
 {
   uint8_t failedApiCalls=0;
-  
+
+  // Testing
   //toneFinder();
+  // strcpy(state.localPlayer[state.currentLocalPlayer].query, "?table=ai4&player=eric");
+  // apiCall("state");
+  // //printf(clientState.tables.table[0].name);
+  // printf(clientState.game.serverName);
+ 
+  // read_appkey(AK_LOBBY_CREATOR_ID, AK_LOBBY_APP_ID, AK_LOBBY_KEY_USERNAME, tempBuffer);
+  // printf("username: ");
+  // tempBuffer[8]=0;
+  // printf(tempBuffer);
   
+  // read_appkey(AK_LOBBY_CREATOR_ID, AK_LOBBY_APP_ID, 55, tempBuffer);
+  // printf("missing appkey: ");
+  // tempBuffer[8]=0;
+  // printf(tempBuffer);
+  // while(1);
+
+
   initGraphics(); 
   initSound();
   

@@ -129,11 +129,9 @@ void savePrefs() {
 uint16_t read_appkey(uint16_t creator_id, uint8_t app_id, uint8_t key_id, char* destination) {
   uint16_t read=0;
   
-  #ifndef _CMOC_VERSION_
   fuji_set_appkey_details(creator_id, app_id, DEFAULT);
   if (!fuji_read_appkey(key_id, &read, (uint8_t*)destination))
     read=0;
-  #endif
 
   // Add string terminator after the data ends in case it is being interpreted as a string
   destination[read] = 0;
@@ -142,8 +140,6 @@ uint16_t read_appkey(uint16_t creator_id, uint8_t app_id, uint8_t key_id, char* 
  
 void write_appkey(uint16_t creator_id, uint8_t app_id, uint8_t key_id,  uint16_t count, char *data)
 {
-  #ifndef _CMOC_VERSION_
   fuji_set_appkey_details(creator_id, app_id, DEFAULT);
   fuji_write_appkey(key_id, count, (uint8_t*)data);
-  #endif
 }

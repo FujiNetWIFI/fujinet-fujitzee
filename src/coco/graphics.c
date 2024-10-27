@@ -181,8 +181,9 @@ void resetScreen(bool forBorderScreen) {
   } else {
     // Moving from one border screen to next - just clear non border area
      hires_Mask(3,0,WIDTH-6,24,0);
-     hires_Mask(0,24,WIDTH,144,0);     
-     hires_Mask(3,168,WIDTH-6,24,0);
+     hires_Mask(0,24,WIDTH,168,0);
+     //hires_Mask(0,24,WIDTH,144,0);     
+     //hires_Mask(3,168,WIDTH-6,24,0);
   }
 }
 
@@ -296,7 +297,7 @@ void drawLine(unsigned char x, unsigned char y, unsigned char w) {
   } else {
     y=y*8-OFFSET_Y+1;
   }
-  hires_Mask(x,y,w,1, 0xff); 
+  hires_Mask(x,y,w,2, ROP_ORANGE); 
 }
 
 // 42653
@@ -358,7 +359,7 @@ void resetGraphics() {
 void waitvsync() {
   static uint16_t i;
   // Aproximate a jiffy for the timer countdown
-  for ( i=0;i<628;i++);
+  for ( i=0;i<705;i++);
 }
 
 #endif

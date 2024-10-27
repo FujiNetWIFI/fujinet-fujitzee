@@ -63,10 +63,12 @@ $(BUILD_DIR)/$(TARGET_EXEC): clean .get_fujinet_lib $(OBJS)
 # Prepare Disk
 	$(RM) $(DSK)
 	decb dskini $(DSK)
-	install-coco-boot-loader $(DSK) support/coco/loader.bin
+	cp $(TARGET_EXEC).app $(TARGET_EXEC).bin 
+#	install-coco-boot-loader $(DSK) support/coco/loader.bin
 #	split -a1 -n6 -d $(TARGET_EXEC).app $(TARGET_EXEC).aa
 #	for f in $(TARGET_EXEC).aa*; do writecocofile $(DSK) $$f; done
-	writecocofile $(DSK) $(TARGET_EXEC).app 
+#	writecocofile $(DSK) support/coco/loader.bin
+	writecocofile $(DSK) $(TARGET_EXEC).bin 
 
 # Normal Method without loader.bin
 #	decb copy -t -0 support/coco/autoexec.bas $(DSK),AUTOEXEC.BAS
@@ -78,8 +80,14 @@ ifeq ($(OS),Windows_NT)
 else
 	@echo ........................................................................ ;ls -l $(TARGET_EXEC).app;echo ........................................................................
 endif
-#	cd ~/mame_coco;mame coco3 -window -debug -natural -autoboot_delay 1 -autoboot_command "dos\n" -flop1 $(CURDIR)/$(DSK)
-	cd ~/mame_coco;mame coco -window -natural -autoboot_delay 2 -autoboot_command "dos\n" -flop1 $(CURDIR)/$(DSK)
+	cp $(CURDIR)/$(DSK) ~/Documents/fujinetpc-coco/SD/$(DSK)
+
+	cd ~/mame_coco;mame coco3 -window -nomaximize -resolution 1024x768 -natural -autoboot_delay 1 -autoboot_command "loadm\"fujitzee\":exec\n"
+#	cd ~/mame_coco;mame coco -window -nomaximize -resolution 1024x768 -natural -autoboot_delay 2 -autoboot_command "loadm\"fujitzee\":exec\n"
+
+#	cd ~/mame_coco;mame coco3 -window  -nomaximize -resolution 1024x768 -natural -autoboot_delay 1 
+
+#	cd ~/mame_coco;mame coco -window -natural -autoboot_delay 2 -autoboot_command "dos\n" -flop1 $(CURDIR)/$(DSK)
 #	-killall -q wine64-preloader;wine64 ~/Downloads/vcc-2.1.9.0/vcc.exe $(TARGET_EXEC).bin
 
 # c source

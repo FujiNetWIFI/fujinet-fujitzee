@@ -388,6 +388,10 @@ void showWelcomeScreen() {
 } 
 
 
+#define TWID 26
+#define RMAR WIDTH/2+TWID/2
+#define LMAR WIDTH/2-TWID/2
+
 /// @brief Shows a screen to select a table to join
 void showTableSelectionScreen() {
   static uint8_t shownChip, tableIndex, altChip;
@@ -426,7 +430,7 @@ void showTableSelectionScreen() {
 
     if (clientState.tables.count>0) {
       for(i=0;i<clientState.tables.count;++i) {
-        drawSpace(6,9+i*2,WIDTH-8);
+        drawSpace(LMAR,9+i*2,TWID);
       }
     }
     waitvsync();
@@ -434,9 +438,9 @@ void showTableSelectionScreen() {
     drawLogo(WIDTH/2-5,0);
     
     centerText(4, "choose a game to join");
-    drawText(6,7, "game");
-    drawText(WIDTH-13,7, "players");
-    drawLine(6,8,WIDTH-12);
+    drawText(LMAR,7, "game");
+    drawText(RMAR-7,7, "players");
+    drawLine(LMAR,8,TWID);
     
     //waitvsync();
 
@@ -444,14 +448,14 @@ void showTableSelectionScreen() {
     apiCall("tables");
 
     if (clientState.tables.count>0) {
-      drawSpace(6,12, WIDTH-12);
+      drawSpace(LMAR,12, TWID);
       for(i=0;i<clientState.tables.count;++i) {
         table = &clientState.tables.table[i];        
         j=9+i*2;
-        k=WIDTH/2+14-strlen(table->players);
+        k=RMAR-strlen(table->players);
         
         drawTextAlt(k, j, table->players);
-        drawTextAlt(WIDTH/2-14,j, table->name);
+        drawTextAlt(LMAR,j, table->name);
         
         if (table->players[0]>'0') {
           drawIcon(k-2, j, ICON_PLAYER);
@@ -478,7 +482,7 @@ void showTableSelectionScreen() {
     while (!input.trigger || !clientState.tables.count) {
 
       if (clientState.tables.count) {
-        drawIcon(4,9+tableIndex*2, altChip<50 ? ICON_MARK : ICON_MARK_ALT);
+        drawIcon(LMAR-2,9+tableIndex*2, altChip<50 ? ICON_MARK : ICON_MARK_ALT);
       } 
 
       waitvsync();
@@ -490,7 +494,7 @@ void showTableSelectionScreen() {
         showHelpScreen();
         restoreScreen();
       } else if (input.key == 'r' || input.key =='R') {
-        drawBlank(4,9+tableIndex*2);
+        drawBlank(LMAR-2,9+tableIndex*2);
         break;
       } else if (input.key == 'c' || input.key =='C') {
         prefs.color = cycleNextColor();
@@ -515,9 +519,9 @@ void showTableSelectionScreen() {
         // Visually unselect old table
         table = &clientState.tables.table[tableIndex];
         j=9+tableIndex*2;
-        drawBlank(4,j);
-        drawTextAlt(6,j, table->name);
-        drawTextAlt(WIDTH-6-strlen(table->players), j, table->players);
+        drawBlank(LMAR-2,j);
+        drawTextAlt(LMAR,j, table->name);
+        drawTextAlt(RMAR-5, j, table->players);
 
         // Move table index to new table
         tableIndex = (input.dirY+tableIndex+clientState.tables.count) % clientState.tables.count;
@@ -525,9 +529,9 @@ void showTableSelectionScreen() {
         // Visually select new table
         table = &clientState.tables.table[tableIndex];
         j=9+tableIndex*2;
-        drawIcon(4,j, ICON_MARK);
-        drawText(6,j, table->name);
-        drawText(WIDTH-6-strlen(table->players), j, table->players);
+        drawIcon(LMAR-2,j, ICON_MARK);
+        drawText(LMAR,j, table->name);
+        drawText(RMAR-5, j, table->players);
 
         soundCursor();
 

@@ -16,13 +16,9 @@ char *requestedMove;
  *  0 - error - aborted
 */
 uint8_t apiCall(char *path) {
-  static int16_t n;
+  static int16_t read;
   static char *query;
-
-  #if _CMOC_VERSION_
-  return API_CALL_ERROR;
-  #endif
-
+ 
   strcpy(url, "n:");
   strcat(url, serverEndpoint);
   strcat(url, path);
@@ -30,18 +26,16 @@ uint8_t apiCall(char *path) {
   strcat(url, query );
   strcat(url, query[0] ? "&bin=1" : "?bin=1");
   
-
-  // Network error. Reset position and abort.
   if (network_open(url, OPEN_MODE_HTTP_GET, OPEN_TRANS_NONE)) {
     return API_CALL_ERROR;
-  }
-
-  n = network_read(url, &clientState, sizeof(clientState));
+  } 
+  
+  read = network_read(url, &clientState.firstByte, sizeof(clientState.game));
   network_close(url);
 
-  if (n<=0) {
-    // Set first byte of clientState to 0
-    clientState.tables.count=0;
+  // If no bytes read, set first byte of clientState to 0, which is the number of tables or players
+  if (read<=0) { 
+    clientState.firstByte=0;
     return API_CALL_ERROR;
   }
 

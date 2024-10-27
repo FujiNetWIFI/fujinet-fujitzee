@@ -40,30 +40,32 @@ typedef struct {
 } Player;
 
 typedef struct {
-  union {
-    struct {
-      uint8_t count;
-      Table table[10];
-    } tables;
+  uint8_t count;
+  Table table[10];
+} Tables;
 
-    struct {
-      uint8_t playerCount;
-      char serverName [21];
-      char prompt     [41];
-      uint8_t round;
-      uint8_t rollsLeft;
-      int8_t activePlayer;
-      uint8_t moveTime;
-      uint8_t viewing;
-      char dice     [6];
-      char keepRoll [6];
-      int8_t validScores[15];
-      Player players[PLAYER_MAX];
-    } game;
-  };
-} ClientStateT;
+typedef struct {
+  uint8_t playerCount;
+  char serverName [21];
+  char prompt     [41];
+  uint8_t round;
+  uint8_t rollsLeft;
+  int8_t activePlayer;
+  uint8_t moveTime;
+  uint8_t viewing;
+  char dice     [6];
+  char keepRoll [6];
+  int8_t validScores[15];
+  Player players[PLAYER_MAX];
+} Game;
 
+typedef union {
+  uint8_t firstByte;
+  Game game;
+  Tables tables;
+} ClientState;
 
+extern ClientState clientState;
 
 typedef struct {
   char query[50]; //?table=12345678&pov=12345678&player=12345678
@@ -71,7 +73,6 @@ typedef struct {
 } LocalPlayerState;
 
 typedef struct {
-
   
   // Internal game state
   uint8_t rollFrames;
@@ -129,7 +130,6 @@ extern char tempBuffer[128];
 extern char serverEndpoint[50];
 extern char localServer[];
 
-extern ClientStateT clientState;
 extern GameState state;
 extern InputStruct input;
 extern PrefsStruct prefs;

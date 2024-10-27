@@ -13,7 +13,7 @@ void resetTimer() {
 }
 
 int getTime() {
-  jiffieTimer+=10;
+  jiffieTimer++;
   return jiffieTimer;
 }
 
