@@ -125,7 +125,7 @@ void showHelpScreen() {
   // y+=1;drawTextAlt(4,y, "run   - RUN OF x - EXAMPLE 12345");
   // y+=1;drawTextAlt(4,y, "count - SCORE TOTAL OF ALL DICE");
   // y+=1;drawTextAlt(4,y, "      - 5 OF A KIND");
-  // drawFujzee(4,y);
+  // drawFujitzee(4,y);
 
   centerStatusText("press any key to close");
 
@@ -658,16 +658,17 @@ void showInGameMenuScreen() {
           resetScreenWithBorder();
           centerText(10, "please wait");
 
-          // Inform server player is leaving
-          apiCallForAll("leave");
-          progressAnim(12);
-          
           //  Clear server app key in case of reboot 
           write_appkey(AK_LOBBY_CREATOR_ID,  AK_LOBBY_APP_ID, AK_LOBBY_KEY_SERVER,0, "");
-
+          
+          // Inform server player is leaving
+          apiCallForAll("leave");
+          
+          progressAnim(12);
           // Clear query so a new table will be selected
           strcpy(query,"");
           showTableSelectionScreen();
+
           return;
       }
     }

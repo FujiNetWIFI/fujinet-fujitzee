@@ -30,7 +30,7 @@ void drawChar(unsigned char x, unsigned char y, char c, unsigned char alt);
 
 void drawIcon(unsigned char x, unsigned char y, unsigned char icon);
 
-void drawFujzee(unsigned char x, unsigned char y);
+void drawFujitzee(unsigned char x, unsigned char y);
 void drawDie(unsigned char x, unsigned char y, unsigned char s, bool isSelected, bool isHighlighted);
 
 void drawClock(unsigned char x, unsigned char y);

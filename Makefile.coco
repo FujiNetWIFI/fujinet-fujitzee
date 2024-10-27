@@ -45,7 +45,7 @@ CFLAGS= \
 LDFLAGS= 			--$(TARGET) \
 	-o$(TARGET_EXEC).app \
 	-I $(CMOC_SRC) \
-	--limit=7DFF \
+	--limit=7D00 \
 	--org=1A00
 
 
@@ -63,12 +63,13 @@ $(BUILD_DIR)/$(TARGET_EXEC): clean .get_fujinet_lib $(OBJS)
 # Prepare Disk
 	$(RM) $(DSK)
 	decb dskini $(DSK)
-	cp $(TARGET_EXEC).app $(TARGET_EXEC).bin 
+	cp $(TARGET_EXEC).app f.bin 
+	writecocofile $(DSK) f.bin 
 #	install-coco-boot-loader $(DSK) support/coco/loader.bin
 #	split -a1 -n6 -d $(TARGET_EXEC).app $(TARGET_EXEC).aa
 #	for f in $(TARGET_EXEC).aa*; do writecocofile $(DSK) $$f; done
 #	writecocofile $(DSK) support/coco/loader.bin
-	writecocofile $(DSK) $(TARGET_EXEC).bin 
+#	writecocofile $(DSK) $(TARGET_EXEC).bin 
 
 # Normal Method without loader.bin
 #	decb copy -t -0 support/coco/autoexec.bas $(DSK),AUTOEXEC.BAS
@@ -82,8 +83,8 @@ else
 endif
 	cp $(CURDIR)/$(DSK) ~/Documents/fujinetpc-coco/SD/$(DSK)
 
-	cd ~/mame_coco;mame coco3 -window -nomaximize -resolution 1024x768 -natural -autoboot_delay 1 -autoboot_command "loadm\"fujitzee\":exec\n"
-#	cd ~/mame_coco;mame coco -window -nomaximize -resolution 1024x768 -natural -autoboot_delay 2 -autoboot_command "loadm\"fujitzee\":exec\n"
+	cd ~/mame_coco;mame coco3 -window -nomaximize -resolution 1024x768 -natural -autoboot_delay 1 -autoboot_command "loadm\"f\":exec\n"
+#	cd ~/mame_coco;mame coco -window -nomaximize -resolution 1024x768 -natural -autoboot_delay 2 -autoboot_command "loadm\"f\":exec\n"
 
 #	cd ~/mame_coco;mame coco3 -window  -nomaximize -resolution 1024x768 -natural -autoboot_delay 1 
 
@@ -106,6 +107,7 @@ $(BUILD_DIR)/%.s.o: %.s
 clean:
 	$(RM) -r $(TARGET_EXEC).*
 	$(RM) -r $(BUILD_DIR)*
+	cd support/coco/gen;make
 
 -include $(DEPS)
 

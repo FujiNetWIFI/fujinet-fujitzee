@@ -18,7 +18,11 @@
 #define GAMEOVER_PROMPT_Y HEIGHT-1
 
 #define COLOR_TOGGLE // Rather than multiple colors, platform only supports toggling color mode on/off
-
+#define QUERY_SUFFIX "" // No extra params for Apple 
+#define ROLL_X WIDTH-25
+#define TIMER_X 12
+#define TIMER_NUM_OFFSET_X 0
+#define TIMER_NUM_OFFSET_Y 0
 
 // Icons
 #define ICON_TEXT_CURSOR  0x22

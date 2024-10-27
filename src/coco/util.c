@@ -12,8 +12,8 @@ void resetTimer() {
   jiffieTimer=0;
 }
 
-int getTime() {
-  jiffieTimer++;
+uint16_t getTime() {
+  jiffieTimer+=10;
   return jiffieTimer;
 }
 

@@ -13,7 +13,8 @@
 #include "../misc.h" 
 #include <coco.h>
    
-#define enableInterrupts()  asm("ANDCC", "#$AF")
+//#define enableInterrupts()  asm("ANDCC", "#$AF")
+#define disableInterrupts() asm("ORCC",  "#$50")
 
 extern unsigned char charset[];
 #define OFFSET_Y 4
@@ -66,11 +67,40 @@ void setColorMode(unsigned char mode) {
   colorMode = mode; 
 }
 
+// Potentially use interrupt for timing
+// 0x985 - of note for disk
+
+// typedef interrupt void (*ISR)(void);
+
+// interrupt asm void irqISR(void)
+// {
+//     asm
+//     {
+// //_dskcon_irqService IMPORT
+//         ldb     $FF03
+//         bpl     @done           // do nothing if 63.5 us interrupt
+//         ldb     $FF02           // 60 Hz interrupt. Reset PIA0, port B interrupt flag.
+// @done //      lbsr    _dskcon_irqService
+//         rti
+//     }
+// }
+
+// void setISR(void *vector, ISR newRoutine)
+// {
+//     byte *isr = * (byte **) vector;
+//     *isr = 0x7E;  // JMP extended
+//     * (ISR *) (isr + 1) = newRoutine;
+// }
+
 void initGraphics() {
-  //enableInterrupts();
+  //disableInterrupts();
+  //setISR(0xFFF8, irqISR);
+  //enableInterrupts(); 
   
+  
+
   initCoCoSupport();
-  
+   
   //if (isCoCo3) {  }
 
   pmode(4, SCREEN);
@@ -120,10 +150,15 @@ void restoreScreenBuffer() {
 
 void drawText(unsigned char x, unsigned char y, char* s) {
   static unsigned char c;
-  y=y*8-OFFSET_Y; 
-  if (y==8*(HEIGHT-1)-OFFSET_Y) {
-    y=182;
-  } 
+  if (y==255)
+    y=scoreY[14]*8-OFFSET_Y+1;
+  else {
+    y=y*8-OFFSET_Y; 
+    if (y==8*(HEIGHT-1)-OFFSET_Y) {
+      y=182;
+    } 
+  }
+  
 
   while(c=*s++) {
     if (c>=97 && c<=122) c-=32; 
@@ -187,7 +222,7 @@ void resetScreen(bool forBorderScreen) {
   }
 }
 
-void drawDie(unsigned char x, unsigned char y, unsigned char s, bool isSelected, bool isHighlighted) {
+void drawDie(unsigned char x, unsigned char y, unsigned char s, bool isKept, bool isHighlighted) {
   static unsigned char i,j,rop;
   static const unsigned char *source;
 
@@ -205,7 +240,7 @@ void drawDie(unsigned char x, unsigned char y, unsigned char s, bool isSelected,
   source=diceChars + (s-1)*9 ; 
   
   // Is die being kept?
-  if (isSelected)
+  if (isKept)
     source+=54;
 
   // Draw the dice to the screen
@@ -222,7 +257,7 @@ void drawDie(unsigned char x, unsigned char y, unsigned char s, bool isSelected,
 
   for (i=0;i<3;i++) {
     for (j=0;j<3;j++) {
-      hires_Draw(x+j,y,1,8,rop,&charset[*(source++)<<3]);
+      hires_Draw(x+j,y,1,8,rop,&charset[(uint16_t)*(source++)<<3]);
     }
     y+=8;
   }
@@ -252,8 +287,8 @@ void drawBoard() {
   static uint8_t y,x;
 
   // Vertical lines
-  for (x=SCORES_X+9;x<40;x+=4) {
-    hires_Mask(x,0,1,160,0x84);
+  for (x=SCORES_X+9;x<32;x+=4) {
+    hires_Mask(x,0,1,160,0x20);
   }
 
   // Main scores box
@@ -261,17 +296,15 @@ void drawBoard() {
   drawBox(SCORES_X-1,2,5,17); 
  
   // Fix overlapping box corners 
-  drawChar(SCORES_X-1,2, 0x24, 0);
+  //drawChar(SCORES_X-1,2, 0x24, 0);
 
   // // Thin horz ines
-  hires_Mask(SCORES_X,9*8,29,1, 0xff); 
-  hires_Mask(SCORES_X,12*8,29,1, 0xff);
-  hires_Mask(0,5*8,SCORES_X-1,1, 0xff);  
+  hires_Mask(SCORES_X,9*8,29,1, 0xff & ROP_ORANGE); 
+  hires_Mask(SCORES_X,12*8,29,1, 0xff & ROP_ORANGE);
   
-
   // // Thick horz lines
-  hires_Mask(SCORES_X,2*8,29,2, 0xff); 
-  hires_Mask(SCORES_X,20*8-1,29,2, 0xff); 
+  hires_Mask(SCORES_X,2*8,29,2, 0xff & ROP_ORANGE); 
+  hires_Mask(SCORES_X,20*8-1,29,2, 0xff & ROP_ORANGE); 
   
 
   // // Score names (16 for end game score)
@@ -280,14 +313,12 @@ void drawBoard() {
   } 
   
   // // Fujitzee score text
-  drawFujzee(SCORES_X,scoreY[14]);
+  drawFujitzee(SCORES_X,255);
 }
 
-void drawFujzee(unsigned char x, unsigned char y) {
-  y=y*8-OFFSET_Y+1;
-  hires_putcc(x,y,ROP_CPY, 0x1b1c); 
-  hires_putcc(x+2,y,ROP_CPY, 0x1d1e);  
-  hires_putc(x+4,y,ROP_CPY, 0x1e);
+void drawFujitzee(unsigned char x, unsigned char y) {
+  char fujitzee[] = {0x1b, 0x1c, 0x1d, 0x1e, 0x1e, 0};
+  drawText(x,y,&fujitzee);
 }
 
 
@@ -330,22 +361,29 @@ void drawBox(unsigned char x, unsigned char y, unsigned char w, unsigned char h)
 }
 
 void drawDiceCursor(unsigned char x) {
-  // Top / Bottom
-  hires_Mask(x,190-28,3,2, 0x55); 
-  hires_Mask(x,190,3,2, 0x55);
+  if (x==ROLL_X-1)
+    x++;
 
-  hires_Mask(x+1,190-28,1,2, 0x2A); 
-  hires_Mask(x+1,190,1,2, 0x2A);
-  
   // Sides
-  hires_Mask(x-1,190-27,1,28,0x20);
-  hires_Mask(x+3,190-27,1,28,0x02);
+  hires_Mask(x-1,190-27,1,28,0x14);
+  hires_Mask(x+3,190-27,1,28,0x14);
+
+  // Top / Bottom
+  hires_Mask(x-1,190-28,5,2, ROP_BLUE); 
+  hires_Mask(x-1,190,5,2, ROP_BLUE);
+
+  // Corners
+  hires_Mask(x-1,190-28,1,2, 0x0f & ROP_BLUE); 
+  hires_Mask(x-1,190,1,2, 0x0f & ROP_BLUE);
+  hires_Mask(x+3,190-28,1,2, 0xf0 & ROP_BLUE); 
+  hires_Mask(x+3,190,1,2, 0xf0 & ROP_BLUE);
 }
 
 void hideDiceCursor(unsigned char x) {
-  //drawDiceCursorInternal(x,5);
-  hires_Mask(x,190-28,3,2, 0); 
-  hires_Mask(x,190,3,2, 0); 
+  if (x==ROLL_X-1)
+    x++;
+  hires_Mask(x-1,190-28,5,2, 0); 
+  hires_Mask(x-1,190,5,2, 0); 
   
   // Sides
   hires_Mask(x-1,190-27,1,28,0);

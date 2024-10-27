@@ -5,7 +5,7 @@
 
 bool reverse, initKeyboard=false;
 char ss[2] = {0,0};
-unsigned char lastKey=0;
+char lastKey=0;
 Keyboard keyboard;
 
 
@@ -15,14 +15,17 @@ unsigned char kbhit (void) {
     Keyboard_init(&keyboard);
   }
 
-  return lastKey=Keyboard_poll(&keyboard);
+  return lastKey=(char)Keyboard_poll(&keyboard);
 }
 
 char cgetc (void) {
+  static char key;
   if (!lastKey) {
     kbhit();
   }
-  return (char)lastKey;
+  key = lastKey;
+  lastKey=0;
+  return key;
 }
 
 #endif

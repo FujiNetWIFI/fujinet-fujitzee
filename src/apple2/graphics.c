@@ -263,10 +263,10 @@ void drawBoard() {
   } 
   
   // // Fujitzee score text
-  drawFujzee(SCORES_X,scoreY[14]);
+  drawFujitzee(SCORES_X,scoreY[14]);
 }
 
-void drawFujzee(unsigned char x, unsigned char y) {
+void drawFujitzee(unsigned char x, unsigned char y) {
   y=y*8-OFFSET_Y+1;
   hires_putcc(x,y,ROP_CPY, 0x1b1c); 
   hires_putcc(x+2,y,ROP_CPY, 0x1d1e);  
@@ -325,6 +325,7 @@ void drawDiceCursor(unsigned char x) {
 }
 
 void hideDiceCursor(unsigned char x) {
+  
   //drawDiceCursorInternal(x,5);
   hires_Mask(x,190-28,3,2, 0xa900); 
   hires_Mask(x,190,3,2, 0xa900); 

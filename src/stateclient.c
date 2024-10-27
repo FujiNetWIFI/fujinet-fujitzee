@@ -24,7 +24,7 @@ uint8_t apiCall(char *path) {
   strcat(url, path);
   query = state.localPlayer[state.currentLocalPlayer].query;
   strcat(url, query );
-  strcat(url, query[0] ? "&bin=1" : "?bin=1");
+  strcat(url, query[0] ? "&bin=1" QUERY_SUFFIX : "?bin=1" QUERY_SUFFIX);
   
   if (network_open(url, OPEN_MODE_HTTP_GET, OPEN_TRANS_NONE)) {
     return API_CALL_ERROR;
@@ -55,6 +55,7 @@ void apiCallForAll(char* path ) {
   for(i=0;i<prefs.localPlayerCount;i++) {
     state.currentLocalPlayer = i;
     apiCall(path);
+    waitvsync();
   }
 }
 

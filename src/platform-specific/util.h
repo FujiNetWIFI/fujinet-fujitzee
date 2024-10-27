@@ -7,7 +7,7 @@
 #include <stdint.h>
 
 void resetTimer();
-int getTime();
+uint16_t getTime();
 void quit();
 void housekeeping();
 uint8_t getJiffiesPerSecond();

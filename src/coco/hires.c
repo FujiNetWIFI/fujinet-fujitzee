@@ -34,8 +34,8 @@ void hires_putc(uint8_t x, uint8_t y, uint8_t rop, uint8_t c)
 /*-----------------------------------------------------------------------*/
 void hires_putcc(uint8_t x, uint8_t y,uint8_t rop, uint16_t cc)
 {
-  hires_putc(x,y,rop,(uint8_t)cc>>8);
-  hires_putc(++x,y,rop,(uint8_t)cc);
+  hires_putc(x,y,rop,cc>>8);
+  hires_putc(++x,y,rop,cc);
 }
 
 void hires_Mask(uint8_t x, uint8_t y, uint8_t xlen, uint8_t ylen, uint8_t c)

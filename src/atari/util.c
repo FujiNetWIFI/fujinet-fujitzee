@@ -14,7 +14,7 @@ void resetTimer() {
  POKEW(0x13,0);
 }
 
-int getTime() {
+uint16_t getTime() {
   return (PEEK(0x13)*256)+PEEK(0x14);
 }
 

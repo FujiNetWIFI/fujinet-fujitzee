@@ -388,11 +388,11 @@ void drawBoard() {
   }
   
   // Fujitzee score text
-  drawFujzee(11,scoreY[14]);
+  drawFujitzee(11,scoreY[14]);
   POKE(xypos(10,scoreY[14]),5);
 }
 
-void drawFujzee(unsigned char x, unsigned char y) {
+void drawFujitzee(unsigned char x, unsigned char y) {
   memcpy(xypos(x-1,y),&"89:;<=",6); // "/|\TZEE"
 }
 

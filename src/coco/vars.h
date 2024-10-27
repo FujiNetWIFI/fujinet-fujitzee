@@ -14,8 +14,15 @@
 #define ROLL_FRAMES 10 // How many roll frames to play
 //#define SCORE_CURSOR_ALT 2 // Alternate score cursor color
 #define BOTTOM_HEIGHT 3 // How high the bottom panel is
-#define SCORES_X 10 // X start of scoreboard
+#define SCORES_X 2 // X start of scoreboard
 #define GAMEOVER_PROMPT_Y HEIGHT-1
+#define QUERY_SUFFIX "&be=1" // Big Endian response for CoCo (68000)
+#define ROLL_X WIDTH-24
+#define TIMER_X 5
+#define TIMER_NUM_OFFSET_X 2
+#define TIMER_NUM_OFFSET_Y 1
+
+
 
 // Icons
 #define ICON_TEXT_CURSOR  0x22
@@ -33,20 +40,20 @@
 
 
 #define KEY_LEFT_ARROW      0x08
-#define KEY_LEFT_ARROW_2    0x9D
-#define KEY_LEFT_ARROW_3    0x2C // ,
+#define KEY_LEFT_ARROW_2    0xF1
+#define KEY_LEFT_ARROW_3    0xF2 // ,
 
-#define KEY_RIGHT_ARROW     0x15
-#define KEY_RIGHT_ARROW_2   0x1D
-#define KEY_RIGHT_ARROW_3   0x2E // .
+#define KEY_RIGHT_ARROW     0x09
+#define KEY_RIGHT_ARROW_2   0xF3
+#define KEY_RIGHT_ARROW_3   0xF4 // .
 
 #define KEY_UP_ARROW        0x5E
-#define KEY_UP_ARROW_2      0x91
-#define KEY_UP_ARROW_3      0x2D // -
+#define KEY_UP_ARROW_2      0xF5
+#define KEY_UP_ARROW_3      0xF6 // -
 
 #define KEY_DOWN_ARROW      0x0A
-#define KEY_DOWN_ARROW_2    0x11
-#define KEY_DOWN_ARROW_3    0x3D // =
+#define KEY_DOWN_ARROW_2    0xF7
+#define KEY_DOWN_ARROW_3    0xF9 // =
 
 #define KEY_RETURN       0x0D
 

@@ -27,6 +27,7 @@ _libs
 
 # Generated files
 fujitzee.*
+f.bin
 
 # Project specific ignores
 gen/gencharset

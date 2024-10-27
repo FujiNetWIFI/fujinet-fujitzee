@@ -46,25 +46,12 @@ extern void toneFinder();
 void main(void)
 {
   uint8_t failedApiCalls=0;
+  
 
   // Testing
   //toneFinder();
-  // strcpy(state.localPlayer[state.currentLocalPlayer].query, "?table=ai4&player=eric");
-  // apiCall("state");
-  // //printf(clientState.tables.table[0].name);
-  // printf(clientState.game.serverName);
+  //while(1) {while (!kbhit());failedApiCalls = cgetc();printf("%d\n", failedApiCalls);} // Read Key
  
-  // read_appkey(AK_LOBBY_CREATOR_ID, AK_LOBBY_APP_ID, AK_LOBBY_KEY_USERNAME, tempBuffer);
-  // printf("username: ");
-  // tempBuffer[8]=0;
-  // printf(tempBuffer);
-  
-  // read_appkey(AK_LOBBY_CREATOR_ID, AK_LOBBY_APP_ID, 55, tempBuffer);
-  // printf("missing appkey: ");
-  // tempBuffer[8]=0;
-  // printf(tempBuffer);
-  // while(1);
-
 
   initGraphics(); 
   initSound();
