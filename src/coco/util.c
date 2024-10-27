@@ -21,10 +21,12 @@ void quit() {
   resetGraphics();
   exit(0);
 }
-
+#define disableInterrupts() asm("ORCC",  "#$50")
 
 void housekeeping() {
-  // Not applicable on CoCo
+  // Disable interrupts when not needed to avoid some flcker
+  // on the hires screen that overlaps with disk routines
+  disableInterrupts();
 }
 
 uint8_t getJiffiesPerSecond() {

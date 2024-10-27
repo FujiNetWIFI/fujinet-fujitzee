@@ -196,7 +196,7 @@ void setHighlight(int8_t player, bool isThisPlayer, uint8_t flash ) {
   }
 }
 
-void saveScreenBuffer() {
+bool saveScreenBuffer() {
   memcpy(SCREEN_BAK, SCREEN_LOC, WIDTH*HEIGHT);
   prevMissleLineVisible = missleLineVisible;
   prevHighlightX = highlightX;

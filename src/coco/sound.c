@@ -14,7 +14,9 @@
 uint16_t ii;
 
 void tone(uint16_t period, uint8_t dur, uint8_t wait) {
-
+  // sound((byte)(100-period/2), dur/10);
+  //  while (wait--)
+  //   for (ii=0; ii<40; ii++) ;
 }
 
 // Keeping this here in case I need it
@@ -27,8 +29,8 @@ void tone(uint16_t period, uint8_t dur, uint8_t wait) {
 //       i-=1;
 //     if (input.key == KEY_UP_ARROW)
 //       i+=1;
-//       cprintf("%i ",i);
-//     tone(i,50,0);
+//       printf("%d ",i);
+//     tone(i,5,0);
 //   }
 // }
 

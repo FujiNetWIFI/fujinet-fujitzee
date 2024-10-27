@@ -47,11 +47,11 @@ void main(void)
 {
   uint8_t failedApiCalls=0;
   
-
+  
   // Testing
   //toneFinder();
-  //while(1) {while (!kbhit());failedApiCalls = cgetc();printf("%d\n", failedApiCalls);} // Read Key
- 
+  //printf("Press keys\n");while(1) {while (!kbhit());failedApiCalls = cgetc();printf("%d 0x%x\n", failedApiCalls, failedApiCalls);} // Read Key
+
 
   initGraphics(); 
   initSound();

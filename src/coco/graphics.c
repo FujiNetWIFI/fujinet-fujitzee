@@ -13,9 +13,6 @@
 #include "../misc.h" 
 #include <coco.h>
    
-//#define enableInterrupts()  asm("ANDCC", "#$AF")
-#define disableInterrupts() asm("ORCC",  "#$50")
-
 extern unsigned char charset[];
 #define OFFSET_Y 4
 
@@ -67,11 +64,11 @@ void setColorMode(unsigned char mode) {
   colorMode = mode; 
 }
 
-// Potentially use interrupt for timing
+// Potentially use interrupt in future for timing, vsync, etc
 // 0x985 - of note for disk
-
+//#define enableInterrupts()  asm("ANDCC", "#$AF")
+//#define disableInterrupts() asm("ORCC",  "#$50")
 // typedef interrupt void (*ISR)(void);
-
 // interrupt asm void irqISR(void)
 // {
 //     asm
@@ -84,7 +81,6 @@ void setColorMode(unsigned char mode) {
 //         rti
 //     }
 // }
-
 // void setISR(void *vector, ISR newRoutine)
 // {
 //     byte *isr = * (byte **) vector;
@@ -97,8 +93,6 @@ void initGraphics() {
   //setISR(0xFFF8, irqISR);
   //enableInterrupts(); 
   
-  
-
   initCoCoSupport();
    
   //if (isCoCo3) {  }
@@ -138,14 +132,13 @@ void setHighlight(int8_t player, bool isThisPlayer, uint8_t flash ) {
   // }
 }
 
-void saveScreenBuffer() {
-  // memcpy((void*)0x840,(void*)0x2000,0x17C0);
-  // memcpy((void*)0x4000,(void*)0x37C0,0x840);
+bool saveScreenBuffer() {
+  // No room on CoCo 32K for second page
+  return false;
 }
 
 void restoreScreenBuffer() {
-  // memcpy((void*)0x2000,(void*)0x840,0x17C0);
-  // memcpy((void*)0x37C0,(void*)0x4000,0x840);
+  // No-op on CoCo
 }
 
 void drawText(unsigned char x, unsigned char y, char* s) {

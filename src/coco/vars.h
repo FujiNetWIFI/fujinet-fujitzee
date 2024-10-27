@@ -21,7 +21,7 @@
 #define TIMER_X 5
 #define TIMER_NUM_OFFSET_X 2
 #define TIMER_NUM_OFFSET_Y 1
-
+#define ONLINE_HELP 1
 
 
 // Icons
@@ -57,8 +57,8 @@
 
 #define KEY_RETURN       0x0D
 
-#define KEY_ESCAPE       0x1B
-#define KEY_ESCAPE_ALT   0x03
+#define KEY_ESCAPE       0x03
+#define KEY_ESCAPE_ALT   0x1B
 
 #define KEY_SPACEBAR     0x20
 #define KEY_BACKSPACE    0x7F

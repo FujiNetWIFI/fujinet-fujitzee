@@ -16,18 +16,22 @@
 #define INGAME_MENU_X WIDTH/2-8
 
 char query[20] = "";
-bool inBorderedScreen=false, prevBorderedScreen=false;
+bool inBorderedScreen=false, prevBorderedScreen=false, savedScreen=false;
 
 
-void saveScreen() {
+bool saveScreen() {
   prevBorderedScreen=inBorderedScreen;
-  saveScreenBuffer();
+  return savedScreen = saveScreenBuffer();
 }
 
-void restoreScreen() {
-  inBorderedScreen=prevBorderedScreen;
-  restoreScreenBuffer();
-  //TODO - handle lack of save/restore-
+bool restoreScreen() {
+  if (savedScreen) {
+    savedScreen=false;
+    inBorderedScreen=prevBorderedScreen;
+    restoreScreenBuffer();
+    return true;
+  }
+  return false;
 }
 
 void resetScreenNoBorder() {
@@ -79,57 +83,62 @@ void showHelpScreen() {
   // y++;drawText(5,y, "score at the end wins!");
 
   // 1400 bytes or so
+  #ifndef ONLINE_HELP
                       //1234567890123456789012345678901234567890
-  // y++;drawTextAlt(3,y, "TAKE TURNS ROLLING DICE UP TO three");
-  // y++;drawTextAlt(3,y, "TIMES PER turn TO GET COMBINATIONS");
-  // y++;drawTextAlt(3,y, "LIKE A set, full house, OR run.");
-  // y++;
-  // y++;drawTextAlt(3,y, "score YOUR COMBO TO EARN POINTS.");
-  // y++;
-  // y++;drawTextAlt(3,y, "PLAY CONTINUES FOR 13 ROUNDS UNTIL");
-  // y++;drawTextAlt(3,y, "THE SCORESHEET IS FILLED.");
+  y++;drawTextAlt(3,y, "TAKE TURNS ROLLING DICE UP TO three");
+  y++;drawTextAlt(3,y, "TIMES PER turn TO GET COMBINATIONS");
+  y++;drawTextAlt(3,y, "LIKE A set, full house, OR run.");
+  y++;
+  y++;drawTextAlt(3,y, "score YOUR COMBO TO EARN POINTS.");
+  y++;
+  y++;drawTextAlt(3,y, "PLAY CONTINUES FOR 13 ROUNDS UNTIL");
+  y++;drawTextAlt(3,y, "THE SCORESHEET IS FILLED.");
   
-  // y++;
-  // y++;drawTextAlt(3,y, "THE PLAYER WITH THE highest TOTAL");
-  // y++;drawTextAlt(3,y, "SCORE WINS THE GAME!");
+  y++;
+  y++;drawTextAlt(3,y, "THE PLAYER WITH THE highest TOTAL");
+  y++;drawTextAlt(3,y, "SCORE WINS THE GAME!");
 
-  // y++;y++;
-  // centerTextAlt(y, "turn steps");
+  y++;y++;
+  centerTextAlt(y, "turn steps");
 
-  // y+=2;drawTextAlt(7,y, "1. SELECT ANY DICE TO keep");
-  // y++;drawTextAlt(7,y, "2. roll TO GET NEW DICE");
-  // y++;drawTextAlt(7,y, "3. YOU MAY REPEAT STEPS 1-2");
-  // y++;drawTextAlt(7,y, "4. CHOOSE YOUR score");
+  y+=2;drawTextAlt(7,y, "1. SELECT ANY DICE TO keep");
+  y++;drawTextAlt(7,y, "2. roll TO GET NEW DICE");
+  y++;drawTextAlt(7,y, "3. YOU MAY REPEAT STEPS 1-2");
+  y++;drawTextAlt(7,y, "4. CHOOSE YOUR score");
 
-  // centerStatusText("PRESS ANY KEY FOR score INFO");
+  centerStatusText("PRESS ANY KEY FOR score INFO");
 
-  // clearCommonInput();
-  // cgetc();
+  clearCommonInput();
+  cgetc();
 
-  // resetScreenWithBorder();
+  resetScreenWithBorder();
 
-  // drawTextAlt(11,1,"scoring your rolls");
-  // drawLine(11,2,18);
+  drawTextAlt(11,1,"scoring your rolls");
+  drawLine(11,2,18);
   
-  // y=4;centerTextAlt(y, "upper scores");
-  // y+=2;drawText(5,y, "total all dice that match the");
-  // y++;drawText(5,y, "number");
+  y=4;centerTextAlt(y, "upper scores");
+  y+=2;drawText(5,y, "total all dice that match the");
+  y++;drawText(5,y, "number");
 
-  // y+=2;centerTextAlt(y, "upper bonus");
-  // y+=2;drawTextAlt(5,y, "IF UPPER TOTAL IS 63 OR HIGHER");
-  // y++;drawTextAlt(5,y, "YOU SCORE A bonus 35 POINTS");
+  y+=2;centerTextAlt(y, "upper bonus");
+  y+=2;drawTextAlt(5,y, "IF UPPER TOTAL IS 63 OR HIGHER");
+  y++;drawTextAlt(5,y, "YOU SCORE A bonus 35 POINTS");
 
-  // y+=3;centerTextAlt(y, "bottom scores");
-  // y+=2;drawTextAlt(4,y, "set   - x OF A KIND - ADD ALL DICE");
-  // y+=1;drawTextAlt(4,y, "house - FULL HOUSE - SET OF 2 AND 3");
-  // y+=1;drawTextAlt(4,y, "run   - RUN OF x - EXAMPLE 12345");
-  // y+=1;drawTextAlt(4,y, "count - SCORE TOTAL OF ALL DICE");
-  // y+=1;drawTextAlt(4,y, "      - 5 OF A KIND");
-  // drawFujitzee(4,y);
+  y+=3;centerTextAlt(y, "bottom scores");
+  y+=2;drawTextAlt(4,y, "set   - x OF A KIND - ADD ALL DICE");
+  y+=1;drawTextAlt(4,y, "house - FULL HOUSE - SET OF 2 AND 3");
+  y+=1;drawTextAlt(4,y, "run   - RUN OF x - EXAMPLE 12345");
+  y+=1;drawTextAlt(4,y, "count - SCORE TOTAL OF ALL DICE");
+  y+=1;drawTextAlt(4,y, "      - 5 OF A KIND");
+  drawFujitzee(4,y);
+  #else
+  y+=8;centerTextAlt(y, "ONLINE HELP FOR cOcO");
+  y+=2;centerText(y, "is coming soon..");
+  #endif
 
   centerStatusText("press any key to close");
 
-  //clearCommonInput();
+  clearCommonInput();
   cgetc();
 }
 
@@ -161,35 +170,44 @@ void drawLogo(uint8_t x, uint8_t y)
 
 
 void showPlayerGroupScreen() {
-  static bool showPlayers;
-  resetScreenWithBorder();
-  drawBox(WIDTH/2-10,0,18,1);
-  drawTextAlt(WIDTH/2-9,1,"LOCAL PLAYER SETUP");
-  
-  centerText(5,"up to 4 players can play on");
-  centerText(7,"one system, sharing controls");
-
-  centerTextAlt(10,"PRESS 1-4 TO EDIT PLAYER");
-
-  centerTextAlt(HEIGHT-1,"press TRIGGER/SPACE when done");
+  static bool redrawScreen;
   
   clearCommonInput();
-  showPlayers = true;
+  redrawScreen = true;
 
-  while (!input.trigger ) {
-    readCommonInput();
-    
-    // Exit early
-    if (input.key == 'q' || input.key == KEY_ESCAPE)
-      break;
+  while (input.key != KEY_ESCAPE) {
+
+    if (redrawScreen) {
+      redrawScreen=false;
+      resetScreenWithBorder();
+      drawBox(WIDTH/2-10,0,18,1);
+      drawTextAlt(WIDTH/2-9,1,"LOCAL PLAYER SETUP");
+      
+      centerText(5,"up to 4 players can play on");
+      centerText(7,"one system, sharing controls");
+
+      centerTextAlt(10,"PRESS 1-4 TO EDIT PLAYER");
+
+      drawBox(WIDTH/2-8,PLAYER_BOX_TOP,14,2+prefs.localPlayerCount + (prefs.localPlayerCount<4 ? 2:0));
+      for(i=0;i<prefs.localPlayerCount;i++) {
+        itoa(i+1,tempBuffer, 10);
+        drawText(WIDTH/2-6,PLAYER_BOX_TOP+2+i, tempBuffer);
+        drawTextAlt(WIDTH/2-5,PLAYER_BOX_TOP+2+i,":");
+        drawTextAlt(WIDTH/2-4,PLAYER_BOX_TOP+2+i,prefs.localPlayer[i].name);
+      }
+
+      if (prefs.localPlayerCount<4) 
+        drawTextAlt(WIDTH/2-6,PLAYER_BOX_TOP+3+i, "A:add player");
+  
+      centerTextAlt(HEIGHT-1,"press ESCAPE to close");
+    }
 
     // Edit player by number
     if (input.key >= '1' && input.key <= '4') {
       i = input.key-'0';
       if (i<=prefs.localPlayerCount) {
         showPlayerNameScreen(i);
-        restoreScreen();
-        showPlayers=true;
+        redrawScreen = !restoreScreen();
       } else {
         soundRelease();
       } 
@@ -202,29 +220,16 @@ void showPlayerGroupScreen() {
         memset(&prefs.localPlayer[prefs.localPlayerCount],0,9);
         prefs.localPlayerCount++;
         showPlayerNameScreen(prefs.localPlayerCount);
-        restoreScreen();
-        showPlayers=true;
+        redrawScreen = !restoreScreen();
+        
       } else {
         soundRelease();
       }
     }
 
-    waitvsync();
-    if (showPlayers) {
-      showPlayers = false;
-
-      drawBox(WIDTH/2-8,PLAYER_BOX_TOP,14,2+prefs.localPlayerCount + (prefs.localPlayerCount<4 ? 2:0));
-      for(i=0;i<prefs.localPlayerCount;i++) {
-        itoa(i+1,tempBuffer, 10);
-        drawText(WIDTH/2-6,PLAYER_BOX_TOP+2+i, tempBuffer);
-        drawTextAlt(WIDTH/2-5,PLAYER_BOX_TOP+2+i,":");
-        drawTextAlt(WIDTH/2-4,PLAYER_BOX_TOP+2+i,prefs.localPlayer[i].name);
-      }
-      if (prefs.localPlayerCount<4) 
-        drawTextAlt(WIDTH/2-6,PLAYER_BOX_TOP+3+i, "A:add player");
-    }
+    readCommonInput();
   }
-  clearCommonInput();
+  
 }
 
 void showPlayerNameScreen(uint8_t p) {
@@ -381,7 +386,9 @@ void showWelcomeScreen() {
   if (!prefs.seenHelp) {
     prefs.seenHelp=true;
     savePrefs();
+    #ifndef ONLINE_HELP
     showHelpScreen();
+    #endif
   } 
   
   pause(30);
@@ -394,7 +401,7 @@ void showWelcomeScreen() {
 
 /// @brief Shows a screen to select a table to join
 void showTableSelectionScreen() {
-  static uint8_t shownChip, tableIndex, altChip;
+  static uint8_t shownChip, tableIndex, altChip, redrawScreen;
   static char* localQuery;
   static Table* table;
   state.inGame=tableIndex=altChip=0;
@@ -492,7 +499,10 @@ void showTableSelectionScreen() {
       if (input.key == 'h' || input.key == 'H') {
         saveScreen();
         showHelpScreen();
-        restoreScreen();
+        if (!restoreScreen()) {
+          resetScreenWithBorder();
+          break;
+        }
       } else if (input.key == 'r' || input.key =='R') {
         drawBlank(LMAR-2,9+tableIndex*2);
         break;
@@ -679,12 +689,11 @@ void showInGameMenuScreen() {
   clearCommonInput();
   
   state.inGame =true;
-  if (state.drawBoard) {
+  if ((!state.drawBoard && !restoreScreen()) || state.drawBoard) {
+    state.drawBoard = true;
     clearRenderState();
     setHighlight(-1,0,0);
     processStateChange();
-  } else {
-    restoreScreen();
   }
 }
 

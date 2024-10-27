@@ -17,7 +17,7 @@
 extern uint8_t scoreY[];
 extern char* scores[];
 
-// Call to clear the screen to an empty table
+// Call to clear the screen, passing true to preserve borders
 void resetScreen(bool forBorderScreen);
 
 void drawText(unsigned char x, unsigned char y, char* s);
@@ -43,7 +43,9 @@ void drawBoard();
 void drawDiceCursor(unsigned char x);
 void hideDiceCursor(unsigned char x);
 
-void saveScreenBuffer();
+// Call to save screen buffer for later restore. Returns false
+// if screen buffer not supported
+bool saveScreenBuffer();
 void restoreScreenBuffer();
 
 void setHighlight(int8_t player, bool isThisPlayer, uint8_t flash );

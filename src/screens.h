@@ -3,11 +3,11 @@
 
 extern uint8_t inputField[20];
 
-/// @brief Save screen to memory for quick recall
-void saveScreen();
+/// @brief Save screen to memory for quick recall - returns true if successful
+bool saveScreen();
 
-/// @brief Restore screen
-void restoreScreen();
+/// @brief Restore screen - returns true if successful
+bool restoreScreen();
 
 /// @brief Reset screen and draw border
 void resetScreenWithBorder();

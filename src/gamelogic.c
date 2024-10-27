@@ -11,6 +11,7 @@
 
 #define PLAYER_LIST_Y_OFFSET 5
 #define BOTTOM_PANEL_Y HEIGHT-BOTTOM_HEIGHT
+#define HELP_X WIDTH-19
 
 uint8_t chat[20]=""; 
 //uint8_t scoreY[] = {1,2,3,4,5,6, 8, 9,11,12,13,14,15,16,17,19};
@@ -105,6 +106,7 @@ void renderBoardNamesMessages() {
       centerTextAlt(6, clientState.game.serverName);
 
       drawLine(READY_LEFT,7,16);
+      centerTextAlt(HEIGHT-7,"press ESC for menu");  
       centerTextAlt(HEIGHT-1,"press TRIGGER/SPACE to toggle");
     }
   
@@ -155,7 +157,7 @@ void renderBoardNamesMessages() {
           if (clientState.game.round>0 && clientState.game.activePlayer != i-1) {
             if (fullWidth)
               drawBlank(0,y);
-            else
+            else if (!currentlyShowingHelp)
               drawBlank(x-1,1);
           } 
           
@@ -190,8 +192,6 @@ void renderBoardNamesMessages() {
     }
   }
 
-  
-
   // Round 0 (waiting to start) checks, or going into round 1
   if (clientState.game.round ==0) { //} || (clientState.game.round == 1 && state.prevRound==0)) {
     // Display "waiting for players" prompt if changed in ready mode
@@ -207,7 +207,7 @@ void renderBoardNamesMessages() {
 
     // Show players that are ready to start  
     c++;
-    for(i=0;i<10;i++) {
+    for(i=0;i<9;i++) {
       if (i<clientState.game.playerCount) {
         drawText(READY_LEFT, 8+i, clientState.game.players[i].name);
         if (clientState.game.players[i].scores[0]) { 
@@ -215,10 +215,10 @@ void renderBoardNamesMessages() {
           //drawIcon(READY_LEFT+10,8+i, ICON_MARK);
         } else {
           drawSpace(READY_LEFT+11, 8+i, 5);
-          drawIcon(READY_LEFT+11+((c+i*2)%5),8+i, ICON_MARK);
+          drawIcon(READY_LEFT+12+(c%3),8+i, ICON_MARK);
         }
-      } else {
-        drawSpace(READY_LEFT, 8+i, 14);
+      } else if (i< state.prevPlayerCount) {
+        drawSpace(READY_LEFT, 8+i, 16);
       }
     }
 
@@ -265,7 +265,7 @@ void renderBoardNamesMessages() {
 
     for (i=clientState.game.playerCount-1;i<255;i--) {
       // Skip spectators or going beyond 6 players
-      if (i>5 || clientState.game.players[i].scores[0]==-2)
+      if (i>5 || clientState.game.players[i].scores[0]==-2 || (currentlyShowingHelp && i>0))
         continue;
       h=SCORES_X+6+i*4;
       i4=h+3;
@@ -585,7 +585,12 @@ void hideInGameHelp() {
   if (!currentlyShowingHelp)
     return;
 
-  restoreScreen();
+  if (!restoreScreen()) {
+    state.drawBoard = true;
+   // clearRenderState();
+   // setHighlight(-1,0,0);
+   // processStateChange();
+  }
   currentlyShowingHelp = false;
 }
 
@@ -600,23 +605,23 @@ void showInGameHelp() {
     drawSpace(SCORES_X+10,y,WIDTH-SCORES_X-10);
   }
   
-  drawBox(21,1,WIDTH-10-13, 17);
+  drawBox(HELP_X-1,1,17, 17);
   
-  drawText(22+(WIDTH-10-12-14)/2, 3,"it's your turn");
+  drawText(HELP_X+2, 3,"it's your turn");
                                                   //123456789012345678
-  drawText(22+(WIDTH-10-12-18)/2, 5,"move up/down to");
-  drawText(22+(WIDTH-10-12-18)/2, 6,"choose a score on");
-  drawText(22+(WIDTH-10-12-18)/2, 7,"the left based on");
-  drawText(22+(WIDTH-10-12-18)/2, 8,"your dice.");
+  drawText(HELP_X, 5,"move up/down to");
+  drawText(HELP_X, 6,"choose a score on");
+  drawText(HELP_X, 7,"the left based on");
+  drawText(HELP_X, 8,"your dice.");
 
-  drawText(22+(WIDTH-10-12-18)/2,10,"before you score,");
-  drawText(22+(WIDTH-10-12-18)/2,11,"you may re-roll ");
-  drawText(22+(WIDTH-10-12-18)/2,12,"any of your dice");
-  drawText(22+(WIDTH-10-12-18)/2,13,"up to two times.");
+  drawText(HELP_X,10,"before you score,");
+  drawText(HELP_X,11,"you may re-roll ");
+  drawText(HELP_X,12,"any of your dice");
+  drawText(HELP_X,13,"up to two times.");
 
-  drawText(22+(WIDTH-10-12-18)/2,15,"move left/right,");
-  drawText(22+(WIDTH-10-12-18)/2,16,"and pick dice to");
-  drawText(22+(WIDTH-10-12-18)/2,17,"keep, then roll.");
+  drawText(HELP_X,15,"move left/right,");
+  drawText(HELP_X,16,"and pick dice to");
+  drawText(HELP_X,17,"keep, then roll.");
 }
 
 void waitOnPlayerMove() {

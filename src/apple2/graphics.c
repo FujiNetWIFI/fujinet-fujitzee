@@ -97,7 +97,7 @@ void setHighlight(int8_t player, bool isThisPlayer, uint8_t flash ) {
   }
 }
 
-void saveScreenBuffer() {
+bool saveScreenBuffer() {
   memcpy((void*)0x840,(void*)0x2000,0x17C0);
   memcpy((void*)0x4000,(void*)0x37C0,0x840);
 }
