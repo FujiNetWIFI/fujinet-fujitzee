@@ -22,8 +22,10 @@ DEPS := $(OBJS:.o=.d)
 include fujinet-lib.mk
 
 LIBS = \
-	-L support/coco/bcontrol -lbcontrol \
-	-L $(FUJINET_LIB_VERSION_DIR) -l:$(FUJINET_LIB_NAME) 
+	-L $(FUJINET_LIB_VERSION_DIR) -l:$(FUJINET_LIB_NAME)
+
+# Not using bcontrol now, but may in future for joystick
+#	-L support/coco/bcontrol -lbcontrol
 	
 
 ASFLAGS = 
@@ -41,11 +43,11 @@ CFLAGS= \
 #			--check-null \
 #			-D_CMOC_CHECK_STACK_OVERFLOW_ --check-stack\
 
-
+# Load from 1A00 to 7D00, but have early warning at 7B00
 LDFLAGS= 			--$(TARGET) \
 	-o$(TARGET_EXEC).app \
 	-I $(CMOC_SRC) \
-	--limit=7D00 \
+	--limit=7B00 \
 	--org=1A00
 
 
@@ -83,8 +85,8 @@ else
 endif
 	cp $(CURDIR)/$(DSK) ~/Documents/fujinetpc-coco/SD/$(DSK)
 
-	cd ~/mame_coco;mame coco3 -window -nomaximize -resolution 1024x768 -natural -autoboot_delay 1 -autoboot_command "loadm\"f\":exec\n"
-#	cd ~/mame_coco;mame coco -window -nomaximize -resolution 1024x768 -natural -autoboot_delay 2 -autoboot_command "loadm\"f\":exec\n"
+	cd ~/mame_coco;mame coco3 -window -nomaximize -resolution 1024x768 -natural -autoboot_delay 1 -autoboot_command "runm\"f\n"
+#	cd ~/mame_coco;mame coco -window -nomaximize -resolution 1024x768 -natural -autoboot_delay 2 -autoboot_command "runm\"f\n"
 
 #	cd ~/mame_coco;mame coco3 -window  -nomaximize -resolution 1024x768 -natural -autoboot_delay 1 
 
@@ -105,7 +107,7 @@ $(BUILD_DIR)/%.s.o: %.s
 .PHONY: clean
 
 clean:
-	$(RM) -r $(TARGET_EXEC).*
+#	$(RM) -r $(TARGET_EXEC).*
 	$(RM) -r $(BUILD_DIR)*
 	cd support/coco/gen;make
 

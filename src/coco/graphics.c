@@ -16,16 +16,16 @@
 extern unsigned char charset[];
 #define OFFSET_Y 4
 
-uint8_t colorMode=0, oldChbas=0, colIndex=0;
-int8_t highlightX=-1;
-uint8_t own_player;
-bool inBorderScreen=false;
-
 #define ROP_CPY 0xff
 
 // Mode 4
 #define ROP_BLUE 0b01010101
 #define ROP_ORANGE 0b10101010
+#define BOX_SIDE 0b111100
+
+int8_t highlightX=-1;
+bool inBorderScreen=false;
+uint8_t box_color = ROP_ORANGE;
 
 uint8_t diceChars[] = {
   // Normal dice
@@ -54,17 +54,15 @@ uint8_t diceChars[] = {
 
 
 unsigned char cycleNextColor() {
-  ++colorMode;
-  if (colorMode>1)
-    colorMode=0;
-  return colorMode;
+  // No color modes
+  return 0;
 }
 
 void setColorMode(unsigned char mode) {
-  colorMode = mode; 
+ // No-op
 }
 
-// Potentially use interrupt in future for timing, vsync, etc
+// Potentially use interrupt in future
 // 0x985 - of note for disk
 //#define enableInterrupts()  asm("ANDCC", "#$AF")
 //#define disableInterrupts() asm("ORCC",  "#$50")
@@ -102,34 +100,53 @@ void initGraphics() {
   screen(1,1);
 } 
 
-//uint8_t highlight[] = {0x23,0x5b,0x3f,0x5b}; 
-//uint8_t highlight[] = {0b100,0b1010,0b11100,0b1010}; 
-uint16_t highlight[] = {0x80|0b100, 0|0b1010, 0x80|0b11100, 0|0b1010}; 
+// Red / Blue vertical lines
+uint16_t highlight[] = {0b100000, 0b1010000};
 
 void setHighlight(int8_t player, bool isThisPlayer, uint8_t flash ) {
-  // static uint8_t i;
-  // if (state.drawBoard) {
-  //   highlightX=player;
-  //   return;
-  // }
-  // if (flash || highlightX==player)  
-  //   return;   
-  
-  // for(i=0;i<2;i++) {
-  //   if (highlightX>=0) {
+  static uint8_t i;
+  if (state.drawBoard) {
+    highlightX=player;
+    return;
+  }
+  if (flash)
+    return;   
 
-  //     hires_Mask(SCORES_X+5+highlightX*4,4,1,19*8+1,highlight[i+(highlightX==0)*2]);
-  //     hires_Mask(SCORES_X+9+highlightX*4,4,1,19*8+1,highlight[i+(highlightX==5)*2]);
+  waitvsync();
 
-  //     if (i==0) {
-  //       hires_Mask(SCORES_X,2*8,29,2, 0xff); 
-  //       hires_Mask(SCORES_X,9*8,29,1, 0xff); 
-  //       hires_Mask(SCORES_X,12*8,29,1, 0xff);
-  //     }
-  //   }
+  // Two passes. First pass hides the previous highlight. Second pass draws the new highlight.
+  for(i=0;i<2;i++) {
+    if (highlightX>=0 ) {
+      if (i==0) {
+        if (highlightX!=player) {
+          
+          drawBox(SCORES_X+5+highlightX*4,0,3,19);
 
-  //   highlightX=player;
-  // }
+          if (highlightX>0)
+            hires_Mask(SCORES_X+5+highlightX*4,2,1,19*8+5,highlight[i]);
+
+          if (highlightX<5)        
+            hires_Mask(SCORES_X+9+highlightX*4,2,1,19*8+5,highlight[i]);
+
+          // Redraw horizontal board lines
+          // Thin horz ines
+          hires_Mask(SCORES_X,9*8,29,1, 0xff & ROP_ORANGE); 
+          hires_Mask(SCORES_X,12*8,29,1, 0xff & ROP_ORANGE);
+          
+          // Thick horz lines
+          hires_Mask(SCORES_X+6,0, 23,2, 0xff & ROP_ORANGE); 
+          hires_Mask(SCORES_X,2*8,29,2, 0xff & ROP_ORANGE); 
+          hires_Mask(SCORES_X,20*8-1,29,2, 0xff & ROP_ORANGE); 
+        }
+      } else {
+        box_color=ROP_BLUE;
+        drawBox(SCORES_X+5+highlightX*4,0,3,19);
+        box_color=ROP_ORANGE;
+      }
+    }
+
+    highlightX=player;
+  }
 }
 
 bool saveScreenBuffer() {
@@ -185,9 +202,6 @@ void drawTextAlt(unsigned char x, unsigned char y, char* s) {
     }
     
     if (c>=97 && c<=122) c-=32; 
-    // Shift lowercase
-      //if (c>=0x60 && c<0x80)
-        //c-=0x20;
     hires_putc(x++,y,rop,c);
   }  
 }
@@ -205,13 +219,10 @@ void resetScreen(bool forBorderScreen) {
   if (!forBorderScreen) {
     // Clear entire screen
     pcls(0);
-    //hires_Mask(0,0,40,192,0);
   } else {
     // Moving from one border screen to next - just clear non border area
      hires_Mask(3,0,WIDTH-6,24,0);
      hires_Mask(0,24,WIDTH,168,0);
-     //hires_Mask(0,24,WIDTH,144,0);     
-     //hires_Mask(3,168,WIDTH-6,24,0);
   }
 }
 
@@ -243,10 +254,6 @@ void drawDie(unsigned char x, unsigned char y, unsigned char s, bool isKept, boo
   if (y==160) {
     y=165;
   }
-
-  
-  //if (x==0) x++; else if (x==WIDTH-3) x--;
-  //if (y==0) y+=4;
 
   for (i=0;i<3;i++) {
     for (j=0;j<3;j++) {
@@ -287,25 +294,21 @@ void drawBoard() {
   // Main scores box
   drawBox(SCORES_X+5,0,23,19);
   drawBox(SCORES_X-1,2,5,17); 
- 
-  // Fix overlapping box corners 
-  //drawChar(SCORES_X-1,2, 0x24, 0);
 
-  // // Thin horz ines
+  // Thin horz ines
   hires_Mask(SCORES_X,9*8,29,1, 0xff & ROP_ORANGE); 
   hires_Mask(SCORES_X,12*8,29,1, 0xff & ROP_ORANGE);
   
-  // // Thick horz lines
+  // Thick horz lines
   hires_Mask(SCORES_X,2*8,29,2, 0xff & ROP_ORANGE); 
   hires_Mask(SCORES_X,20*8-1,29,2, 0xff & ROP_ORANGE); 
   
-
-  // // Score names (16 for end game score)
+  // Score names (16 for end game score)
   for(y = 0; y<14; y++) { 
     drawTextAlt(SCORES_X,scoreY[y],scores[y]);
   } 
   
-  // // Fujitzee score text
+  // Fujitzee score text
   drawFujitzee(SCORES_X,255);
 }
 
@@ -324,33 +327,27 @@ void drawLine(unsigned char x, unsigned char y, unsigned char w) {
   hires_Mask(x,y,w,2, ROP_ORANGE); 
 }
 
-// 42653
 void drawBox(unsigned char x, unsigned char y, unsigned char w, unsigned char h) {
   y=y*8-OFFSET_Y+1;
 
   // Top Corners
-  hires_putc(x,y+3,ROP_ORANGE, 0x3b);
-  hires_putc(x+w+1,y+3,ROP_ORANGE, 0x3c);
-  
-  // Accents if height > 1
-  // if (h>1) {
-  //   hires_putc(x+1,y+8,ROP_CPY, 1);
-  // }
+  hires_putc(x,y+3,box_color, 0x3b);
+  hires_putc(x+w+1,y+3,box_color, 0x3c);
   
   // Top/bottom lines
-  hires_Mask(x+1,y+3,w,2, ROP_ORANGE); 
-  hires_Mask(x+1,y+(h+1)*8+2,w,2, ROP_ORANGE); 
+  hires_Mask(x+1,y+3,w,2, box_color); 
+  hires_Mask(x+1,y+(h+1)*8+2,w,2, box_color); 
   
   // Sides
   for(i=0;i<h;++i) {
     y+=8;
-    hires_putc(x,y,ROP_ORANGE, 0x3f);
-    hires_putc(x+w+1,y,ROP_ORANGE, 0x3f);
+    hires_putc(x,y,box_color, 0x3f);
+    hires_putc(x+w+1,y,box_color,0x3f);
   }
 
   // Bottom Corners
-  hires_putc(x,y+7,ROP_ORANGE, 0x3d);
-  hires_putc(x+w+1,y+7,ROP_ORANGE, 0x3e);
+  hires_putc(x,y+7,box_color, 0x3d);
+  hires_putc(x+w+1,y+7,box_color, 0x3e);
 }
 
 void drawDiceCursor(unsigned char x) {
@@ -384,13 +381,17 @@ void hideDiceCursor(unsigned char x) {
 }
 
 void resetGraphics() {
+  pmode(0, 0x400);
+  pcls(0x60);
   screen(0,0);
+  
+  // Future - mount and start Lobby
 }
 
 void waitvsync() {
   static uint16_t i;
-  // Aproximate a jiffy for the timer countdown
-  for ( i=0;i<705;i++);
+  i=getTimer();
+  while (i==getTimer());
 }
 
 #endif

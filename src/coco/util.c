@@ -5,28 +5,23 @@
 #include<stdint.h>
 #include"../fujinet-fuji.h"
 #include"../platform-specific/graphics.h"
-
-uint16_t jiffieTimer;
+#include<coco.h>
 
 void resetTimer() {
-  jiffieTimer=0;
+  setTimer(0);
 }
 
 uint16_t getTime() {
-  jiffieTimer+=10;
-  return jiffieTimer;
+  return getTimer();
 }
 
 void quit() {
   resetGraphics();
   exit(0);
 }
-#define disableInterrupts() asm("ORCC",  "#$50")
 
 void housekeeping() {
-  // Disable interrupts when not needed to avoid some flcker
-  // on the hires screen that overlaps with disk routines
-  disableInterrupts();
+  // Not needed on CoCo
 }
 
 uint8_t getJiffiesPerSecond() {

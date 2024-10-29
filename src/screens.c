@@ -615,20 +615,28 @@ void showTableSelectionScreen() {
 
 /// @brief shows in-game menu
 void showInGameMenuScreen() {
-  static uint8_t y;
+  static uint8_t y,i,wait;
+  
   saveScreen();
   state.inGame =false;
-  i=1;
+  i=wait=1;
   while (i) {
     
     resetScreenWithBorder();
     
+    #ifndef NO_COLOR_CYCLE
     y = HEIGHT/2-5;
-      
-    drawBox(INGAME_MENU_X-3,y-2,21,11);
+    drawBox(INGAME_MENU_X-2,y-2,19,11);
+    #else
+    y = HEIGHT/2-3;
+    drawBox(INGAME_MENU_X-2,y-2,19,9);
+    #endif
+
     drawTextAlt(INGAME_MENU_X,y,    "  Q: quit table");
     drawTextAlt(INGAME_MENU_X,y+=2, "  H: how to play"); 
+    #ifndef NO_COLOR_CYCLE
     drawTextAlt(INGAME_MENU_X,y+=2, "  C: color mode");
+    #endif
     drawTextAlt(INGAME_MENU_X,y+=2, prefs.disableSound ?  "  S: sound OFF" : "  S: sound ON");
     drawTextAlt(INGAME_MENU_X,y+=2, "ESC: keep playing"); 
     
@@ -636,10 +644,16 @@ void showInGameMenuScreen() {
     strcat(tempBuffer, clientState.game.serverName);
 
     centerTextAlt(y+6, tempBuffer);
-
     clearCommonInput();
     i=1;
     while (i==1) {
+
+      // Wait a short while before Escape can close this window
+      // to avoid double tap closing
+      if (wait<40) {
+        wait++;
+      }
+      waitvsync();
       readCommonInput();
       switch (input.key) {
         case 's':
@@ -649,6 +663,7 @@ void showInGameMenuScreen() {
           soundScore();
           savePrefs();
           break;
+        #ifndef NO_COLOR_CYCLE
         case 'c':
         case 'C':
             prefs.color = cycleNextColor();
@@ -656,12 +671,14 @@ void showInGameMenuScreen() {
             savePrefs();
             i=2;
             break;
+        #endif
         case 'h':
         case 'H':
           showHelpScreen();
         case KEY_ESCAPE:
         case KEY_ESCAPE_ALT:
-          i=0;
+          if (wait>39)
+            i=0;
           break;
         case 'q':
         case 'Q':

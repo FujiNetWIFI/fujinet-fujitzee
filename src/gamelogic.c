@@ -11,7 +11,7 @@
 
 #define PLAYER_LIST_Y_OFFSET 5
 #define BOTTOM_PANEL_Y HEIGHT-BOTTOM_HEIGHT
-#define HELP_X WIDTH-19
+#define HELP_X WIDTH-18
 
 uint8_t chat[20]=""; 
 //uint8_t scoreY[] = {1,2,3,4,5,6, 8, 9,11,12,13,14,15,16,17,19};
@@ -197,10 +197,15 @@ void renderBoardNamesMessages() {
     // Display "waiting for players" prompt if changed in ready mode
     if (clientState.game.round==0) {
         centerTextWide(HEIGHT-3,clientState.game.prompt);
-      if (!state.countdownStarted && clientState.game.prompt[0]== 's') {
-        soundJoinGame();
-        state.countdownStarted = true;
-      } else if (clientState.game.prompt[0]!= 's') {
+        
+      if (clientState.game.prompt[0]== 's') {
+        if (state.countdownStarted)
+          soundTick();
+        else {
+          soundJoinGame();
+          state.countdownStarted = true;
+        }
+      } else {
         state.countdownStarted = false;
       }
     }
@@ -403,13 +408,12 @@ void renderBoardNamesMessages() {
 
       if (clientState.game.round != state.prevRound) {
         soundGameDone();
-
-        pause(255);
-        centerTextAlt(HEIGHT-1,"press TRIGGER/SPACE to continue");
+        pause(180);
+        //centerTextAlt(HEIGHT-1,"press TRIGGER/SPACE to continue");
         state.waitingOnEndGameContinue = true;
         state.countdownStarted = false;
       } else {
-        centerTextAlt(HEIGHT-1,"please wait..");
+        centerTextAlt(HEIGHT-2, "please wait..");
       }
         clearCommonInput();     
     }
@@ -841,7 +845,7 @@ void waitOnPlayerMove() {
   hideInGameHelp();
   clearBelowBoard();
   
-  centerText(BOTTOM_PANEL_Y+1,"you timed out. scoring first free row.");
+  centerText(BOTTOM_PANEL_Y+1,"you timed out. auto scoring.");
   state.playerMadeMove=1;
   i=0;
   for (j=0;j<15;j++) {

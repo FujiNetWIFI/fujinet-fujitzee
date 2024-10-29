@@ -9,105 +9,113 @@
 #include "../misc.h"
 #include "../platform-specific/sound.h"
 
-//#define CLICK  __asm__ ("sta $c030")
-
 uint16_t ii;
 
-void tone(uint16_t period, uint8_t dur, uint8_t wait) {
-  // sound((byte)(100-period/2), dur/10);
-  //  while (wait--)
-  //   for (ii=0; ii<40; ii++) ;
+void tone(uint8_t period, uint8_t dur, uint8_t wait) {
+  if (!prefs.disableSound) {
+    sound(period, dur);
+  }
+  
+  while (wait--)
+    for (ii=0; ii<60; ii++) ;
 }
 
-// Keeping this here in case I need it
+// // Keeping this here in case I need it
 // void toneFinder() {
 //   clearCommonInput();
 //   while (input.key != KEY_RETURN || i<2) {
 //     while (!kbhit());
 //     input.key = cgetc();
-//     if (input.key == KEY_DOWN_ARROW)
-//       i-=1;
-//     if (input.key == KEY_UP_ARROW)
-//       i+=1;
-//       printf("%d ",i);
-//     tone(i,5,0);
+//     switch (input.key) {
+//       case KEY_DOWN_ARROW: i--; break;
+//       case KEY_UP_ARROW: i++; break;
+//       case KEY_RIGHT_ARROW: i+=20; break;
+//       case KEY_LEFT_ARROW: i-=20; break;
+//       case KEY_ESCAPE: return;
+//     }
+
+//     printf("%d ",i);
+//     tone(i,1,0);
 //   }
 // }
 
 void initSound() {}
 
 void soundJoinGame() {
-  tone(36,50,50);
-  tone(44,50,50);
-  tone(36,50,0);
+  tone(40,1,50);
+  tone(2,1,50);
+  tone(40,1,0);
 }
 
 void soundFujitzee() {
-  tone(146,20,0);
-  tone(109,28,0);
-  tone(86,35,0);
+  tone(0,1,20);
+  tone(70,1,20);
+  tone(110,1,20);
 
-  tone(109,6,0);
-  tone(72,42,100);
-
-  tone(86,30,0);
-
-  tone(109,6,0);
-  tone(72,120,250);
+  tone(132,2,50);
+  
+  tone(110,1,20);
+  tone(132,3,0);
 }
 
 void soundMyTurn() {
-  tone(36,50,60);
-  tone(36,80,0);
+  tone(40,1,60);
+  tone(40,2,0);
 }
 
 void soundGameDone() {
-  tone(60,70,130);
-  tone(45,230,200);
-  tone(39,90,130);
-  tone(35,250,0);
+  tone(0,2,20);
+  tone(70,3,100);
+  tone(90,3,20);
+  tone(110,5,20);
 }
 
 
 void soundRollDice() {
- tone(50+(rand() % 20)*5,3,0);
+ tone(100+(rand() % 20)*7,0,0);
 }
 
 void soundRollButton() {
-  tone(45,20,10);
-  tone(36,20,0);
+  tone(2,1,10);
+  tone(40,1,10);
 }
 
 void soundCursor() {
-  tone(47,10,0);
+  static int i;
+  tone(0,0,0);
+  tone(0,0,0);
+  tone(0,0,0);
 }
 
 void soundScoreCursor() {
-  tone(42,10,0);
+  tone(30,0,0);
+  tone(30,0,0);
+  tone(30,0,0);
 }
 
 void soundKeep() {
-  tone(88,10,0);
-  tone(84,10,0);
-  tone(77,10,0);
+  static uint8_t i;
+  for(i=0;i<10;i++)
+    tone((i*13+8)%100,0,0);
 }
 
 void soundRelease() {
-  for (i=105;i<=112;i++)
-    tone(i,2,0);
+   tone(10,0,1);
+   tone(10,0,2);
+   tone(10,0,3);
+   tone(10,0,0);
 }
 
 void soundTick() {
- tone(80,2,0);
+  tone(0,0,0);
 }
 
 void soundScore() {
- tone(42,10,0);
- tone(29,30,0);
- tone(27,40,0);
+ tone(80,1,5);
+ tone(90,1,0);
 }
 
-// Not applicable to Apple
+// Not applicable to CoCo
 void soundStop() {}
 void disableKeySounds() {}
 void enableKeySounds() {}

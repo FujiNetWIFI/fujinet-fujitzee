@@ -112,7 +112,7 @@ void loadPrefs() {
       strcpy(serverEndpoint, localServer);
     }
   }
-
+  
   // Ensure local player count is at least one (older appkeys may have this set to 0)
   if (prefs.localPlayerCount==0 || prefs.localPlayerCount>4) {
     prefs.localPlayerCount=1;

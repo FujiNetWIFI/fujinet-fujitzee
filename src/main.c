@@ -42,16 +42,14 @@ unsigned char h, i, j, k, x, y;
 char tempBuffer[128];
 
 extern void toneFinder();
-
+#include<coco.h>
 void main(void)
 {
   uint8_t failedApiCalls=0;
   
-  
   // Testing
   //toneFinder();
   //printf("Press keys\n");while(1) {while (!kbhit());failedApiCalls = cgetc();printf("%d 0x%x\n", failedApiCalls, failedApiCalls);} // Read Key
-
 
   initGraphics(); 
   initSound();
@@ -82,7 +80,7 @@ void main(void)
           
           // After consequitive failures, let the player know we are experiencing technical difficulties
           if (failedApiCalls>1) {
-            drawTextAlt(0, HEIGHT-1, "#$reconnecting..  ");
+            drawTextAlt(0, HEIGHT-1, "reconnecting..");
           }
           break;
      
