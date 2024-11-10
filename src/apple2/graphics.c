@@ -219,6 +219,11 @@ void drawClock(unsigned char x, unsigned char y) {
   hires_putcc(x,y*8-OFFSET_Y,ROP_CPY, 0x2526);
 }
 
+void drawConnectionIcon(unsigned char x, unsigned char y) {
+  hires_putcc(x,y==HEIGHT-1 ? 182 : y*8-OFFSET_Y,ROP_CPY, 0x5c5d);
+}
+
+
 void clearBelowBoard() {
   hires_Mask(0,161,40,31,0xa900);
 }

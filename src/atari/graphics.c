@@ -329,6 +329,10 @@ void drawClock(unsigned char x, unsigned char y) {
   POKE(xypos(x,y),0x37);
 }
 
+void drawConnectionIcon(unsigned char x, unsigned char y) {
+  POKEW(xypos(x,y), 0x0403);
+}
+
 void clearBelowBoard() {
   memset(xypos(0,HEIGHT-5),0,200);
 }

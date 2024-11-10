@@ -1010,6 +1010,26 @@ const char charset[]=
 	" * *    "
 	" * *    "
 	
+	/* 0x5C Left connection icon */
+	"    ****"
+	"  **    "
+	"**      "
+	"    ****"
+	"  **    "
+	"      **"
+	"    **  "
+	"        "
+
+	/* 0x5D Right connection icon */
+	"**      "
+	"  **    "
+	"    **  "
+	"**      "
+	"  **    "
+	"        "
+	"**      "
+	"        "
+	
 ;
 
 #endif /* CHARSET_H */

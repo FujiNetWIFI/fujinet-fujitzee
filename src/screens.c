@@ -577,7 +577,6 @@ void showTableSelectionScreen() {
   // Reset the game state
   clearRenderState();
   state.waitingOnEndGameContinue = false;
-  state.drawBoard = true;
   
   // The query will have the table already, e.g. "?table=1234"
 
@@ -624,7 +623,7 @@ void showInGameMenuScreen() {
     
     resetScreenWithBorder();
     
-    #ifndef NO_COLOR_CYCLE
+    #ifdef COLOR_CYCLE
     y = HEIGHT/2-5;
     drawBox(INGAME_MENU_X-2,y-2,19,11);
     #else
@@ -634,7 +633,7 @@ void showInGameMenuScreen() {
 
     drawTextAlt(INGAME_MENU_X,y,    "  Q: quit table");
     drawTextAlt(INGAME_MENU_X,y+=2, "  H: how to play"); 
-    #ifndef NO_COLOR_CYCLE
+    #ifdef COLOR_CYCLE
     drawTextAlt(INGAME_MENU_X,y+=2, "  C: color mode");
     #endif
     drawTextAlt(INGAME_MENU_X,y+=2, prefs.disableSound ?  "  S: sound OFF" : "  S: sound ON");
@@ -663,7 +662,7 @@ void showInGameMenuScreen() {
           soundScore();
           savePrefs();
           break;
-        #ifndef NO_COLOR_CYCLE
+        #ifdef COLOR_CYCLE
         case 'c':
         case 'C':
             prefs.color = cycleNextColor();
@@ -707,9 +706,7 @@ void showInGameMenuScreen() {
   
   state.inGame =true;
   if ((!state.drawBoard && !restoreScreen()) || state.drawBoard) {
-    state.drawBoard = true;
     clearRenderState();
-    setHighlight(-1,0,0);
     processStateChange();
   }
 }

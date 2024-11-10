@@ -27,7 +27,7 @@
 #define ICON_TEXT_CURSOR  0xD9
 #define ICON_MARK         0x1D
 #define ICON_MARK_ALT     0x1C
-#define ICON_PLAYER       0x23
+#define ICON_PLAYER       0x0A
 #define ICON_SPEC         0xDC
 #define ICON_CURSOR       0xBE
 #define ICON_CURSOR_ALT   0xBF

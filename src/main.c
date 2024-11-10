@@ -42,7 +42,7 @@ unsigned char h, i, j, k, x, y;
 char tempBuffer[128];
 
 extern void toneFinder();
-#include<coco.h>
+
 void main(void)
 {
   uint8_t failedApiCalls=0;
@@ -80,7 +80,11 @@ void main(void)
           
           // After consequitive failures, let the player know we are experiencing technical difficulties
           if (failedApiCalls>1) {
-            drawTextAlt(0, HEIGHT-1, "reconnecting..");
+            drawConnectionIcon(0,HEIGHT-1);
+            pause(30);
+            drawText(0, HEIGHT-1, "  ");
+            pause(30);
+            drawConnectionIcon(0,HEIGHT-1);
           }
           break;
      
@@ -88,7 +92,7 @@ void main(void)
 
           // Clear connection failure message
           if (failedApiCalls>1) {
-            drawSpace(0, HEIGHT-1, 16);
+            drawText(0, HEIGHT-1, "  ");
           }
           failedApiCalls=0;
           processStateChange();

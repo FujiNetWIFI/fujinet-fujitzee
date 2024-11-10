@@ -90,7 +90,6 @@ void renderBoardNamesMessages() {
   if (redraw || state.drawBoard) {
     resetScreenNoBorder();
     redraw=true;
-    
 
     if (clientState.game.round>0) {
       // Round 1+
@@ -114,18 +113,8 @@ void renderBoardNamesMessages() {
     state.drawBoard = false;
   }
   
-  // Clear score board if a new round
-  // if (redraw && clientState.game.round==0) {    
-  //     // Clear score locations
-  //   // for (i=SCORES_X+6;i<41;i+=4) {
-  //   //   clearScores(i);
-  //   // }
-    
-    
-  // }
 
-
-  // Draw player names if the count changed
+  // Draw player names
   spectators=0;
   if (clientState.game.round>0) {
     for(i=1;i<=PLAYER_MAX;i++) {
@@ -178,7 +167,7 @@ void renderBoardNamesMessages() {
           }
         }
 
-      } else if (i<=state.prevPlayerCount) {
+      } else /*if (i<=state.prevPlayerCount)*/ {
         // Blank out entries for this player
         if (fullWidth)
           drawSpace(0,y,9);
@@ -214,6 +203,11 @@ void renderBoardNamesMessages() {
     c++;
     for(i=0;i<9;i++) {
       if (i<clientState.game.playerCount) {
+        drawText(READY_LEFT, 8+i, clientState.game.players[i].name);
+        len = (uint8_t)strlen(clientState.game.players[i].name);
+        if (len<8) {
+          drawSpace(READY_LEFT+len, 8+i, 8-len);
+        }
         drawText(READY_LEFT, 8+i, clientState.game.players[i].name);
         if (clientState.game.players[i].scores[0]) { 
           drawTextAlt(READY_LEFT+11,8+i,"ready");
@@ -868,6 +862,8 @@ void clearRenderState() {
   state.prevActivePlayer = state.prevRound = 99;
   state.prevPlayerCount = 0;
   memset(state.renderedScore, 0, 16*6);
+  state.drawBoard=true;
+  setHighlight(-1,0,0);
 }
 
 /// @brief Convenience function to draw text centered at row Y

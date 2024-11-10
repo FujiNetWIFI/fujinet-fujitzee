@@ -72,6 +72,8 @@ void soundGameDone() {
 
 
 void soundRollDice() {
+ tone(100+(rand() % 20)*7,0,5);
+ tone(100+(rand() % 20)*7,0,3);
  tone(100+(rand() % 20)*7,0,0);
 }
 
@@ -111,7 +113,7 @@ void soundTick() {
 }
 
 void soundScore() {
- tone(80,1,5);
+ tone(80,1,0);
  tone(90,1,0);
 }
 

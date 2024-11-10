@@ -34,6 +34,7 @@ void drawFujitzee(unsigned char x, unsigned char y);
 void drawDie(unsigned char x, unsigned char y, unsigned char s, bool isSelected, bool isHighlighted);
 
 void drawClock(unsigned char x, unsigned char y);
+void drawConnectionIcon(unsigned char x, unsigned char y);
 void drawBlank(unsigned char x, unsigned char y);
 void drawSpace(unsigned char x, unsigned char y, unsigned char w);
 void drawLine(unsigned char x, unsigned char y, unsigned char w);
