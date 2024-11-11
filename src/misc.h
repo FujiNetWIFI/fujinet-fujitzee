@@ -23,10 +23,6 @@
 
 #define FUJITZEE_SCORE 14
 
-//todo - binary enable state
-// 23397 Atari size pre binary
-// 21275
-
 typedef struct {
   char table    [9];
   char name     [21];

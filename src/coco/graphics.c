@@ -166,7 +166,9 @@ void drawText(unsigned char x, unsigned char y, char* s) {
     y=y*8-OFFSET_Y; 
     if (y==8*(HEIGHT-1)-OFFSET_Y) {
       y=182;
-    } 
+    } else if (y==8*(HEIGHT-3)-OFFSET_Y) {
+      y=162;
+    }
   }
   
 
@@ -206,14 +208,6 @@ void drawTextAlt(unsigned char x, unsigned char y, char* s) {
   }  
 }
 
-void drawTextVert(unsigned char x, unsigned char y, char* s) {
-  static unsigned char c;
-  y=y*8-OFFSET_Y;
-  while(c=*s++) {
-    if (c>=97 && c<=122) c-=32;
-    hires_putc(x,y+=8,ROP_CPY,c);
-  }  
-}
 
 void resetScreen(bool forBorderScreen) { 
   if (!forBorderScreen) {
@@ -286,7 +280,7 @@ void drawBlank(unsigned char x, unsigned char y) {
 }
 
 void drawSpace(unsigned char x, unsigned char y, unsigned char w) {
-  hires_Mask(x,y*8-OFFSET_Y,w,8,0);
+  hires_Mask(x,y==HEIGHT-3 ? 162 : y*8-OFFSET_Y,w,8,0);
 }
 
 void drawBoard() {

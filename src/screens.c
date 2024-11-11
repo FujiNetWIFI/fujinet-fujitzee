@@ -207,7 +207,7 @@ void showPlayerGroupScreen() {
       i = input.key-'0';
       if (i<=prefs.localPlayerCount) {
         showPlayerNameScreen(i);
-        redrawScreen = !restoreScreen();
+        redrawScreen = true;
       } else {
         soundRelease();
       } 
@@ -220,7 +220,7 @@ void showPlayerGroupScreen() {
         memset(&prefs.localPlayer[prefs.localPlayerCount],0,9);
         prefs.localPlayerCount++;
         showPlayerNameScreen(prefs.localPlayerCount);
-        redrawScreen = !restoreScreen();
+        redrawScreen = true;
         
       } else {
         soundRelease();
@@ -238,7 +238,7 @@ void showPlayerNameScreen(uint8_t p) {
 
   for (i=PLAYER_BOX_TOP;i<PLAYER_BOX_TOP+10;i++)
     drawSpace(WIDTH/2-8,i,16);
-  saveScreen();
+
   resetScreenWithBorder();
 
   canDelete = prefs.localPlayerCount>1;
@@ -506,10 +506,12 @@ void showTableSelectionScreen() {
       } else if (input.key == 'r' || input.key =='R') {
         drawBlank(LMAR-2,9+tableIndex*2);
         break;
+#ifdef COLOR_TOGGLE
       } else if (input.key == 'c' || input.key =='C') {
         prefs.color = cycleNextColor();
         savePrefs();
         break;
+#endif        
       } else if (input.key == 's' || input.key =='S') {
         prefs.disableSound = !prefs.disableSound;  
         soundCursor();

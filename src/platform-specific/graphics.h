@@ -22,7 +22,6 @@ void resetScreen(bool forBorderScreen);
 
 void drawText(unsigned char x, unsigned char y, char* s);
 void drawTextAlt(unsigned char x, unsigned char y, char* s);
-void drawTextVert(unsigned char x, unsigned char y, char* s);
 
 void clearBelowBoard();
 

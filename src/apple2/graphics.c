@@ -112,7 +112,9 @@ void drawText(unsigned char x, unsigned char y, char* s) {
   y=y*8-OFFSET_Y; 
   if (y==8*(HEIGHT-1)-OFFSET_Y) {
     y=182;
-  } 
+  } else if (y==8*(HEIGHT-3)-OFFSET_Y) {
+    y=162;
+  }
 
   while(c=*s++) {
     if (c>=97 && c<=122) c-=32; 
@@ -129,17 +131,17 @@ void drawTextAlt(unsigned char x, unsigned char y, char* s) {
   static unsigned char c, mustAlt;
   static uint16_t rop;
 
-  mustAlt = state.inGame && x>SCORES_X+5 && y<21;
+  mustAlt = state.inGame && clientState.game.round && x>SCORES_X+5 && y<21;
  
   y=y*8-OFFSET_Y; 
   if (y==8*(HEIGHT-1)-OFFSET_Y) {
     y=182;
-  } 
+  }
 
   while(c=*s++) {
     if (mustAlt) {
       rop = diceRop[3+x%2];
-    } else if (y!=21*8-OFFSET_Y && !colorMode && (c<65 || c> 90)) {
+    } else if (!colorMode && (c<65 || c> 90)) {
       rop = ROP_COLORS; 
     } else {
       rop=ROP_CPY;
@@ -147,15 +149,6 @@ void drawTextAlt(unsigned char x, unsigned char y, char* s) {
     
     if (c>=97 && c<=122) c-=32; 
     hires_putc(x++,y,rop,c);
-  }  
-}
-
-void drawTextVert(unsigned char x, unsigned char y, char* s) {
-  static unsigned char c;
-  y=y*8-OFFSET_Y;
-  while(c=*s++) {
-    if (c>=97 && c<=122) c-=32;
-    hires_putc(x,y+=8,ROP_CPY,c);
   }  
 }
 
@@ -233,7 +226,7 @@ void drawBlank(unsigned char x, unsigned char y) {
 }
 
 void drawSpace(unsigned char x, unsigned char y, unsigned char w) {
-  hires_Mask(x,y*8-OFFSET_Y,w,8,0xa900);
+  hires_Mask(x,y==HEIGHT-3 ? 162 : y*8-OFFSET_Y,w,8,0xa900);
 }
 
 void drawBoard() {

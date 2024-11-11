@@ -14,7 +14,6 @@
 #define HELP_X WIDTH-18
 
 uint8_t chat[20]=""; 
-//uint8_t scoreY[] = {1,2,3,4,5,6, 8, 9,11,12,13,14,15,16,17,19};
 uint8_t scoreY[] =   {3,4,5,6,7,8,10,11,13,14,15,16,17,18,19,21};
 char* scores[]={"one","two","three","four","five","six","total","bonus","set 3","set 4","house","s run","l run","count"};
 uint8_t cursorPos, prevCursorPos, spectators, inputField_done, validX;
@@ -54,6 +53,7 @@ void renderBoardNamesMessages() {
   static Player *player; 
   static int16_t score;
   
+  // Could move this to a define to save space if runtime check is not needed
   fullWidth = WIDTH>=40;
 
   // If player is waiting on end game screen, auto-ready up if the game is starting
@@ -105,7 +105,7 @@ void renderBoardNamesMessages() {
       centerTextAlt(6, clientState.game.serverName);
 
       drawLine(READY_LEFT,7,16);
-      centerTextAlt(HEIGHT-7,"press ESC for menu");  
+      centerTextAlt(18,"press ESC for menu");  
       centerTextAlt(HEIGHT-1,"press TRIGGER/SPACE to toggle");
     }
   
@@ -167,7 +167,7 @@ void renderBoardNamesMessages() {
           }
         }
 
-      } else /*if (i<=state.prevPlayerCount)*/ {
+      } else if (i<=state.prevPlayerCount || state.prevPlayerCount==0) {
         // Blank out entries for this player
         if (fullWidth)
           drawSpace(0,y,9);
@@ -277,7 +277,7 @@ void renderBoardNamesMessages() {
           if (len<3) {
             drawSpace(h,scoreY[j],len);
           }
-          if (j==15 || (!newScoreFound && !ignoreNewScore && i!= state.localPlayer[state.currentLocalPlayer].index && i==mostRecentPlayer && j!=6 && j!=7 && !state.renderedScore[i*16+j])) {
+          if (j!=6 && j!=7 && j!=15 && !newScoreFound && !ignoreNewScore && i!= state.localPlayer[state.currentLocalPlayer].index && i==mostRecentPlayer && !state.renderedScore[i*16+j]) {
             drawTextAlt(i4-len,scoreY[j],tempBuffer);
             if (scoreCursorY==0 ) {
               scoreCursorY=scoreY[j];
@@ -293,8 +293,6 @@ void renderBoardNamesMessages() {
           drawSpace(h,scoreY[j],3);
         }
       }
-       
-      //}
     }
 
     // Animate arrow showing newly added score
@@ -396,20 +394,23 @@ void renderBoardNamesMessages() {
     } else {
        // Handle end of game
 
-      // Clear active indicators
-      drawTextVert(0,PLAYER_LIST_Y_OFFSET+1,"            ");
+      // Clear active indicator
+      if (fullWidth && state.prevActivePlayer>-1) {
+        drawBlank(0,state.prevActivePlayer+PLAYER_LIST_Y_OFFSET+1);
+      }
+
       centerText(GAMEOVER_PROMPT_Y, clientState.game.prompt);
 
       if (clientState.game.round != state.prevRound) {
         soundGameDone();
-        pause(180);
-        //centerTextAlt(HEIGHT-1,"press TRIGGER/SPACE to continue");
+
+        centerTextAlt(HEIGHT-1, "please wait..");
+        pause(240);
+        centerTextAlt(HEIGHT-1,"press TRIGGER/SPACE to continue");
         state.waitingOnEndGameContinue = true;
         state.countdownStarted = false;
-      } else {
-        centerTextAlt(HEIGHT-2, "please wait..");
-      }
-        clearCommonInput();     
+      } 
+      clearCommonInput();     
     }
 
     if (state.localPlayerIsActive && !clientState.game.viewing) {

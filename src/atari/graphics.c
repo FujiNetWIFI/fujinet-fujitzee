@@ -255,19 +255,6 @@ void drawTextAlt(unsigned char x, unsigned char y, char* s) {
   }  
 }
 
-void drawTextVert(unsigned char x, unsigned char y, char* s) {
-  static unsigned char c;
-  static unsigned char* pos;
-
-  pos = xypos(x,y);
-
-  while(c=*s++) {
-    if (c<65 && c>=32) c-=32;
-    *pos = c;
-    pos+=40;
-  }  
-}
-
 void resetScreen(bool forBorderScreen) { 
   static uint8_t i;
   waitvsync();

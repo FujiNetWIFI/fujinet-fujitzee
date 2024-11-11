@@ -15,7 +15,7 @@
 //#define SCORE_CURSOR_ALT 2 // Alternate score cursor color
 #define BOTTOM_HEIGHT 3 // How high the bottom panel is
 #define SCORES_X 2 // X start of scoreboard
-#define GAMEOVER_PROMPT_Y HEIGHT-1
+#define GAMEOVER_PROMPT_Y HEIGHT-2
 #define QUERY_SUFFIX "&be=1" // Big Endian response for CoCo (68000)
 #define ROLL_X WIDTH-24
 #define TIMER_X 5

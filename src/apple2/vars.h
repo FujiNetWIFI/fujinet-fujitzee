@@ -15,7 +15,7 @@
 //#define SCORE_CURSOR_ALT 2 // Alternate score cursor color
 #define BOTTOM_HEIGHT 3 // How high the bottom panel is
 #define SCORES_X 10 // X start of scoreboard
-#define GAMEOVER_PROMPT_Y HEIGHT-1
+#define GAMEOVER_PROMPT_Y HEIGHT-2
 
 #define COLOR_TOGGLE // Rather than multiple colors, platform only supports toggling color mode on/off
 #define QUERY_SUFFIX "" // No extra params for Apple 
