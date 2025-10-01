@@ -10,8 +10,8 @@
 
 // Other platform specific constnats
 
-#define ROLL_SOUND_MOD 2 // How often to play roll sound
-#define ROLL_FRAMES 16 // How many roll frames to play
+#define ROLL_SOUND_MOD 1 // How often to play roll sound
+#define ROLL_FRAMES 11 // How many roll frames to play
 //#define SCORE_CURSOR_ALT 2 // Alternate score cursor color
 #define BOTTOM_HEIGHT 3 // How high the bottom panel is
 #define SCORES_X 2 // X start of scoreboard
@@ -22,6 +22,11 @@
 #define TIMER_NUM_OFFSET_X 2
 #define TIMER_NUM_OFFSET_Y 1
 #define ONLINE_HELP 1
+
+#undef ESCAPE
+#define ESCAPE "BREAK"
+#undef ESC
+#define ESC "BRK"
 
 
 

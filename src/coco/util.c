@@ -17,6 +17,8 @@ uint16_t getTime() {
 
 void quit() {
   resetGraphics();
+  memset(0x200,0,0x200);
+  memset(0x600,0,0x1200);
   exit(0);
 }
 

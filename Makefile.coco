@@ -39,20 +39,21 @@ CFLAGS= \
 			--stack-space=512 \
 			-fomit-frame-pointer \
 			-O2 \
-			--raw
+			--raw \
+			--no-relocate
 #			--check-null \
 #			-D_CMOC_CHECK_STACK_OVERFLOW_ --check-stack\
 
 # Load from 1A00 to 7D00, but have early warning at 7B00
 LDFLAGS= 			--$(TARGET) \
-	-o$(TARGET_EXEC).app \
+	-o$(TARGET_EXEC).bin \
 	-I $(CMOC_SRC) \
 	--limit=7B00 \
 	--org=1A00
 
 
 LDFLAGS_TEST= 			--$(TARGET) \
-	-o$$(TARGET_EXEC).app
+	-o$$(TARGET_EXEC).bin
 
 INC_DIRS := $(shell find $(SRC_DIRS) -type d)
 INC_FLAGS := $(addprefix -I,$(INC_DIRS))
@@ -65,8 +66,8 @@ $(BUILD_DIR)/$(TARGET_EXEC): clean .get_fujinet_lib $(OBJS)
 # Prepare Disk
 	$(RM) $(DSK)
 	decb dskini $(DSK)
-	cp $(TARGET_EXEC).app f.bin 
-	writecocofile $(DSK) f.bin 
+	writecocofile $(DSK) $(TARGET_EXEC).bin
+
 #	install-coco-boot-loader $(DSK) support/coco/loader.bin
 #	split -a1 -n6 -d $(TARGET_EXEC).app $(TARGET_EXEC).aa
 #	for f in $(TARGET_EXEC).aa*; do writecocofile $(DSK) $$f; done
@@ -79,19 +80,20 @@ $(BUILD_DIR)/$(TARGET_EXEC): clean .get_fujinet_lib $(OBJS)
 
 	
 ifeq ($(OS),Windows_NT) 
-	@echo ........................................................................ & dir $(TARGET_EXEC).app | find "$(TARGET_EXEC).app" &echo ........................................................................
+	@echo ........................................................................ & dir $(TARGET_EXEC).bin | find "$(TARGET_EXEC).bin" &echo ........................................................................
 else
-	@echo ........................................................................ ;ls -l $(TARGET_EXEC).app;echo ........................................................................
+	@echo ........................................................................ ;ls -l $(TARGET_EXEC).bin;echo ........................................................................
 endif
+
+# Test using Fujinet - copy to fujine-tpc SD drive. On first run, mount that drive for future runs
 	cp $(CURDIR)/$(DSK) ~/Documents/fujinetpc-coco/SD/$(DSK)
+#	cd ~/mame_coco;mame coco3 -window -nomaximize -resolution 1024x768 -natural -autoboot_delay 1 -autoboot_command "runm\"fujitzee\n"
+	cd ~/mame_coco;mame coco -window -nomaximize -resolution 1024x768 -natural -autoboot_delay 2 -autoboot_command "runm\"fujitzee\n"
 
-	cd ~/mame_coco;mame coco3 -window -nomaximize -resolution 1024x768 -natural -autoboot_delay 1 -autoboot_command "runm\"f\n"
-#	cd ~/mame_coco;mame coco -window -nomaximize -resolution 1024x768 -natural -autoboot_delay 2 -autoboot_command "runm\"f\n"
 
-#	cd ~/mame_coco;mame coco3 -window  -nomaximize -resolution 1024x768 -natural -autoboot_delay 1 
+# Test local floppy - not in fujinet
+#	cd ~/mame_coco;mame coco -window -natural -autoboot_delay 2 -autoboot_command "runm\"fujitzee" -flop1 $(CURDIR)/$(DSK)
 
-#	cd ~/mame_coco;mame coco -window -natural -autoboot_delay 2 -autoboot_command "dos\n" -flop1 $(CURDIR)/$(DSK)
-#	-killall -q wine64-preloader;wine64 ~/Downloads/vcc-2.1.9.0/vcc.exe $(TARGET_EXEC).bin
 
 # c source
 $(BUILD_DIR)/%.c.o: %.c

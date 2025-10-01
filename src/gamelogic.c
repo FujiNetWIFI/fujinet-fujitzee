@@ -105,7 +105,7 @@ void renderBoardNamesMessages() {
       centerTextAlt(6, clientState.game.serverName);
 
       drawLine(READY_LEFT,7,16);
-      centerTextAlt(18,"press ESC for menu");  
+      centerTextAlt(18,"press " ESCAPE " for menu");  
       centerTextAlt(HEIGHT-1,"press TRIGGER/SPACE to toggle");
     }
   

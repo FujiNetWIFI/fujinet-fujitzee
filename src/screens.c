@@ -199,7 +199,7 @@ void showPlayerGroupScreen() {
       if (prefs.localPlayerCount<4) 
         drawTextAlt(WIDTH/2-6,PLAYER_BOX_TOP+3+i, "A:add player");
   
-      centerTextAlt(HEIGHT-1,"press ESCAPE to close");
+      centerTextAlt(HEIGHT-1,"press " ESCAPE " to close");
     }
 
     // Edit player by number
@@ -639,7 +639,7 @@ void showInGameMenuScreen() {
     drawTextAlt(INGAME_MENU_X,y+=2, "  C: color mode");
     #endif
     drawTextAlt(INGAME_MENU_X,y+=2, prefs.disableSound ?  "  S: sound OFF" : "  S: sound ON");
-    drawTextAlt(INGAME_MENU_X,y+=2, "ESC: keep playing"); 
+    drawTextAlt(INGAME_MENU_X,y+=2, ESC ": keep playing"); 
     
     strcpy(tempBuffer,  "CURRENTLY AT ");
     strcat(tempBuffer, clientState.game.serverName);

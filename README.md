@@ -9,9 +9,17 @@ Fujitzee is a clone of the popular Yahtzee dice game.
 * **C64** *(planned)*
 * *Please contribute to add more!*
 
+### To Test/Run
+1. Start Fujinet-PC for your appropriate platform
+2. Tweak the emulator start commands in makefile / Makefile.coco, and for CoCo, the cp command that copies the dsk to the Fujinet-PC SD directory
+3. Build/run per below
 
 ### To build: *CoCo*
+
+*NOTE:* The latest fujinet-lib release (4.7.3) does not work with CoCo, so the latest fujinet-lib needs to cloned and built to work.
+
 `make -f Makefile.coco`
+
 
 ### To build: *Atari | Apple ][ | C64*
 

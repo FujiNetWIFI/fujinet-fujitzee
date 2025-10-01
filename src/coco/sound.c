@@ -59,7 +59,7 @@ void soundFujitzee() {
 }
 
 void soundMyTurn() {
-  tone(40,1,60);
+  tone(40,1,40);
   tone(40,2,0);
 }
 
@@ -72,8 +72,8 @@ void soundGameDone() {
 
 
 void soundRollDice() {
- tone(100+(rand() % 20)*7,0,5);
  tone(100+(rand() % 20)*7,0,3);
+ //tone(100+(rand() % 20)*7,0,3);
  tone(100+(rand() % 20)*7,0,0);
 }
 
