@@ -1,6 +1,5 @@
 #ifdef _CMOC_VERSION_
 
-#include <string.h>
 #include <stdint.h>
 #include <conio.h>
 #include "../platform-specific/sound.h"
@@ -15,13 +14,13 @@ void hires_putc(uint8_t x, uint8_t y, uint8_t rop, uint8_t c)
   //static uint8_t i;
   hires_Draw(x,y,1,8,rop,&charset[(uint16_t)c<<3]);
   //memcpy(sprite, &charset[c<<3],8);
-    
+
   //for(i=0;i<8;i++)
     //sprite[i]=sprite[i]&rop;
   //   x=0;
   //   y=0;
   // for(i=0;i<92;i++) {
-    
+
   //   if (x==32) {
   //     x=0;
   //     y+=8;
