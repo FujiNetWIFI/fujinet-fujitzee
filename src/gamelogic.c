@@ -13,7 +13,6 @@
 #define BOTTOM_PANEL_Y HEIGHT-BOTTOM_HEIGHT
 #define HELP_X WIDTH-18
 
-uint8_t chat[20]=""; 
 uint8_t scoreY[] =   {3,4,5,6,7,8,10,11,13,14,15,16,17,18,19,21};
 char* scores[]={"one","two","three","four","five","six","total","bonus","set 3","set 4","house","s run","l run","count"};
 uint8_t cursorPos, prevCursorPos, spectators, inputField_done, validX;

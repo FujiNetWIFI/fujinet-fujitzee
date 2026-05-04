@@ -6,6 +6,8 @@ Makefile.options
 build/
 dist/
 obj/
+r2r/
+_cache/
 
 # Emulator configs
 altirra-debug.ini
