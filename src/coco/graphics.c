@@ -163,19 +163,19 @@ void drawText(unsigned char x, unsigned char y, char* s) {
   if (y==255)
     y=scoreY[14]*8-OFFSET_Y+1;
   else {
-    y=y*8-OFFSET_Y; 
+    y=y*8-OFFSET_Y;
     if (y==8*(HEIGHT-1)-OFFSET_Y) {
       y=182;
     } else if (y==8*(HEIGHT-3)-OFFSET_Y) {
       y=162;
     }
   }
-  
+
 
   while(c=*s++) {
-    if (c>=97 && c<=122) c-=32; 
+    if (c>=97 && c<=122) c-=32;
     hires_putc(x++,y,ROP_CPY,c);
-  }  
+  }
 }
 
 void drawChar(unsigned char x, unsigned char y, char c, unsigned char alt) {

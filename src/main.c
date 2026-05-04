@@ -28,7 +28,7 @@ char serverEndpoint[50] = "https://fujitzee.carr-designs.com/";
 
 // For local dev testing, instead of changing the endpoint above, 
 // set 3rd byte in the e41c0300 appkey to 0xff, which will cause the below endpoing to be used
-char localServer[] = "http://127.0.0.1:8080/"; 
+char localServer[] = "http://127.0.0.1:8080/";
 
 ClientState clientState;
 GameState state;

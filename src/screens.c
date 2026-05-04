@@ -399,12 +399,44 @@ void showWelcomeScreen() {
 #define RMAR WIDTH/2+TWID/2
 #define LMAR WIDTH/2-TWID/2
 
+static uint8_t lobbyTableIndex;
+
+/// @brief Redraws the lobby cursor: deselects the current row, advances by dy, selects the new row.
+static void redrawLobbyCursor(int8_t dy) {
+  Table* t;
+  uint8_t row;
+  char nameBuf[22];
+  char playersBuf[7];
+
+  // Visually unselect old table — copy fields locally first to defend
+  // against memory corruption between calls (cmoc/CoCo bug in this path).
+  t = &clientState.tables.table[lobbyTableIndex];
+  strcpy(nameBuf, t->name);
+  strcpy(playersBuf, t->players);
+  row = 9 + lobbyTableIndex * 2;
+  drawBlank(LMAR-2, row);
+  drawTextAlt(LMAR, row, nameBuf);
+  drawTextAlt(RMAR-5, row, playersBuf);
+
+  // Move to new index
+  lobbyTableIndex = (dy + lobbyTableIndex + clientState.tables.count) % clientState.tables.count;
+
+  // Visually select new table — same defensive copy
+  t = &clientState.tables.table[lobbyTableIndex];
+  strcpy(nameBuf, t->name);
+  strcpy(playersBuf, t->players);
+  row = 9 + lobbyTableIndex * 2;
+  drawIcon(LMAR-2, row, ICON_MARK);
+  drawText(LMAR, row, nameBuf);
+  drawText(RMAR-5, row, playersBuf);
+}
+
 /// @brief Shows a screen to select a table to join
 void showTableSelectionScreen() {
-  static uint8_t shownChip, tableIndex, altChip, redrawScreen;
+  static uint8_t shownChip, altChip, redrawScreen;
   static char* localQuery;
   static Table* table;
-  state.inGame=tableIndex=altChip=0;
+  state.inGame=lobbyTableIndex=altChip=0;
   
   resetScreenWithBorder();
 
@@ -457,10 +489,10 @@ void showTableSelectionScreen() {
     if (clientState.tables.count>0) {
       drawSpace(LMAR,12, TWID);
       for(i=0;i<clientState.tables.count;++i) {
-        table = &clientState.tables.table[i];        
+        table = &clientState.tables.table[i];
         j=9+i*2;
         k=RMAR-strlen(table->players);
-        
+
         drawTextAlt(k, j, table->players);
         drawTextAlt(LMAR,j, table->name);
         
@@ -489,13 +521,13 @@ void showTableSelectionScreen() {
     while (!input.trigger || !clientState.tables.count) {
 
       if (clientState.tables.count) {
-        drawIcon(LMAR-2,9+tableIndex*2, altChip<50 ? ICON_MARK : ICON_MARK_ALT);
-      } 
+        drawIcon(LMAR-2,9+lobbyTableIndex*2, altChip<50 ? ICON_MARK : ICON_MARK_ALT);
+      }
 
       waitvsync();
       altChip=(altChip+1) % 60;
       readCommonInput();
-      
+
       if (input.key == 'h' || input.key == 'H') {
         saveScreen();
         showHelpScreen();
@@ -504,16 +536,16 @@ void showTableSelectionScreen() {
           break;
         }
       } else if (input.key == 'r' || input.key =='R') {
-        drawBlank(LMAR-2,9+tableIndex*2);
+        drawBlank(LMAR-2,9+lobbyTableIndex*2);
         break;
 #ifdef COLOR_TOGGLE
       } else if (input.key == 'c' || input.key =='C') {
         prefs.color = cycleNextColor();
         savePrefs();
         break;
-#endif        
+#endif
       } else if (input.key == 's' || input.key =='S') {
-        prefs.disableSound = !prefs.disableSound;  
+        prefs.disableSound = !prefs.disableSound;
         soundCursor();
         savePrefs();
       } else if (input.key == 'p' || input.key =='P') {
@@ -526,43 +558,24 @@ void showTableSelectionScreen() {
         itoa(input.key, tempBuffer, 10);
         drawStatusText(tempBuffer);
       }*/
-      
+
       if (!shownChip || (clientState.tables.count>0 && input.dirY)) {
-        // Visually unselect old table
-        table = &clientState.tables.table[tableIndex];
-        j=9+tableIndex*2;
-        drawBlank(LMAR-2,j);
-        drawTextAlt(LMAR,j, table->name);
-        drawTextAlt(RMAR-5, j, table->players);
-
-        // Move table index to new table
-        tableIndex = (input.dirY+tableIndex+clientState.tables.count) % clientState.tables.count;
-
-        // Visually select new table
-        table = &clientState.tables.table[tableIndex];
-        j=9+tableIndex*2;
-        drawIcon(LMAR-2,j, ICON_MARK);
-        drawText(LMAR,j, table->name);
-        drawText(RMAR-5, j, table->players);
-
+        redrawLobbyCursor(input.dirY);
         soundCursor();
-
-        // Housekeeping - allows platform specific housekeeping, like stopping Attract/screensaver mode in Atari
         housekeeping();
-
         shownChip=1;
       }
     }
-    
+
     if (input.trigger) {
       soundScore();
 
       // Clear screen and write server name
       resetScreenWithBorder();
-      centerText(15, clientState.tables.table[tableIndex].name);
-      
+      centerText(15, clientState.tables.table[lobbyTableIndex].name);
+
       strcpy(query, "?table=");
-      strcat(query, clientState.tables.table[tableIndex].table);
+      strcat(query, clientState.tables.table[lobbyTableIndex].table);
       strcpy(tempBuffer, serverEndpoint);
       strcat(tempBuffer, query);
 
