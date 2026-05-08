@@ -7,7 +7,9 @@
 #include "misc.h"
 #include "stateclient.h"
 #include "screens.h"
+#ifndef __WATCOMC__
 #include <peekpoke.h>
+#endif
 
 #define PLAYER_LIST_Y_OFFSET 5
 #define BOTTOM_PANEL_Y HEIGHT-BOTTOM_HEIGHT
@@ -96,6 +98,12 @@ void renderBoardNamesMessages() {
       if (fullWidth) {
         drawLogo(0,0);
         drawTextAlt(1,4,"players");
+#ifdef __WATCOMC__
+        /* FUJITZEE-box bottom-right corner and score-box top-left corner
+         * land on the same cell on msdos. Replace it with a thick cross
+         * so both boxes' edges visually connect through the joint. */
+        drawIcon(9, 2, 0x50);
+#endif
       }
       
     } else {
@@ -536,6 +544,10 @@ void handleAnimation() {
 
     // Draw "Rolls" die if this player's turn and there are rolls left
     drawDie(ROLL_X,HEIGHT-4,clientState.game.rollsLeft+13,0,0);
+
+#ifdef __WATCOMC__
+    setHighlight(clientState.game.activePlayer, true, 0);
+#endif
   }
 }
 

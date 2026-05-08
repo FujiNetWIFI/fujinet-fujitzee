@@ -34,3 +34,7 @@ f.bin
 # Project specific ignores
 gen/gencharset
 gen/charset
+
+# Compiled charset generators
+support/*/create_charset
+support/*/gencharset

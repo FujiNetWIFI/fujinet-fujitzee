@@ -1,4 +1,6 @@
+#ifndef __WATCOMC__
 #include <joystick.h>
+#endif
 #include <string.h>
 #include "platform-specific/graphics.h"
 #include "platform-specific/input.h"
@@ -8,6 +10,17 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+
+#ifdef __WATCOMC__
+#include <conio.h>      /* Watcom kbhit() */
+#define JOY_LEFT(v)   0
+#define JOY_RIGHT(v)  0
+#define JOY_UP(v)     0
+#define JOY_DOWN(v)   0
+#define JOY_BTN_1(v)  0
+#define JOY_BTN_2(v)  0
+extern char cgetc(void);
+#endif
 
 InputStruct input;
 unsigned char _lastJoy, _joy, _joySameCount=10;
