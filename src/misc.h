@@ -1,8 +1,10 @@
 #ifndef MISC_H
 #define MISC_H
 
+#ifndef __WATCOMC__
 #include <joystick.h>
 #include <conio.h>
+#endif
 #include "platform-specific/graphics.h"
 #include "platform-specific/input.h"
 #include <stdbool.h>
@@ -22,6 +24,17 @@
 #define PLAYER_MAX 12
 
 #define FUJITZEE_SCORE 14
+
+#ifdef __WATCOMC__
+/* Watcom defaults to 2-byte struct alignment in 16-bit, which inserts
+ * padding before int16_t fields. The server sends bytes assuming the
+ * cc65/CMOC tightly-packed layout, so any padding here shifts every
+ * field after the pad and corrupts the parsed state (e.g. the local
+ * player's name shows up missing its first letter). Force 1-byte
+ * packing for the Game/Player/Tables structs so the binary layout
+ * matches what the server sends. */
+#pragma pack(push, 1)
+#endif
 
 typedef struct {
   char table    [9];
@@ -54,6 +67,10 @@ typedef struct {
   int8_t validScores[15];
   Player players[PLAYER_MAX];
 } Game;
+
+#ifdef __WATCOMC__
+#pragma pack(pop)
+#endif
 
 typedef union {
   uint8_t firstByte;
