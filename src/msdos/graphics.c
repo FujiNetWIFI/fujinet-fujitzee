@@ -88,8 +88,13 @@ static const unsigned char diceChars[] = {
     0xA6,0xCC,0xA7, 0xAA,0xA0,0xAB, 0xA8,0xCD,0xA9
 };
 
-/* Forward decl so plot_raw can re-apply highlight after writing. */
+/* Forward decls so plot_raw can re-apply highlight after writing. */
 static void hilite_cell(unsigned char x, unsigned char y, bool on);
+static void hilite_cell_partial(unsigned char x, unsigned char y,
+                                unsigned char mask0, unsigned char mask1, bool on);
+static void hilite_cell_range(unsigned char x, unsigned char y,
+                              unsigned char mask0, unsigned char mask1,
+                              unsigned char rstart, unsigned char rend, bool on);
 
 static void plot_raw(unsigned char x, unsigned char y, const unsigned char *tile)
 {
@@ -106,15 +111,20 @@ static void plot_raw(unsigned char x, unsigned char y, const unsigned char *tile
     }
 
     /* Auto-extend the active-column highlight: if the cell we just wrote
-     * is inside the active player's column interior (rows 3..19, cols
-     * SCORES_X+6+highlightX*4 .. +2), re-apply the bg color transform
-     * so the highlight survives score updates, cursor moves, and any
-     * other tile draws into that area without explicit setHighlight
-     * calls from common code. */
-    if (highlightX >= 0 && y >= 3 && y <= 19) {
+     * is anywhere in the active player's full column box (rows 0..20),
+     * re-apply the bg color transform so the highlight survives score
+     * updates, cursor moves, and any other tile draws into that area.
+     * The column spans 5 cells: hx-1 (left vertical, partial right half),
+     * hx..hx+2 (full interior), hx+3 (right vertical, partial left 2px). */
+    if (highlightX >= 0 && y <= 20) {
         unsigned char hx = SCORES_X + 6 + (unsigned char)highlightX * 4;
-        if (x >= hx && x < hx + 3) {
-            hilite_cell(x, y, true);
+        unsigned char rend = (y == 20) ? 3 : 7;  /* row 20: top half only */
+        if (x == hx - 1) {
+            hilite_cell_range(x, y, 0x00, 0xAA, 0, rend, true);
+        } else if (x >= hx && x <= hx + 2) {
+            hilite_cell_range(x, y, 0xAA, 0xAA, 0, rend, true);
+        } else if (x == hx + 3) {
+            hilite_cell_range(x, y, 0xA0, 0x00, 0, rend, true);
         }
     }
 }
@@ -172,27 +182,24 @@ void initGraphics()
     /* Background = black via the CGA color-select port. */
     outp(0x3D9, 0x30);
 
-    /* VGA palette remap:
-     *   color 0 -> black       (table background, dice pip dots,
-     *                            dice corner-curve pixels)
-     *   color 1 -> cyan        (box borders, dividers, alt-text/icons,
-     *                            kept-die brackets)
-     *   color 2 -> blue        (active-column highlight bg, the
-     *                            activated Roll button face, cursor) */
+    /* VGA palette remap (color 0 and 2 swapped from the original Atari
+     * mapping): table background is now blue, blue-shadow elements are
+     * black. Dice pips/text and Roll-button text get re-encoded to use
+     * color 2 in the tile data so they still render BLACK. */
     r.h.ah = 0x10; r.h.al = 0x00;
-    r.h.bl = 0x00; r.h.bh = 0x00;
+    r.h.bl = 0x00; r.h.bh = 0x01;     /* color 0 -> blue (table bg) */
     int86(0x10, &r, &r);
 
     r.h.ah = 0x10; r.h.al = 0x00;
-    r.h.bl = 0x01; r.h.bh = 0x0B;
+    r.h.bl = 0x01; r.h.bh = 0x0B;     /* color 1 -> cyan */
     int86(0x10, &r, &r);
 
     r.h.ah = 0x10; r.h.al = 0x00;
-    r.h.bl = 0x02; r.h.bh = 0x01;
+    r.h.bl = 0x02; r.h.bh = 0x00;     /* color 2 -> black (was blue) */
     int86(0x10, &r, &r);
 
     r.h.ah = 0x10; r.h.al = 0x00;
-    r.h.bl = 0x03; r.h.bh = 0x0F;
+    r.h.bl = 0x03; r.h.bh = 0x0F;     /* color 3 -> white */
     int86(0x10, &r, &r);
 }
 
@@ -426,6 +433,7 @@ void clearBelowBoard()
 #define DICE_PERIM_PIXELS 220
 #define CKR(px, py)       ((((px) + (py)) & 1) ? 2 : 1)
 static unsigned char diceCursorSave[DICE_PERIM_PIXELS];
+static unsigned char diceCursorX = 0;
 static bool diceCursorActive = false;
 
 static unsigned char get_pixel_2bpp(unsigned int px, unsigned int py)
@@ -447,11 +455,16 @@ static void set_pixel_2bpp(unsigned int px, unsigned int py, unsigned char color
 
 void drawDiceCursor(unsigned char x)
 {
-    unsigned int fL = ((unsigned int)x << 3) - 3;     /* frame left  */
-    unsigned int fR = ((unsigned int)x << 3) + 26;    /* frame right */
-    unsigned int fT = ((unsigned int)(HEIGHT - 4) << 3) - 3;
-    unsigned int fB = ((unsigned int)(HEIGHT - 4) << 3) + 26;
+    unsigned int fL, fR, fT, fB;
     unsigned int i, idx = 0;
+    /* If a cursor is already drawn somewhere, hide it first so we
+     * don't overwrite the save buffer with the cursor's own pixels. */
+    if (diceCursorActive) hideDiceCursor(diceCursorX);
+    diceCursorX = x;
+    fL = ((unsigned int)x << 3) - 3;     /* frame left  */
+    fR = ((unsigned int)x << 3) + 26;    /* frame right */
+    fT = ((unsigned int)(HEIGHT - 4) << 3) - 3;
+    fB = ((unsigned int)(HEIGHT - 4) << 3) + 26;
 
     /* Top outer (rounded: skip cols fL and fR). */
     for (i = 1; i < 29; i++) {
@@ -498,13 +511,18 @@ void drawDiceCursor(unsigned char x)
 
 void hideDiceCursor(unsigned char x)
 {
-    unsigned int fL = ((unsigned int)x << 3) - 3;
-    unsigned int fR = ((unsigned int)x << 3) + 26;
-    unsigned int fT = ((unsigned int)(HEIGHT - 4) << 3) - 3;
-    unsigned int fB = ((unsigned int)(HEIGHT - 4) << 3) + 26;
+    unsigned int fL, fR, fT, fB;
     unsigned int i, idx = 0;
 
     if (!diceCursorActive) return;
+    /* Always restore at the position the cursor was last drawn — the
+     * caller-supplied x can drift if the calling logic changes the
+     * cursor target before sending the hide. */
+    (void)x;
+    fL = ((unsigned int)diceCursorX << 3) - 3;
+    fR = ((unsigned int)diceCursorX << 3) + 26;
+    fT = ((unsigned int)(HEIGHT - 4) << 3) - 3;
+    fB = ((unsigned int)(HEIGHT - 4) << 3) + 26;
     for (i = 1; i < 29; i++) set_pixel_2bpp(fL + i, fT,         diceCursorSave[idx++]);
     for (i = 0; i < 30; i++) set_pixel_2bpp(fL + i, fT + 1,     diceCursorSave[idx++]);
     for (i = 0; i < 30; i++) set_pixel_2bpp(fL + i, fB - 1,     diceCursorSave[idx++]);
@@ -573,19 +591,69 @@ static void hilite_cell(unsigned char x, unsigned char y, bool on)
     }
 }
 
+/* Partial-cell variant: keep_mask selects which 0xAA-position bits (the
+ * "high bit of each pixel pair") to keep modified. Other pairs are
+ * restored to their pre-hilite state. */
+static void hilite_byte_partial(unsigned char far *p, unsigned char keep_mask, bool on)
+{
+    unsigned char orig = *p;
+    hilite_byte_in_place(p, on);
+    *p = (*p & keep_mask) | (orig & ~keep_mask);
+}
+
+/* Apply partial-cell highlight to a sub-range of internal rows [rstart, rend]
+ * of cell (x, y). mask0/mask1 select which pixels of byte 0 / byte 1 to
+ * affect (0xAA = all 4 pixels, 0xA0 = first 2 pixels, etc.). */
+static void hilite_cell_range(unsigned char x, unsigned char y,
+                              unsigned char mask0, unsigned char mask1,
+                              unsigned char rstart, unsigned char rend, bool on)
+{
+    unsigned char i;
+    unsigned char col = x << 1;
+    unsigned char ybase = y << 3;
+    for (i = rstart; i <= rend; i++) {
+        unsigned char r  = ybase + i;
+        unsigned char rh = r >> 1;
+        unsigned int  ro = (unsigned int)rh * VIDEO_LINE_BYTES + col;
+        if (r & 1) ro += VIDEO_ODD_OFFSET;
+        if (mask0) hilite_byte_partial(&video[ro],     mask0, on);
+        if (mask1) hilite_byte_partial(&video[ro + 1], mask1, on);
+    }
+}
+
+static void hilite_cell_partial(unsigned char x, unsigned char y,
+                                unsigned char mask0, unsigned char mask1, bool on)
+{
+    hilite_cell_range(x, y, mask0, mask1, 0, 7, on);
+}
+
 static void hilite_column_interior(int8_t player, bool on)
 {
     unsigned char x = SCORES_X + 6 + player*4;
     unsigned char y;
-    /* Score area only: rows 3..19 sit inside the box (between the top
-     * thick divider at row 2 and the bottom thick divider at row 20).
-     * Skip header rows 0-1 and divider rows 2/20 so the highlight does
-     * not bleed past the box boundary. */
-    for (y = 3; y <= 19; y++) {
+    /* Cover the entire box from row 0 (column-header thick rule) down
+     * to row 19 (FUJITZEE row). Cells x..x+2 are the full column
+     * interior; x-1 (left vertical's cell) gets only its right half
+     * highlighted (cols 4-7), and x+3 (right vertical's cell) gets
+     * only its leftmost 2 pixels (cols 0-1). The verticals themselves
+     * (cyan at cols 2-3) are not color 0 so the highlight transform
+     * leaves them intact. */
+    for (y = 0; y <= 19; y++) {
+        hilite_cell_partial(x - 1, y, 0x00, 0xAA, on);
         hilite_cell(x,     y, on);
         hilite_cell(x + 1, y, on);
         hilite_cell(x + 2, y, on);
+        hilite_cell_partial(x + 3, y, 0xA0, 0x00, on);
     }
+    /* Row 20 = bottom thick rule cell. Highlight only its top half
+     * (internal rows 0-3 = above + including the rule). Skipping the
+     * lower half (rows 4-7) prevents the highlight from bleeding below
+     * the rule into the dice area. */
+    hilite_cell_range(x - 1, 20, 0x00, 0xAA, 0, 3, on);
+    hilite_cell_range(x,     20, 0xAA, 0xAA, 0, 3, on);
+    hilite_cell_range(x + 1, 20, 0xAA, 0xAA, 0, 3, on);
+    hilite_cell_range(x + 2, 20, 0xAA, 0xAA, 0, 3, on);
+    hilite_cell_range(x + 3, 20, 0xA0, 0x00, 0, 3, on);
 }
 
 void setHighlight(int8_t player, bool isThisPlayer, uint8_t flash)
