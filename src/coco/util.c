@@ -3,7 +3,7 @@
 #include<peekpoke.h>
 #include<stdlib.h>
 #include<stdint.h>
-#include"../fujinet-fuji.h"
+#include <fujinet-fuji.h>
 #include"../platform-specific/graphics.h"
 #include<coco.h>
 
