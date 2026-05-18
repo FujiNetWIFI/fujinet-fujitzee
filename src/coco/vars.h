@@ -3,12 +3,39 @@
 #ifndef KEYMAP_H
 #define KEYMAP_H
 
-// Screen dimensions for platform
+// Screen dimensions and layout for platform
 
+#ifdef COCO3
+
+// CoCo 3: 320x200x16 graphics, 40x25 character grid (MSDOS-style layout)
+#define WIDTH 40
+#define HEIGHT 25
+
+#define ROLL_SOUND_MOD 1
+#define ROLL_FRAMES 8
+#define BOTTOM_HEIGHT 4
+#define SCORES_X 10
+#define GAMEOVER_PROMPT_Y HEIGHT-3
+#define ROLL_X WIDTH-25
+#define TIMER_X 12
+#define TIMER_NUM_OFFSET_X 0
+#define TIMER_NUM_OFFSET_Y 0
+
+// Icons (MSDOS charset glyph numbering; bit 7 selects the alt palette)
+#define ICON_TEXT_CURSOR  0xD9
+#define ICON_MARK         0x1D
+#define ICON_MARK_ALT     0x1C
+#define ICON_PLAYER       0x0A
+#define ICON_SPEC         0xDC
+#define ICON_CURSOR       0xBE
+#define ICON_CURSOR_ALT   0xBF
+#define ICON_CURSOR_BLIP  0x3E
+
+#else
+
+// CoCo 1/2: 256x192x2 graphics, 32x24 character grid
 #define WIDTH 32
 #define HEIGHT 24
-
-// Other platform specific constnats
 
 #define ROLL_SOUND_MOD 1 // How often to play roll sound
 #define ROLL_FRAMES 11 // How many roll frames to play
@@ -16,19 +43,13 @@
 #define BOTTOM_HEIGHT 3 // How high the bottom panel is
 #define SCORES_X 2 // X start of scoreboard
 #define GAMEOVER_PROMPT_Y HEIGHT-2
-#define QUERY_SUFFIX "&be=1" // Big Endian response for CoCo (68000)
 #define ROLL_X WIDTH-24
 #define TIMER_X 5
 #define TIMER_NUM_OFFSET_X 2
 #define TIMER_NUM_OFFSET_Y 1
+
+// CoCo 1/2 uses online help; the built-in help text overruns memory here.
 #define ONLINE_HELP 1
-
-#undef ESCAPE
-#define ESCAPE "BREAK"
-#undef ESC
-#define ESC "BRK"
-
-
 
 // Icons
 #define ICON_TEXT_CURSOR  0x22
@@ -39,6 +60,16 @@
 #define ICON_CURSOR       0x29
 #define ICON_CURSOR_ALT   0x2A
 #define ICON_CURSOR_BLIP  0x2B
+
+#endif /* COCO3 */
+
+// Common to all CoCo models
+#define QUERY_SUFFIX "&be=1" // Big Endian response for CoCo (6809)
+
+#undef ESCAPE
+#define ESCAPE "BREAK"
+#undef ESC
+#define ESC "BRK"
 
 /**
  * Platform specific key map for common input
