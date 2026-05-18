@@ -311,6 +311,21 @@ void drawFujitzee(unsigned char x, unsigned char y)
     plot_glyph(x+2, y, 0x3B, MASK_WHITE);
     plot_glyph(x+3, y, 0x3C, MASK_WHITE);
     plot_glyph(x+4, y, 0x3D, MASK_WHITE);
+
+    /* Glyph 0x38 carries the score-box left border for the in-game
+     * placement. For a standalone logo (x != SCORES_X) erase that border
+     * bar - the left 4 pixels (byte 0 of the cell) - keeping the tail. */
+    if (x != SCORES_X) {
+        unsigned char i;
+        unsigned char col = (x - 1) << 1;
+        unsigned char ybase = y << 3;
+        for (i = 0; i < 8; i++) {
+            unsigned char r  = ybase + i;
+            unsigned int  ro = (unsigned int)(r >> 1) * VIDEO_LINE_BYTES + col;
+            if (r & 1) ro += VIDEO_ODD_OFFSET;
+            video[ro] = 0;
+        }
+    }
 }
 
 void drawLine(unsigned char x, unsigned char y, unsigned char w)

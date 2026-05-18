@@ -98,10 +98,10 @@ void renderBoardNamesMessages() {
       if (fullWidth) {
         drawLogo(0,0);
         drawTextAlt(1,4,"players");
-#ifdef __WATCOMC__
+#if defined(__WATCOMC__) || defined(COCO3)
         /* FUJITZEE-box bottom-right corner and score-box top-left corner
-         * land on the same cell on msdos. Replace it with a thick cross
-         * so both boxes' edges visually connect through the joint. */
+         * land on the same cell on msdos / CoCo 3. Replace it with a thick
+         * cross so both boxes' edges visually connect through the joint. */
         drawIcon(9, 2, 0x50);
 #endif
       }

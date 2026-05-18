@@ -1,4 +1,9 @@
 // Auto Generated in support/coco/gen
+//
+// CoCo 1/2 only. The CoCo 3 build uses the MSDOS-derived 4-color font
+// in charset_coco3.h, which hires.c includes directly.
+#ifndef COCO3
+
 unsigned char charset[] = {
   0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
   0x3f, 0x3f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
@@ -96,3 +101,5 @@ unsigned char charset[] = {
   0xc0, 0x30, 0x0c, 0xc0, 0x30, 0x00, 0xc0, 0x00
 };
 unsigned int charset_len = 752;
+
+#endif /* !COCO3 */
