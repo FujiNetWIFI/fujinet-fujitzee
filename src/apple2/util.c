@@ -3,8 +3,8 @@
 #include<peekpoke.h>
 #include<stdlib.h>
 #include<stdint.h>
-#include"../fujinet-fuji.h"
-#include"../platform-specific/graphics.h"
+#include <fujinet-fuji.h>
+#include "../platform-specific/graphics.h"
 
 uint16_t jiffieTimer;
 
