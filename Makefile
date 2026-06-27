@@ -1,6 +1,9 @@
 PRODUCT = fujitzee
 PRODUCT_UPPER = FUJITZEE
-PLATFORMS = atari apple2 coco msdos
+PLATFORMS = atari apple2 coco msdos dragon
+
+PLATFORM_COMBOS = \
+  dragon+=coco
 
 # CoCo targets:
 #   make coco        → CoCo 1/2 build
@@ -17,6 +20,7 @@ INCLUDE_DIRS = src/platform-specific
 # src/include holds wrappers (stdint.h, conio.h ...) for non-cc65 toolchains.
 # cc65 ships its own real versions, so adding it globally would shadow them.
 EXTRA_INCLUDE_COCO  = src/include
+EXTRA_INCLUDE_DRAGON = src/include
 
 # Default fujinet-lib version. msdos requires fujinet-lib-experimental for
 # RS232 support; override at build time so it doesn't drag the experimental
@@ -32,15 +36,26 @@ CFLAGS_EXTRA_COCO  += -fomit-frame-pointer -O2 -Wno-const
 ifeq ($(MAKE_COCO3),COCO3)
   # CoCo 3: the 32K screen lives in MMU blocks 52-55, so the program can
   # start lower and keep clear of the $8000 graphics window.
+  COCO_ORG = 1000
   CFLAGS_EXTRA_COCO  += -DCOCO3
-  LDFLAGS_EXTRA_COCO += --org=1000 --limit=7E00
+  LDFLAGS_EXTRA_COCO += --org=$(COCO_ORG) --limit=7E00
 else
-  LDFLAGS_EXTRA_COCO += --org=1A00 --limit=7B00
+  COCO_ORG = 1A00
+  LDFLAGS_EXTRA_COCO += --org=$(COCO_ORG) --limit=7B00
 endif
 
 # Support 'make coco3'
 coco3:
 	$(MAKE) coco MAKE_COCO3=COCO3
+
+## Dragon specific flags (cmoc)
+CFLAGS_EXTRA_DRAGON = \
+	-Wno-assign-in-condition \
+	--no-relocate \
+	--intermediate \
+	-DDRAGON \
+	--dragon
+LDFLAGS_EXTRA_DRAGON = --limit=7b00 --org=$(COCO_ORG) --dragon
 
 # Apple II: custom HGR-aware linker config
 LDFLAGS_EXTRA_APPLE2 += -C src/apple2/apple2-hgr.cfg
