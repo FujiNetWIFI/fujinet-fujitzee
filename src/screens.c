@@ -57,84 +57,108 @@ void resetScreenWithBorder() {
   }
 }
 
+// Draws a help line and advances the row; keeps showHelpScreen's code compact.
+static unsigned char hy;
+static void helpLn(unsigned char x, char *s) { drawTextAlt(x, ++hy, s); }
+
 /// @brief Shows information about the game
 void showHelpScreen() {
-  static unsigned char y;
-  
   resetScreenWithBorder();
 
   drawTextAlt(WIDTH/2-10,1,"how to play fujiTZEE");
   drawLine(WIDTH/2-10,2,20);
-  y=3;
+  hy=3;
 
-                   //1234567890123456789012345678901234567890
-  // y++;drawText(5,y, "this is a dice game where players");
-  // y++;drawText(5,y, "take turns rolling 5 dice up to 3");
-  // y++;drawText(5,y, "times per turn to achieve specific");
-  // y++;drawText(5,y, "combos, such as three of a kind,");
-  // y++;drawText(5,y, "full house, or a straight. each");
-  // y++;drawText(5,y, "combination corresponds to a score");
-  // y++;drawText(5,y, "on the player's scorecard. Players");
-  // y++;drawText(5,y, "must strategically choose which");
-  // y++;drawText(5,y, "combo to score after each roll.");
-  // y++;drawText(5,y, "the game continues until all 13");
-  // y++;drawText(5,y, "score categories are filled, and");
-  // y++;drawText(5,y, "the player with the highest total");
-  // y++;drawText(5,y, "score at the end wins!");
+#ifdef ONLINE_HELP
+  hy+=8;centerTextAlt(hy, "ONLINE HELP FOR cOcO");
+  hy+=2;centerText(hy, "is coming soon..");
+#else
 
-  // 1400 bytes or so
-  #ifndef ONLINE_HELP
-                      //1234567890123456789012345678901234567890
-  y++;drawTextAlt(3,y, "TAKE TURNS ROLLING DICE UP TO three");
-  y++;drawTextAlt(3,y, "TIMES PER turn TO GET COMBINATIONS");
-  y++;drawTextAlt(3,y, "LIKE A set, full house, OR run.");
-  y++;
-  y++;drawTextAlt(3,y, "score YOUR COMBO TO EARN POINTS.");
-  y++;
-  y++;drawTextAlt(3,y, "PLAY CONTINUES FOR 13 ROUNDS UNTIL");
-  y++;drawTextAlt(3,y, "THE SCORESHEET IS FILLED.");
-  
-  y++;
-  y++;drawTextAlt(3,y, "THE PLAYER WITH THE highest TOTAL");
-  y++;drawTextAlt(3,y, "SCORE WINS THE GAME!");
-
-  y++;y++;
-  centerTextAlt(y, "turn steps");
-
-  y+=2;drawTextAlt(7,y, "1. SELECT ANY DICE TO keep");
-  y++;drawTextAlt(7,y, "2. roll TO GET NEW DICE");
-  y++;drawTextAlt(7,y, "3. YOU MAY REPEAT STEPS 1-2");
-  y++;drawTextAlt(7,y, "4. CHOOSE YOUR score");
-
+  #if WIDTH < 40
+                //12345678901234567890123456789012
+  helpLn(2, "TAKE TURNS ROLLING DICE");
+  helpLn(2, "UP TO three TIMES A turn");
+  helpLn(2, "TO MAKE COMBOS LIKE A set,");
+  helpLn(2, "full house OR run.");
+  hy++;
+  helpLn(2, "score A COMBO TO EARN");
+  helpLn(2, "POINTS EACH turn.");
+  hy++;
+  helpLn(2, "PLAY 13 ROUNDS UNTIL THE");
+  helpLn(2, "SCORESHEET IS FILLED.");
+  helpLn(2, "TOP score WINS!");
+  hy+=2;
+  centerTextAlt(hy, "turn steps");
+  hy++;
+  helpLn(6, "1. keep ANY DICE");
+  helpLn(6, "2. roll FOR NEW DICE");
+  helpLn(6, "3. REPEAT 1-2");
+  helpLn(6, "4. CHOOSE A score");
+  centerStatusText("any KEY FOR score INFO");
+  #else
+                     //1234567890123456789012345678901234567890
+  helpLn(3, "TAKE TURNS ROLLING DICE UP TO three");
+  helpLn(3, "TIMES PER turn TO GET COMBINATIONS");
+  helpLn(3, "LIKE A set, full house, OR run.");
+  hy++;
+  helpLn(3, "score YOUR COMBO TO EARN POINTS.");
+  hy++;
+  helpLn(3, "PLAY CONTINUES FOR 13 ROUNDS UNTIL");
+  helpLn(3, "THE SCORESHEET IS FILLED.");
+  hy++;
+  helpLn(3, "THE PLAYER WITH THE highest TOTAL");
+  helpLn(3, "SCORE WINS THE GAME!");
+  hy+=2;
+  centerTextAlt(hy, "turn steps");
+  hy++;
+  helpLn(7, "1. SELECT ANY DICE TO keep");
+  helpLn(7, "2. roll TO GET NEW DICE");
+  helpLn(7, "3. YOU MAY REPEAT STEPS 1-2");
+  helpLn(7, "4. CHOOSE YOUR score");
   centerStatusText("PRESS ANY KEY FOR score INFO");
+  #endif
 
   clearCommonInput();
   cgetc();
 
   resetScreenWithBorder();
+  drawTextAlt(WIDTH/2-9,1,"scoring your rolls");
+  drawLine(WIDTH/2-9,2,18);
 
-  drawTextAlt(11,1,"scoring your rolls");
-  drawLine(11,2,18);
-  
-  y=4;centerTextAlt(y, "upper scores");
-  y+=2;drawText(5,y, "total all dice that match the");
-  y++;drawText(5,y, "number");
-
-  y+=2;centerTextAlt(y, "upper bonus");
-  y+=2;drawTextAlt(5,y, "IF UPPER TOTAL IS 63 OR HIGHER");
-  y++;drawTextAlt(5,y, "YOU SCORE A bonus 35 POINTS");
-
-  y+=3;centerTextAlt(y, "bottom scores");
-  y+=2;drawTextAlt(4,y, "set   - x OF A KIND - ADD ALL DICE");
-  y+=1;drawTextAlt(4,y, "house - FULL HOUSE - SET OF 2 AND 3");
-  y+=1;drawTextAlt(4,y, "run   - RUN OF x - EXAMPLE 12345");
-  y+=1;drawTextAlt(4,y, "count - SCORE TOTAL OF ALL DICE");
-  y+=1;drawTextAlt(4,y, "      - 5 OF A KIND");
-  drawFujitzee(4,y);
+  #if WIDTH < 40
+  hy=4;centerTextAlt(hy, "upper scores");
+  hy+=2;drawText(2,hy, "add dice matching the");
+  hy++;drawText(2,hy, "number rolled.");
+  hy+=2;centerTextAlt(hy, "upper bonus");
+  hy++;
+  helpLn(2, "63+ IN UPPER SCORES A");
+  helpLn(2, "bonus OF 35 POINTS.");
+  hy+=2;centerTextAlt(hy, "bottom scores");
+  hy++;
+  helpLn(2, "set   - x OF A KIND");
+  helpLn(2, "house - FULL HOUSE");
+  helpLn(2, "run   - RUN, EG 12345");
+  helpLn(2, "count - ADD ALL DICE");
+  helpLn(2, "      - 5 OF A KIND");
+  drawFujitzee(2,hy);
   #else
-  y+=8;centerTextAlt(y, "ONLINE HELP FOR cOcO");
-  y+=2;centerText(y, "is coming soon..");
+  hy=4;centerTextAlt(hy, "upper scores");
+  hy+=2;drawText(5,hy, "total all dice that match the");
+  hy++;drawText(5,hy, "number");
+  hy+=2;centerTextAlt(hy, "upper bonus");
+  hy++;
+  helpLn(5, "IF UPPER TOTAL IS 63 OR HIGHER");
+  helpLn(5, "YOU SCORE A bonus 35 POINTS");
+  hy+=3;centerTextAlt(hy, "bottom scores");
+  hy++;
+  helpLn(4, "set   - x OF A KIND - ADD ALL DICE");
+  helpLn(4, "house - FULL HOUSE - SET OF 2 AND 3");
+  helpLn(4, "run   - RUN OF x - EXAMPLE 12345");
+  helpLn(4, "count - SCORE TOTAL OF ALL DICE");
+  helpLn(4, "      - 5 OF A KIND");
+  drawFujitzee(4,hy);
   #endif
+#endif
 
   centerStatusText("press any key to close");
 
@@ -373,8 +397,11 @@ void welcomeActionVerifyPlayerName() {
 /// @brief Shows the Welcome Screen with Logo. Asks player's name
 void showWelcomeScreen() {
 
-  // Load preferences
+  // CoCo 3 loads prefs in main() before the color prompt; re-reading here would
+  // clobber the not-yet-saved choice.
+#ifndef COCO3
   loadPrefs();
+#endif
 
   // Retrieve the main player's name
   welcomeActionVerifyPlayerName();
@@ -389,10 +416,15 @@ void showWelcomeScreen() {
     #ifndef ONLINE_HELP
     showHelpScreen();
     #endif
-  } 
-  
+  }
+#ifdef COCO3
+  else {
+    savePrefs(); // persist a returning player's startup color choice
+  }
+#endif
+
   pause(30);
-} 
+}
 
 
 #define TWID 26

@@ -21,9 +21,8 @@
   time through text_palettes[] so the screen can use all 16 colors.
 ===========================================================================*/
 
-// Hardware palette ($FFB0). Approximates the Atari port's color scheme.
-// Index meaning is referenced by text_palettes[] and the COL_* defines.
-const unsigned char palette[16] = {
+// Hardware palette ($FFB0); colorMode selects RGB (1) or Composite (2).
+const unsigned char paletteRGB[16] = {
      0,  // 0  black
     63,  // 1  white
      9,  // 2  table blue (background)
@@ -39,6 +38,26 @@ const unsigned char palette[16] = {
      7,  // 12 dark gray
     45,  // 13 pink
      2,  // 14 dark green
+    63,  // 15 white
+};
+
+// Composite-monitor variant; (guess) entries are unverified on hardware.
+const unsigned char paletteComposite[16] = {
+     0,  // 0  black
+    63,  // 1  white
+    12,  // 2  table blue (background)
+    62,  // 3  cyan
+    21,  // 4  gold (grid lines)
+    23,  // 5  red (highlight)
+    14,  // 6  dark blue-green (hilite column bg) (guess)
+    32,  // 7  light gray
+     7,  // 8  dark red
+    28,  // 9  light blue
+    30,  // 10 green (guess)
+    36,  // 11 yellow
+    16,  // 12 dark gray
+    38,  // 13 pink (guess)
+    15,  // 14 dark green
     63,  // 15 white
 };
 
@@ -103,8 +122,40 @@ void waitvsync()
     asm { sync }
 }
 
-unsigned char cycleNextColor() { return 0; }
-void setColorMode() { }
+static void updateColors()
+{
+    memcpy((void *)0xFFB0,
+           (colorMode == 2) ? paletteComposite : paletteRGB, 16);
+}
+
+unsigned char cycleNextColor()
+{
+    colorMode = (colorMode == 1) ? 2 : 1;
+    updateColors();
+    return colorMode;
+}
+
+void setColorMode(unsigned char mode)
+{
+    colorMode = mode;
+}
+
+// First-boot monitor prompt. showWelcomeScreen persists prefs.color; savePrefs()
+// must not run here (no fujinet I/O mid-initGraphics).
+static void rgbOrComposite()
+{
+    if (colorMode == 0) {
+        drawTextAlt(9, HEIGHT / 2, "R: RGB    C: COMPOSITE");
+        for (;;) {
+            char k = cgetc();
+            if (k == 'R' || k == 'r') { colorMode = 1; break; }
+            if (k == 'C' || k == 'c') { colorMode = 2; break; }
+        }
+        prefs.color = colorMode;
+        resetScreen(false);
+    }
+    updateColors();
+}
 
 void initGraphics()
 {
@@ -117,7 +168,7 @@ void initGraphics()
     memcpy((void *)0xFFA8, task1MMUBlocks, sizeof(task1MMUBlocks));
 
     memcpy(paletteBackup, (void *)0xFFB0, 16);
-    memcpy((void *)0xFFB0, palette, 16);
+    memcpy((void *)0xFFB0, paletteRGB, 16);
 
     asm { sync } // wait for v-sync before switching graphics mode
 
@@ -135,6 +186,8 @@ void initGraphics()
     enableInterrupts();
 
     resetScreen(false);
+
+    rgbOrComposite();
 }
 
 void resetGraphics()

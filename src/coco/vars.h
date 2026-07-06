@@ -21,6 +21,8 @@
 #define TIMER_NUM_OFFSET_X 0
 #define TIMER_NUM_OFFSET_Y 0
 
+#define COLOR_CYCLE // in-game RGB/Composite toggle
+
 // Icons (MSDOS charset glyph numbering; bit 7 selects the alt palette)
 #define ICON_TEXT_CURSOR  0xD9
 #define ICON_MARK         0x1D
@@ -48,8 +50,7 @@
 #define TIMER_NUM_OFFSET_X 2
 #define TIMER_NUM_OFFSET_Y 1
 
-// CoCo 1/2 uses online help; the built-in help text overruns memory here.
-#define ONLINE_HELP 1
+// CoCo 1/2 uses the 32-column built-in help (showHelpScreen WIDTH<40 branch).
 
 // Icons
 #define ICON_TEXT_CURSOR  0x22
