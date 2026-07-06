@@ -25,7 +25,7 @@ EXTRA_INCLUDE_DRAGON = src/include
 # Default fujinet-lib version. msdos requires fujinet-lib-experimental for
 # RS232 support; override at build time so it doesn't drag the experimental
 # branch into other platforms.
-FUJINET_LIB = 4.10.0
+FUJINET_LIB = 
 ifeq ($(PLATFORM),msdos)
   FUJINET_LIB = https://github.com/FozzTexx/fujinet-lib-experimental.git
 endif
@@ -38,7 +38,8 @@ ifeq ($(MAKE_COCO3),COCO3)
   # start lower and keep clear of the $8000 graphics window.
   COCO_ORG = 1000
   CFLAGS_EXTRA_COCO  += -DCOCO3
-  LDFLAGS_EXTRA_COCO += --org=$(COCO_ORG) --limit=7E00
+  # --initial-s puts the stack at the top of RAM below the $8000 screen window.
+  LDFLAGS_EXTRA_COCO += --org=$(COCO_ORG) --limit=7E00 --initial-s=8000
 else
   COCO_ORG = 1A00
   LDFLAGS_EXTRA_COCO += --org=$(COCO_ORG) --limit=7B00
