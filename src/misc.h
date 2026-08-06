@@ -25,14 +25,20 @@
 
 #define FUJITZEE_SCORE 14
 
-#ifdef __WATCOMC__
+#if defined(__WATCOMC__) || defined(FUJITZEE_PACK_STRUCTS)
 /* Watcom defaults to 2-byte struct alignment in 16-bit, which inserts
  * padding before int16_t fields. The server sends bytes assuming the
  * cc65/CMOC tightly-packed layout, so any padding here shifts every
  * field after the pad and corrupts the parsed state (e.g. the local
  * player's name shows up missing its first letter). Force 1-byte
  * packing for the Game/Player/Tables structs so the binary layout
- * matches what the server sends. */
+ * matches what the server sends.
+ *
+ * Any toolchain whose default alignment is wider than 1 byte needs this;
+ * define FUJITZEE_PACK_STRUCTS in its build to opt in. (m68k-amigaos-gcc
+ * is one: it aligns int16_t to 2 bytes, which pads Game.players[] from
+ * offset 95 to 96 and reads every player record one byte out of phase.)
+ * Both GCC and Clang honour #pragma pack. */
 #pragma pack(push, 1)
 #endif
 
@@ -68,7 +74,7 @@ typedef struct {
   Player players[PLAYER_MAX];
 } Game;
 
-#ifdef __WATCOMC__
+#if defined(__WATCOMC__) || defined(FUJITZEE_PACK_STRUCTS)
 #pragma pack(pop)
 #endif
 
