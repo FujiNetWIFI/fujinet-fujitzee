@@ -14,6 +14,9 @@ char *requestedMove;
  *  1 - successfully received a payload
  *  2 - async - received payload, still in process, call for more data
  *  0 - error - aborted
+ * 
+ * NOTE: For Big-Endian systems, the server accepts a "be=1" query parameter, which can be set in QUERY_SUFFIX in [platform]/vars.h.
+ * e.g. #define QUERY_SUFFIX "&be=1"
 */
 uint8_t apiCall(char *path) {
   static int16_t read;

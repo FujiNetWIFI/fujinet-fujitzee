@@ -34,6 +34,14 @@ I normally run the following, which *cleans*, downloads dependencies, *builds*, 
 
 # Server / Api details
 
-Please visit the server page for more information:
+## Endianness
+The server defaults to little-endian values for 16 bit values. To request big-endian from the server, define QUERY_SUFFIX as follows in src/[platform]/vars.h:
+
+```c
+#define QUERY_SUFFIX "&be=1"
+```
+
+
+Please visit the server page for general Api information:
 
 https://github.com/FujiNetWIFI/servers/tree/main/fujinet-game-system/fujitzee/server#readme
