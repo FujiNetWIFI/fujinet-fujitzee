@@ -42,23 +42,6 @@ uint8_t apiCall(char *path) {
   return API_CALL_SUCCESS;
 }
 
-#ifdef FUJITZEE_BIG_ENDIAN
-/// @brief Swap the little-endian scores the server sends into host order.
-/// Only called where the payload is known to be a Game — the table listing
-/// shares the same union but is all single-byte fields. See misc.h.
-void fixStateEndianness() {
-  static uint8_t p, s;
-  static uint16_t v;
-
-  for(p=0;p<PLAYER_MAX;p++) {
-    for(s=0;s<16;s++) {
-      v = (uint16_t)clientState.game.players[p].scores[s];
-      clientState.game.players[p].scores[s] = (int16_t)((v>>8) | (v<<8));
-    }
-  }
-}
-#endif
-
 void sendMove(char* move) {
   if (move != NULL)
     state.apiCallWait=0;
@@ -71,8 +54,7 @@ void sendMove(char* move) {
 void apiCallForAll(char* path ) {
   for(i=0;i<prefs.localPlayerCount;i++) {
     state.currentLocalPlayer = i;
-    if (apiCall(path) == API_CALL_SUCCESS)
-      fixStateEndianness();
+    apiCall(path);
     waitvsync();
   }
 }
@@ -93,9 +75,7 @@ uint8_t getStateFromServer()
   }
 
   if ((apiCallResult = apiCall(tempBuffer)) == API_CALL_SUCCESS) {
-
-    fixStateEndianness();
-
+    
     // Map local players
     state.currentLocalPlayer=state.localPlayerIsActive=0;
 
