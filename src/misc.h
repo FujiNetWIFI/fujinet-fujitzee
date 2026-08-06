@@ -78,6 +78,22 @@ typedef struct {
 #pragma pack(pop)
 #endif
 
+/* Player.scores is the only multi-byte field in anything the server sends,
+ * and it arrives little-endian. Big-endian toolchains therefore read every
+ * score byte-swapped — a real score of 11 renders as 2816 (0x0B00) — while
+ * every other field, and the 0xFFFF "not yet scored" marker, is byte-order
+ * invariant, so the corruption shows up only in opponents' filled-in cells.
+ *
+ * Define FUJITZEE_BIG_ENDIAN in such a build to swap the scores back after
+ * each read. (m68k-amigaos-gcc is one; it also needs FUJITZEE_PACK_STRUCTS
+ * above. Packing and byte order are independent problems — a port can need
+ * either, both, or neither.) */
+#ifdef FUJITZEE_BIG_ENDIAN
+void fixStateEndianness(void);
+#else
+#define fixStateEndianness() ((void)0)
+#endif
+
 typedef union {
   uint8_t firstByte;
   Game game;
