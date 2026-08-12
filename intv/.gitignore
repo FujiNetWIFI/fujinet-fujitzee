@@ -1,0 +1,6 @@
+# Build outputs from `make` in this directory (see Makefile).
+fujitzee.asm
+fujitzee.bin
+fujitzee.cfg
+fujitzee.rom
+fujitzee.lst
