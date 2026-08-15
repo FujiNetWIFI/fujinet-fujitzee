@@ -12,14 +12,22 @@
     GOTO boot_start
 
     INCLUDE "constants.bas"
+
+    ' STATUS_ROW must be declared before card.bas is included below: the
+    ' compiler resolves CONST symbols at parse time (unlike GOSUB labels,
+    ' which resolve fine forward), so a reference from within an included
+    ' file to a CONST declared later in this file silently falls back to
+    ' an implicit, unassigned 8-bit variable defaulting to 0 instead of the
+    ' intended screenpos(0,11) -- card.bas's show_standings hit exactly
+    ' this, printing its "HOLD ENTER" hint over row 0 instead of row 11.
+    CONST ROWCELLS = 20
+    CONST STATUS_ROW = screenpos(0, 11)
+
     INCLUDE "fujinet.bas"
     INCLUDE "state.bas"
     INCLUDE "dice.bas"
     INCLUDE "card.bas"
     INCLUDE "sound.bas"
-
-    CONST ROWCELLS = 20
-    CONST STATUS_ROW = screenpos(0, 11)
 
 ' ---------------------------------------------------------------------------
 ' URL literals (ASCII DATA). url_path selects the endpoint:
@@ -54,6 +62,7 @@ lit_abin: DATA 38,98,105,110,61,49
     DIM #tbl_count, tbl_sel
     DIM inp_lock
     DIM want_leave, im_sel
+    DIM hs_i, hs_page
     DIM url_path
     DIM #tmp_addr
 
@@ -120,14 +129,21 @@ END
 ' without this every screen would still show a black field behind
 ' whatever text gets drawn on top of it. Every CLS in this file goes
 ' through here instead, matching fujinet-5cardstud/intv/5card.bas's
-' fill_bg pattern.
+' fill_bg pattern. Paced one row (20 cells) per WAIT -- the STIC has no
+' page-flip, and this is the single largest unbroken BACKTAB write in the
+' project; splitting it matches render_card's/render_playscreen's own
+' per-region WAIT breaks and keeps it from tearing into whatever's already
+' on screen (most visibly right before render_gameover repaints on top).
 ' ---------------------------------------------------------------------------
-DIM cb_i
+DIM cb_i, cb_row
 cls_blue: PROCEDURE
     CLS
-    FOR cb_i = 0 TO 239
-        #BACKTAB(cb_i) = COL_TEXT
-    NEXT cb_i
+    FOR cb_row = 0 TO 11
+        FOR cb_i = 0 TO 19
+            #BACKTAB(cb_row * 20 + cb_i) = COL_TEXT
+        NEXT cb_i
+        WAIT
+    NEXT cb_row
 END
 
 ' ---------------------------------------------------------------------------
@@ -398,6 +414,7 @@ game_loop:
         poll_wait = 45
     ELSEIF #cur_round = ROUND_GAMEOVER THEN
         IF prev_round <> ROUND_GAMEOVER THEN
+            GOSUB sound_gamedone
             GOSUB cls_blue
             GOSUB render_gameover
         END IF
@@ -554,6 +571,20 @@ gl_input:
         want_leave = 0
         GOTO table_select
     END IF
+    ' Standings are turn_input's own ENTER handler while it's your turn
+    ' (that loop owns input then); here in the outer poll loop it's
+    ' reachable the rest of the time, so you can check standings while
+    ' waiting on other players too.
+    IF #cur_round >= 1 THEN
+        IF #cur_round <= ROUND_FINAL THEN
+            IF my_turn = 0 THEN
+                IF CONT1.KEY = 11 THEN
+                    GOSUB show_standings
+                    GOSUB restore_screen
+                END IF
+            END IF
+        END IF
+    END IF
     GOTO game_loop
 
 ' ===========================================================================
@@ -599,10 +630,9 @@ END
 ' (poll_wait=60) until the server resets the table back to the lobby.
 ' ===========================================================================
 render_gameover: PROCEDURE
-    GOSUB sound_gamedone
     prl_top = 1
     GOSUB render_player_list
-    #df_src = FN_RX + GAME_PROMPT : df_pos = STATUS_ROW : df_len = ROWCELLS : #df_color = COL_HILITE
+    #df_src = FN_RX + GAME_PROMPT : df_pos = STATUS_ROW - ROWCELLS : df_len = ROWCELLS * 2 : #df_color = COL_HILITE
     GOSUB draw_field
 END
 
@@ -729,6 +759,28 @@ render_playscreen: PROCEDURE
 END
 
 ' ===========================================================================
+' restore_screen: full repaint of whatever screen #cur_round says should be
+' up right now, from whatever's already cached in FN_RX -- not a fresh
+' poll. Shared by any full-screen overlay (ingame_menu, show_standings) that
+' can be opened from inside turn_input's own blocking ti_loop: control
+' doesn't return to game_loop's CLS/redraw dispatch until the current turn
+' ends, which could be a long time away, so without this the overlay would
+' just leave its own drawing sitting there once closed.
+' ===========================================================================
+restore_screen: PROCEDURE
+    prev_round = 255 ' safety net, in case some other path still relies on it
+    GOSUB cls_blue
+    IF #cur_round = ROUND_LOBBY THEN
+        GOSUB render_lobby
+    ELSEIF #cur_round = ROUND_GAMEOVER THEN
+        GOSUB render_gameover
+    ELSE
+        GOSUB card_init
+        GOSUB render_playscreen
+    END IF
+END
+
+' ===========================================================================
 ' pick_best_score: point crs_idx at whichever open, selectable category
 ' scores the most with the current (final) roll. Used when rollsLeft hits
 ' 0 and SCORE mode is entered automatically -- matches the reference C
@@ -811,7 +863,7 @@ ti_loop:
     END IF
     IF CONT1.KEY = 11 THEN
         GOSUB show_standings
-        GOSUB render_card_for_view
+        GOSUB restore_screen
         GOTO ti_loop
     END IF
 
@@ -1098,7 +1150,7 @@ clear_room_appkey: PROCEDURE
 END
 
 ' ===========================================================================
-' ingame_menu: keypad CLEAR overlay, drawn over the prompt row and the two
+' ingame_menu: keypad CLEAR overlay, drawn over the prompt row and the three
 ' rows above it. Disc up/down to choose, action button to confirm, Clear
 ' again cancels straight back to RESUME.
 ' ===========================================================================
@@ -1116,22 +1168,44 @@ im_wait_release:
     IF CONT1.KEY <> 12 THEN GOTO im_wait_release
 
 im_loop:
+    ' Blank pass and text pass share one frame, same as the original 3-row
+    ' version -- this loop repaints every frame the menu is up, so a WAIT
+    ' between the two passes would flash the blanked rows for a frame on
+    ' every iteration. 160 cells is well under the whole-screen (240 cell)
+    ' burst that motivates splitting cls_blue/show_standings across WAITs.
+    PRINT AT STATUS_ROW - 60 COLOR COL_TEXT, "                    "
     PRINT AT STATUS_ROW - 40 COLOR COL_TEXT, "                    "
     PRINT AT STATUS_ROW - 20 COLOR COL_TEXT, "                    "
     PRINT AT STATUS_ROW COLOR COL_TEXT, "                    "
-    PRINT AT STATUS_ROW - 40 COLOR COL_TEXT, "TABLE MENU"
+    PRINT AT STATUS_ROW - 60 COLOR COL_TEXT, "TABLE MENU"
     #gs_c = COL_TEXT
     IF im_sel = 0 THEN #gs_c = COL_HILITE
-    PRINT AT STATUS_ROW - 20 COLOR #gs_c, "RESUME"
+    PRINT AT STATUS_ROW - 40 COLOR #gs_c, "RESUME"
     #gs_c = COL_TEXT
     IF im_sel = 1 THEN #gs_c = COL_HILITE
+    PRINT AT STATUS_ROW - 20 COLOR #gs_c, "HELP"
+    #gs_c = COL_TEXT
+    IF im_sel = 2 THEN #gs_c = COL_HILITE
     PRINT AT STATUS_ROW COLOR #gs_c, "QUIT TABLE"
 
     WAIT
     IF inp_lock > 0 THEN inp_lock = inp_lock - 1 : GOTO im_loop
 
-    IF CONT1.UP OR CONT1.DOWN THEN
-        im_sel = 1 - im_sel
+    ' Three items now, so the old "im_sel = 1 - im_sel" toggle is gone.
+    ' Wraps rather than clamps, matching every other cursor in the game
+    ' (ne_cur, dice_cur, crs_idx, view_idx). The "IF im_sel = 0 THEN
+    ' im_sel = 3" idiom before decrementing avoids unsigned underflow --
+    ' same shape as the LEFT handlers at gl_input and name_entry_screen.
+    IF CONT1.DOWN THEN
+        im_sel = im_sel + 1
+        IF im_sel > 2 THEN im_sel = 0
+        inp_lock = 10
+        GOSUB sound_cursor
+        GOTO im_loop
+    END IF
+    IF CONT1.UP THEN
+        IF im_sel = 0 THEN im_sel = 3
+        im_sel = im_sel - 1
         inp_lock = 10
         GOSUB sound_cursor
         GOTO im_loop
@@ -1141,6 +1215,14 @@ im_loop:
     GOSUB sound_select
 
     IF im_sel = 1 THEN
+        ' HELP takes over the whole screen and returns straight to the
+        ' game rather than back to this menu -- im_done's restore_screen
+        ' below is then the single full repaint the takeover needs, at no
+        ' extra cost.
+        GOSUB help_screen
+        GOTO im_done
+    END IF
+    IF im_sel = 2 THEN
         url_path = 5 : GOSUB compose_url
         #net_readlen = 8
         GOSUB api_call
@@ -1148,25 +1230,122 @@ im_loop:
         want_leave = 1
     END IF
 im_done:
-    prev_round = 255 ' safety net, in case some other path still relies on it
-    ' Redraw the whole screen immediately from whatever's already cached
-    ' in FN_RX -- not just next poll. ingame_menu is called both from
-    ' gl_input (outer loop) and from turn_input's own blocking ti_loop;
-    ' in the latter case, control doesn't return to game_loop's own
-    ' CLS/redraw dispatch until the current turn ends, which could be a
-    ' long time away, so the menu's overlay (rows 9-11) would otherwise
-    ' just sit there behind whatever turn_input draws around it next.
+    ' Redraw the whole screen immediately -- not just next poll. See
+    ' restore_screen's own comment for why this is needed both here and
+    ' from show_standings.
     IF want_leave = 0 THEN
-        GOSUB cls_blue
-        IF #cur_round = ROUND_LOBBY THEN
-            GOSUB render_lobby
-        ELSEIF #cur_round = ROUND_GAMEOVER THEN
-            GOSUB render_gameover
-        ELSE
-            GOSUB card_init
-            GOSUB render_playscreen
-        END IF
+        GOSUB restore_screen
+        ' Don't hand a still-held button/key back to the caller: ti_loop
+        ' reads CONT1.BUTTON as roll/hold/score and gl_input reads
+        ' CONT1.KEY=11 as standings, so confirming RESUME (or dismissing
+        ' HELP) with the button/key still down past restore_screen's ~14
+        ' frames would otherwise fire an unintended action immediately.
+im_exit_release:
+        WAIT
+        IF CONT1.BUTTON THEN GOTO im_exit_release
+        IF CONT1.KEY <> 12 THEN GOTO im_exit_release
     END IF
+END
+
+' ===========================================================================
+' help_screen: full-screen key reference, opened from ingame_menu's HELP
+' item. Two pages: the 20x12 screen fits about ten content rows once the
+' title and footer are taken out, and the reference needs four section
+' headers plus nine key lines, so a single page could only fit by dropping
+' the DICE-vs-CARD split -- which is exactly the distinction that makes the
+' two different meanings of the action button legible. Disc left/right
+' flips pages; any side button or any keypad key returns to the game (the
+' caller's im_done then does the full repaint).
+'
+' Blanked one row per WAIT, like show_standings and cls_blue -- the STIC
+' has no page-flip and an unbroken 240-cell BACKTAB write tears.
+' ===========================================================================
+help_screen: PROCEDURE
+    hs_page = 0
+
+hs_draw:
+    FOR hs_i = 0 TO 11
+        PRINT AT screenpos(0, hs_i) COLOR COL_TEXT, "                    "
+        WAIT
+    NEXT hs_i
+
+    PRINT AT screenpos(0, 0) COLOR COL_HILITE, "HELP"
+    IF hs_page = 0 THEN
+        PRINT AT screenpos(17, 0) COLOR COL_LABEL, "1/2"
+        WAIT
+        PRINT AT screenpos(0, 2) COLOR COL_LABEL, "ANYTIME"
+        PRINT AT screenpos(1, 3) COLOR COL_HILITE, "CLEAR"
+        PRINT AT screenpos(8, 3) COLOR COL_TEXT, "TABLE MENU"
+        PRINT AT screenpos(1, 4) COLOR COL_HILITE, "ENTER"
+        PRINT AT screenpos(8, 4) COLOR COL_TEXT, "STANDINGS"
+        WAIT
+        PRINT AT screenpos(0, 6) COLOR COL_LABEL, "WHILE WAITING"
+        PRINT AT screenpos(1, 7) COLOR COL_HILITE, "L / R"
+        PRINT AT screenpos(8, 7) COLOR COL_TEXT, "VIEW CARDS"
+        WAIT
+        PRINT AT screenpos(0, 9) COLOR COL_LABEL, "IN THE LOBBY"
+        PRINT AT screenpos(1, 10) COLOR COL_HILITE, "FIRE"
+        PRINT AT screenpos(8, 10) COLOR COL_TEXT, "READY / NOT"
+        PRINT AT STATUS_ROW COLOR COL_TEXT, "DISC R=MORE BTN=GAME"
+    ELSE
+        PRINT AT screenpos(17, 0) COLOR COL_LABEL, "2/2"
+        WAIT
+        PRINT AT screenpos(0, 1) COLOR COL_LABEL, "YOUR TURN - DICE"
+        PRINT AT screenpos(1, 2) COLOR COL_HILITE, "L / R"
+        PRINT AT screenpos(8, 2) COLOR COL_TEXT, "MOVE CURSOR"
+        PRINT AT screenpos(1, 3) COLOR COL_HILITE, "FIRE"
+        PRINT AT screenpos(8, 3) COLOR COL_TEXT, "ROLL OR KEEP"
+        WAIT
+        PRINT AT screenpos(0, 4) COLOR COL_POTENTIAL, "R TILE = ROLL DICE"
+        PRINT AT screenpos(1, 5) COLOR COL_HILITE, "UP"
+        PRINT AT screenpos(8, 5) COLOR COL_TEXT, "GO TO CARD"
+        WAIT
+        PRINT AT screenpos(0, 6) COLOR COL_LABEL, "YOUR TURN - CARD"
+        PRINT AT screenpos(1, 7) COLOR COL_HILITE, "DISC"
+        PRINT AT screenpos(8, 7) COLOR COL_TEXT, "MOVE CURSOR"
+        PRINT AT screenpos(1, 8) COLOR COL_HILITE, "FIRE"
+        PRINT AT screenpos(8, 8) COLOR COL_TEXT, "TAKE SCORE"
+        WAIT
+        PRINT AT screenpos(1, 9) COLOR COL_HILITE, "DOWN"
+        PRINT AT screenpos(8, 9) COLOR COL_TEXT, "BACK TO DICE"
+        PRINT AT screenpos(1, 10) COLOR COL_HILITE, "LOW L"
+        PRINT AT screenpos(8, 10) COLOR COL_TEXT, "BACK TO DICE"
+        PRINT AT STATUS_ROW COLOR COL_TEXT, "DISC L=BACK BTN=GAME"
+    END IF
+
+    ' The button press that picked HELP out of the menu is still held here
+    ' -- without this the first frame of hs_input would read it as "any
+    ' button" and dismiss the screen instantly. Same reason as
+    ' ingame_menu's own im_wait_release, extended to the button because
+    ' this screen is entered *by* a button rather than by a keypad key.
+    ' Runs again after each page flip, where it's a harmless no-op (the
+    ' disc isn't checked here).
+hs_release:
+    WAIT
+    IF CONT1.BUTTON THEN GOTO hs_release
+    IF CONT1.KEY <> 12 THEN GOTO hs_release
+    inp_lock = 0
+
+hs_input:
+    WAIT
+    IF inp_lock > 0 THEN inp_lock = inp_lock - 1 : GOTO hs_input
+    ' Any of the three side buttons dismisses (CONT1.BUTTON is true for
+    ' all three -- see turn_input's own comment on BUTTON_MASK). Any
+    ' keypad key dismisses too: CLEAR is the natural "close this", and
+    ' leaving ENTER live here would fight with the STANDINGS binding this
+    ' very screen documents.
+    IF CONT1.BUTTON THEN GOTO hs_done
+    IF CONT1.KEY <> 12 THEN GOTO hs_done
+    IF CONT1.RIGHT AND hs_page = 0 THEN
+        hs_page = 1 : inp_lock = 10 : GOSUB sound_cursor : GOTO hs_draw
+    END IF
+    IF CONT1.LEFT AND hs_page = 1 THEN
+        hs_page = 0 : inp_lock = 10 : GOSUB sound_cursor : GOTO hs_draw
+    END IF
+    GOTO hs_input
+
+hs_done:
+    GOSUB sound_select
 END
 
 ' ===========================================================================

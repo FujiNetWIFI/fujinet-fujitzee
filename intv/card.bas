@@ -219,22 +219,23 @@ END
 '
 ' This is the player's *first* name character (PL_NAME+0), not the
 ' server's PL_ALIAS-indexed "unique highlight character" the field
-' technically exists for. The alias-indirection version (PEEK an alias
-' index byte, then PEEK name[that index]) was extensively verified
-' correct -- traced the exact compiled instructions, cross-checked real
-' alias/name bytes pulled live from both the dev and production servers
-' (every case seen had alias=0, i.e. this simpler version is what it
-' would have shown anyway) -- and still rendered '?' for every seat in
-' practice. Simplifying to a single direct PEEK removes the double
-' indirection entirely rather than continuing to chase a mismatch between
-' verified-correct analysis and observed behavior.
+' technically exists for; every case seen live had alias=0, i.e. that
+' fancier version would have shown the same letter anyway.
+'
+' Root cause of the long-standing "renders '?' for every seat" bug:
+' ss_addr held player_addr(ss_i) (FN_RX-relative, so always > 255) in an
+' 8-bit DIM, silently truncating the address mod 256 before the PEEK --
+' every seat read garbage/zeroed RAM, which is always < 32 and hits the
+' '?' fallback below. Every other address var in this file (#rc_addr,
+' #rv_addr, #tmp_addr, #prl_addr) is correctly 16-bit; ss_addr just missed
+' the '#'.
 ' ---------------------------------------------------------------------------
-DIM ss_i, ss_addr, #ss_ch, #ss_color
+DIM ss_i, #ss_addr, #ss_ch, #ss_color
 render_seatstrip: PROCEDURE
     FOR ss_i = 0 TO 5
         IF ss_i < state_playercount THEN
-            ss_addr = player_addr(ss_i)
-            #ss_ch = (PEEK(ss_addr + PL_NAME) AND 255)
+            #ss_addr = player_addr(ss_i)
+            #ss_ch = (PEEK(#ss_addr + PL_NAME) AND 255)
             IF #ss_ch >= 97 AND #ss_ch <= 122 THEN #ss_ch = #ss_ch - 32
             IF #ss_ch < 32 OR #ss_ch > 95 THEN #ss_ch = 63 ' '?' fallback
             ' Active/viewed status wins the BG (black-on-yellow/green, as
@@ -261,46 +262,72 @@ END
 
 ' ---------------------------------------------------------------------------
 ' render_player_list: name + running total for up to 8 seated players,
-' starting at BACKTAB row prl_top. Shared by show_standings (the keypad-
-' ENTER overlay during play) and render_gameover (the round-99 screen) --
-' both just want "who's got how many points," and calc_running_total's sum
-' of every filled category equals the server's own final total once every
-' category is filled, so the same running-total math is correct in both
-' places without needing to trust the wire's game-over-only total field.
+' starting at BACKTAB row prl_top, each row in that player's own color
+' (player_color_tbl) so a player reads consistently with the header/seat
+' strip/card. Shared by show_standings (the keypad-ENTER overlay during
+' play) and render_gameover (the round-99 screen) -- both just want "who's
+' got how many points," and calc_running_total's sum of every filled
+' category equals the server's own final total once every category is
+' filled, so the same running-total math is correct in both places without
+' needing to trust the wire's game-over-only total field.
 ' ---------------------------------------------------------------------------
-DIM prl_top, prl_i, prl_addr, #prl_pc
+DIM prl_top, prl_i, #prl_addr, #prl_pc
 render_player_list: PROCEDURE
     #prl_pc = state_playercount
     IF #prl_pc > 8 THEN #prl_pc = 8
     FOR prl_i = 0 TO #prl_pc - 1
-        prl_addr = player_addr(prl_i)
+        ' #prl_addr must be 16-bit: player_addr() is FN_RX-relative and
+        ' FN_RX sits well above byte range ($9D40+, per state.bas), so an
+        ' 8-bit holder here truncates the pointer and reads/PEEKs garbage --
+        ' this was the cause of blank names and corrupted totals.
+        #prl_addr = player_addr(prl_i)
         pc_idx = prl_i
         GOSUB player_color
-        #df_src = prl_addr + PL_NAME : df_pos = screenpos(0, prl_top + prl_i) : df_len = 9 : #df_color = #pc_color
+        #df_src = #prl_addr + PL_NAME : df_pos = screenpos(0, prl_top + prl_i) : df_len = 9 : #df_color = #pc_color
         GOSUB draw_field
-        #ctr_addr = prl_addr
+        #ctr_addr = #prl_addr
         GOSUB calc_running_total
-        PRINT AT screenpos(15, prl_top + prl_i) COLOR COL_TEXT, <.4>#ctr_total
+        PRINT AT screenpos(15, prl_top + prl_i) COLOR #pc_color, <.4>#ctr_total
     NEXT prl_i
 END
 
 ' ---------------------------------------------------------------------------
-' show_standings: keypad-ENTER overlay. Blanks rows 1-8 and lists seated
-' players' names and running totals instead of the card. Blocks on its own
-' input loop (like ingame_menu) rather than folding into the poll loop --
-' holding ENTER for a couple of frames of paused polling is harmless, and
-' this keeps render_card's cell layout untouched by an overlay that only
-' needs to exist while the button is held.
+' show_standings: keypad-ENTER overlay. Takes over the whole screen (title +
+' name/total list + hint) instead of layering over the card, so there's
+' nothing underneath left to show through -- the previous rows-1-8-only
+' version left the card's own labels and text visible around the list and,
+' worse, never got fully repainted by its caller afterward (see callers'
+' restore_screen). Blocks on its own input loop (like ingame_menu) rather
+' than folding into the poll loop -- holding ENTER for a couple of frames of
+' paused polling is harmless. The blank loop is paced one row (20 cells) per
+' WAIT, matching render_card's/render_playscreen's own per-region WAIT
+' breaks -- the STIC has no page-flip, so a big unbroken BACKTAB write (the
+' old version blanked all 8 rows in one unbroken burst) can spill past
+' vblank into active display and tear.
 ' ---------------------------------------------------------------------------
-DIM sd_i
+DIM sd_i, sd_hold
 show_standings: PROCEDURE
-    FOR sd_i = 1 TO 8
+    FOR sd_i = 0 TO 11
         PRINT AT screenpos(0, sd_i) COLOR COL_TEXT, "                    "
+        WAIT
     NEXT sd_i
-    prl_top = 1
+    PRINT AT screenpos(0, 0) COLOR COL_HILITE, "STANDINGS"
+    PRINT AT screenpos(15, 0) COLOR COL_LABEL, "SCORE"
+    WAIT
+    prl_top = 2
     GOSUB render_player_list
+    PRINT AT STATUS_ROW COLOR COL_TEXT, "HOLD ENTER"
 
+    ' Require a few consecutive off frames before exiting, not just one --
+    ' a single dropped poll of the keypad matrix shouldn't dismiss an
+    ' overlay that's meant to stay up for as long as the button is held.
+    sd_hold = 0
 sd_wait:
     WAIT
-    IF CONT1.KEY = 11 THEN GOTO sd_wait
+    IF CONT1.KEY = 11 THEN
+        sd_hold = 0
+        GOTO sd_wait
+    END IF
+    sd_hold = sd_hold + 1
+    IF sd_hold < 4 THEN GOTO sd_wait
 END
