@@ -305,7 +305,7 @@ END
 ' old version blanked all 8 rows in one unbroken burst) can spill past
 ' vblank into active display and tear.
 ' ---------------------------------------------------------------------------
-DIM sd_i, sd_hold
+DIM sd_i
 show_standings: PROCEDURE
     FOR sd_i = 0 TO 11
         PRINT AT screenpos(0, sd_i) COLOR COL_TEXT, "                    "
@@ -318,16 +318,12 @@ show_standings: PROCEDURE
     GOSUB render_player_list
     PRINT AT STATUS_ROW COLOR COL_TEXT, "HOLD ENTER"
 
-    ' Require a few consecutive off frames before exiting, not just one --
-    ' a single dropped poll of the keypad matrix shouldn't dismiss an
-    ' overlay that's meant to stay up for as long as the button is held.
-    sd_hold = 0
+    ' Level, not an edge -- this overlay stays up for as long as ENTER is
+    ' held. No consecutive-off-frame count needed here any more: read_input's
+    ' own settle filter already rejects a single dropped poll of the keypad
+    ' matrix before it ever reaches inp_key.
 sd_wait:
     WAIT
-    IF CONT1.KEY = 11 THEN
-        sd_hold = 0
-        GOTO sd_wait
-    END IF
-    sd_hold = sd_hold + 1
-    IF sd_hold < 4 THEN GOTO sd_wait
+    GOSUB read_input
+    IF inp_key = 11 THEN GOTO sd_wait
 END

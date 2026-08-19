@@ -19,7 +19,7 @@ PRODUCT = fujitzee
 # a wildcard or a partial list means editing one file alone doesn't trigger
 # a rebuild (fujinet-5cardstud/intv/Makefile shipped with exactly that bug
 # -- its SOURCES omitted sound.bas).
-SOURCES = fujitzee.bas constants.bas fujinet.bas state.bas dice.bas card.bas sound.bas
+SOURCES = fujitzee.bas constants.bas input.bas fujinet.bas state.bas dice.bas card.bas sound.bas
 
 .PHONY: all clean run
 
