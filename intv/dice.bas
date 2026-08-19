@@ -62,6 +62,12 @@ END
     CONST COL_DICE_NORMAL = FG_BLACK + BG_WHITE
     CONST COL_DICE_KEPT   = FG_BLACK + BG_YELLOW
     CONST COL_DICE_CURSOR = FG_BLACK + BG_GREEN
+    ' Matches card.bas's COL_TEXT (blue page bg, per cls_blue) -- can't
+    ' reference COL_TEXT itself here since dice.bas is INCLUDEd before
+    ' card.bas and CONST symbols resolve at parse time, not forward (see
+    ' fujitzee.bas's STATUS_ROW comment for the bug that pattern caused
+    ' once already).
+    CONST COL_ROW_BG      = FG_WHITE + BG_BLUE
 
 DIM dr_mode, dr_cursor, dr_i, #dr_ch, dr_kept, #dr_rolls
 draw_dice_row: PROCEDURE
@@ -89,11 +95,19 @@ draw_dice_row: PROCEDURE
     ' the whole gap defensively means any future stray write here (or
     ' leftover from a still-undiagnosed one) can't leave visible debris
     ' either, rather than only ever touching the exact 2 cells this
-    ' PRINT needs.
+    ' PRINT needs. Uses COL_ROW_BG (blue bg, matching cls_blue's page
+    ' background) for the gap, not COL_DICE_NORMAL -- the latter is
+    ' white, and painting 9 cells of solid white right after the dice
+    ' made this whole stretch of row 10 read as one unbroken white
+    ' bar/streak running from the dice to the roll count instead of a
+    ' blank gap.
     FOR dr_i = 11 TO 19
-        #BACKTAB(screenpos(dr_i, DICE_ROW)) = COL_DICE_NORMAL
+        #BACKTAB(screenpos(dr_i, DICE_ROW)) = COL_ROW_BG
     NEXT dr_i
     #dr_rolls = state_rollsleft
+    ' The count itself stays COL_DICE_NORMAL (black-on-white), matching
+    ' the dice tiles, so it reads as a tile rather than page text; the
+    ' PRINT's own background overwrites the 2 gap cells it lands on.
     PRINT AT screenpos(18, DICE_ROW) COLOR COL_DICE_NORMAL, <.2>#dr_rolls
 END
 
@@ -142,61 +156,61 @@ END
 ' (face 6 only).
 diceart:
     ' Face 1 (index 0): center pip.
-    BITMAP "oooooooo"
-    BITMAP "o......o"
-    BITMAP "o......o"
-    BITMAP "o......o"
-    BITMAP "o...o..o"
-    BITMAP "o......o"
-    BITMAP "o......o"
-    BITMAP "oooooooo"
+    BITMAP "........"
+    BITMAP "........"
+    BITMAP "........"
+    BITMAP "...o...."
+    BITMAP "........"
+    BITMAP "........"
+    BITMAP "........"
+    BITMAP "........"
 
     ' Face 2 (index 1): top-left, bottom-right.
-    BITMAP "oooooooo"
-    BITMAP "o......o"
-    BITMAP "o.o....o"
-    BITMAP "o......o"
-    BITMAP "o......o"
-    BITMAP "o......o"
-    BITMAP "o.....oo"
-    BITMAP "oooooooo"
+    BITMAP "........"
+    BITMAP ".o......"
+    BITMAP "........"
+    BITMAP "........"
+    BITMAP "........"
+    BITMAP ".....o.."
+    BITMAP "........"
+    BITMAP "........"
 
     ' Face 3 (index 2): top-left, center, bottom-right.
-    BITMAP "oooooooo"
-    BITMAP "o......o"
-    BITMAP "o.o....o"
-    BITMAP "o......o"
-    BITMAP "o...o..o"
-    BITMAP "o......o"
-    BITMAP "o.....oo"
-    BITMAP "oooooooo"
+    BITMAP "........"
+    BITMAP ".o......"
+    BITMAP "........"
+    BITMAP "...o...."
+    BITMAP "........"
+    BITMAP ".....o.."
+    BITMAP "........"
+    BITMAP "........"
 
     ' Face 4 (index 3): four corners.
-    BITMAP "oooooooo"
-    BITMAP "o......o"
-    BITMAP "o.o...oo"
-    BITMAP "o......o"
-    BITMAP "o......o"
-    BITMAP "o......o"
-    BITMAP "o.o...oo"
-    BITMAP "oooooooo"
+    BITMAP "........"
+    BITMAP ".o...o.."
+    BITMAP "........"
+    BITMAP "........"
+    BITMAP "........"
+    BITMAP ".o...o.."
+    BITMAP "........"
+    BITMAP "........"
 
     ' Face 5 (index 4): four corners + center.
-    BITMAP "oooooooo"
-    BITMAP "o......o"
-    BITMAP "o.o...oo"
-    BITMAP "o......o"
-    BITMAP "o...o..o"
-    BITMAP "o......o"
-    BITMAP "o.o...oo"
-    BITMAP "oooooooo"
+    BITMAP "........"
+    BITMAP ".o...o.."
+    BITMAP "........"
+    BITMAP "...o...."
+    BITMAP "........"
+    BITMAP ".o...o.."
+    BITMAP "........"
+    BITMAP "........"
 
     ' Face 6 (index 5): four corners + two middle side pips.
-    BITMAP "oooooooo"
-    BITMAP "o......o"
-    BITMAP "o.o...oo"
-    BITMAP "o......o"
-    BITMAP "o.o...oo"
-    BITMAP "o......o"
-    BITMAP "o.o...oo"
-    BITMAP "oooooooo"
+    BITMAP "........"
+    BITMAP ".o...o.."
+    BITMAP "........"
+    BITMAP ".o...o.."
+    BITMAP "........"
+    BITMAP ".o...o.."
+    BITMAP "........"
+    BITMAP "........"
