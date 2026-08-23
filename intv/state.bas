@@ -108,21 +108,41 @@
     CONST SCORE_READY   = 1
     CONST SCORE_UNREADY = 0
 
+' Every parameter below is wrapped in its own parens where it's used, the
+' same way constants.bas's screenpos/screenaddr do it. That is load-bearing,
+' not decoration: IntyBASIC's DEF FN is raw *textual* substitution and does
+' not parenthesize the arguments it splices in, so a caller passing anything
+' more complex than a bare variable silently regroups the body's arithmetic
+' around the argument's last term.
+'
+' Cost of getting it wrong, from the field: card.bas drew UP/BON with
+' "score_at(#dcc_addr, 6 + (dcc_cat - 100))", which expanded to
+' "PL_SCORES + 6 + (dcc_cat - 100) * 2" -- the 6 never got doubled, so the
+' compiler folded PL_SCORES(10) + 6 = 16 instead of 10 + 6*2 = 22 (visible
+' as "ADDI #16" in the generated .asm) and the two computed cells read
+' scores[3] and scores[4]. UP displayed the player's fours and BON their
+' fives, tracking those cells for the whole game. Same trap bit
+' player_addr(active_player), where only active_player's trailing PEEK term
+' got multiplied by PLAYER_STRIDE.
+'
+' See also state_round's comment further down for the sibling "AND 255"
+' precedence trap. Don't strip either set of parens.
+
 ' player_addr(i): address of player i's 42-byte record in FN_RX.
-    DEF FN player_addr(i) = FN_RX + GAME_PLAYERS + i * PLAYER_STRIDE
+    DEF FN player_addr(i) = FN_RX + GAME_PLAYERS + (i) * PLAYER_STRIDE
 
 ' table_addr(i): address of table i's 36-byte record in FN_RX (i is 0-based,
 ' the record right after the leading count byte).
-    DEF FN table_addr(i) = FN_RX + 1 + i * TABLE_STRIDE
+    DEF FN table_addr(i) = FN_RX + 1 + (i) * TABLE_STRIDE
 
 ' score_at(addr, i): player record at `addr`'s scores[i] as an unsigned
 ' 16-bit word (65535 = unset/-1, 65534 = viewing/-2 in the lobby slot).
-    DEF FN score_at(addr, i) = (PEEK(addr + PL_SCORES + i * 2 + 1) AND 255) * 256 + (PEEK(addr + PL_SCORES + i * 2) AND 255)
+    DEF FN score_at(addr, i) = (PEEK((addr) + PL_SCORES + (i) * 2 + 1) AND 255) * 256 + (PEEK((addr) + PL_SCORES + (i) * 2) AND 255)
 
 ' valid_at(i): validScores[i] as an unsigned byte (255 = -1 = not selectable).
 ' Parenthesized "(... AND 255)" deliberately -- see state_round's comment
 ' below for why an unparenthesized trailing "AND 255" is dangerous.
-    DEF FN valid_at(i) = (PEEK(FN_RX + GAME_VALIDSCORES + i) AND 255)
+    DEF FN valid_at(i) = (PEEK(FN_RX + GAME_VALIDSCORES + (i)) AND 255)
 
 ' active_player: activePlayer as a signed value (-1..11), converting the
 ' wire's $FF sentinel. Called as plain `active_player` (no parens -- DEF FN

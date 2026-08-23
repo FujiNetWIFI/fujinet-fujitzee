@@ -126,7 +126,7 @@ draw_cat_cell: PROCEDURE
     IF dcc_cursor THEN #dcc_color = COL_CURSOR
 
     IF dcc_cat = 100 OR dcc_cat = 101 THEN
-        #dcc_v = score_at(#dcc_addr, 6 + (dcc_cat - 100))
+        #dcc_v = score_at(#dcc_addr, SCORE_UPPER_TOTAL + (dcc_cat - 100))
         IF #dcc_v = SCORE_UNSET OR #dcc_v = SCORE_VIEWING THEN
             IF dcc_cursor = 0 THEN #dcc_color = COL_DASH
             PRINT AT screenpos(dcc_valcol, dcc_row) COLOR #dcc_color, "  -"
