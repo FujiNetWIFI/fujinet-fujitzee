@@ -6,6 +6,7 @@ Fujitzee is a clone of the popular Yahtzee dice game.
 * **Atari**
 * **Apple II**
 * **CoCo** *(WIP)*
+* **Coleco Adam**
 * **C64** *(planned)*
 * *Please contribute to add more!*
 
@@ -20,6 +21,20 @@ Fujitzee is a clone of the popular Yahtzee dice game.
 
 `make -f Makefile.coco`
 
+
+### To build: *Coleco Adam*
+
+There is no published Adam fujinet-lib release yet, so build the sibling
+checkout first, then build the game inside the z88dk container (run from the
+directory that holds both checkouts so `../fujinet-lib/build` resolves):
+
+```
+defoogi make -C fujinet-lib TARGETS=adam
+defoogi make -C fujinet-fujitzee adam
+```
+
+The bootable tape image lands at `r2r/adam/fujitzee.ddp` (and is copied to
+`~/tnfs/` if that directory exists).
 
 ### To build: *Atari | Apple ][ | C64*
 

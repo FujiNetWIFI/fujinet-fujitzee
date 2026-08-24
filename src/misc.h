@@ -1,7 +1,15 @@
 #ifndef MISC_H
 #define MISC_H
 
-#ifndef __WATCOMC__
+#if defined(__ADAM__)
+/* z88dk's conio.h maps cgetc() onto getk(), a dead stub on the Adam
+ * target - kbhit/cgetc are implemented over EOS in src/adam/input.c.
+ * cgetc must return unsigned: sccz80 chars are signed and the Adam's
+ * arrow/SmartKeys codes are 0x81-0xA8 - a plain char return would
+ * sign-extend them and no KEY_* case in the input switch would match. */
+unsigned char kbhit(void);
+unsigned char cgetc(void);
+#elif !defined(__WATCOMC__)
 #include <joystick.h>
 #include <conio.h>
 #endif

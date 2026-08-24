@@ -1,6 +1,6 @@
 PRODUCT = fujitzee
 PRODUCT_UPPER = FUJITZEE
-PLATFORMS = atari apple2 coco msdos dragon
+PLATFORMS = atari apple2 coco msdos dragon adam
 
 PLATFORM_COMBOS = \
   dragon+=coco
@@ -25,10 +25,17 @@ EXTRA_INCLUDE_DRAGON = src/include
 # Default fujinet-lib version. msdos requires fujinet-lib-experimental for
 # RS232 support; override at build time so it doesn't drag the experimental
 # branch into other platforms.
-FUJINET_LIB = 
+FUJINET_LIB =
 ifeq ($(PLATFORM),msdos)
   FUJINET_LIB = https://github.com/FozzTexx/fujinet-lib-experimental.git
 endif
+
+# Adam (z88dk): no published Adam release zip yet, so build against the
+# sibling fujinet-lib checkout (make -C ../fujinet-lib TARGETS=adam first).
+ifeq ($(PLATFORM),adam)
+  FUJINET_LIB = ../fujinet-lib/build
+endif
+LDFLAGS_EXTRA_ADAM = -m
 
 # CoCo: optimization + memory layout from old Makefile.coco
 CFLAGS_EXTRA_COCO  += -fomit-frame-pointer -O2 -Wno-const
@@ -64,6 +71,11 @@ LDFLAGS_EXTRA_APPLE2 += -C src/apple2/apple2-hgr.cfg
 # MS-DOS (Watcom): bundle AUTOEXEC.BAT into the disk image
 msdos/disk-post::
 	mcopy -t -i $(DISK) src/msdos/AUTOEXEC.BAT "::AUTOEXEC.BAT"
+
+adam/r2r-post::
+#	Stage the DDP on the local TNFS root for loading via the TMA-3 host slot.
+#	Skipped silently inside the defoogi container, where ~/tnfs is not mounted.
+	-@[ -d ~/tnfs ] && cp $(EXECUTABLE) ~/tnfs/ && echo "Copied $(EXECUTABLE) to ~/tnfs/" || true
 
 include mekkogx/toplevel-rules.mk
 

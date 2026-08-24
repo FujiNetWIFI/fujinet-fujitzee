@@ -1,4 +1,4 @@
-#ifndef __WATCOMC__
+#if !defined(__WATCOMC__) && !defined(__ADAM__)
 #include <joystick.h>
 #endif
 #include <string.h>

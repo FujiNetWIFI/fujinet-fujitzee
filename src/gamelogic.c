@@ -7,7 +7,7 @@
 #include "misc.h"
 #include "stateclient.h"
 #include "screens.h"
-#ifndef __WATCOMC__
+#if !defined(__WATCOMC__) && !defined(__ADAM__)
 #include <peekpoke.h>
 #endif
 
