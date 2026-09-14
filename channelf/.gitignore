@@ -1,0 +1,7 @@
+build/
+cfg/*.cfg
+src/font.inc
+src/endpoint.inc
+src/*.lst
+src/*.p
+tools/__pycache__/
