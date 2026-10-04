@@ -1,0 +1,4 @@
+* Joystick should be able to move between top and bottom without needing to press left or right.
+* VRAM glitches, e.g. on dice.
+* When picking a score ,sometimes the other entries in the same column disappear, the scores in the column re-appear after a score is selected. The blanking seems scoped to a specific top or bottom section.
+* Missing theme music for getting a Fujitzee (50), as well as for round ending.

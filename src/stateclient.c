@@ -8,6 +8,12 @@
 static char url[160];
 char *requestedMove;
 
+#ifdef CUSTOM_FUJINET_CALLS
+// Implemented in platform-specific code, for a platform whose fujinet-lib
+// headers cannot be included alongside the game's (see src/nes/fujinet.c)
+int16_t custom_network_call(char *url, uint8_t *buffer, uint16_t max_len);
+#endif
+
 /*
  * @brief Makes an Api call, returning true if valid payload received
  * Returns API_CALL_*:
@@ -29,12 +35,16 @@ uint8_t apiCall(char *path) {
   strcat(url, query );
   strcat(url, query[0] ? "&bin=1" QUERY_SUFFIX : "?bin=1" QUERY_SUFFIX);
   
+#ifdef CUSTOM_FUJINET_CALLS
+  read = custom_network_call(url, &clientState.firstByte, sizeof(clientState.game));
+#else
   if (network_open(url, OPEN_MODE_HTTP_GET, OPEN_TRANS_NONE)) {
     return API_CALL_ERROR;
   } 
   
   read = network_read(url, &clientState.firstByte, sizeof(clientState.game));
   network_close(url);
+#endif
 
   // If no bytes read, set first byte of clientState to 0, which is the number of tables or players
   if (read<=0) { 

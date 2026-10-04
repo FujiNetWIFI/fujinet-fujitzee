@@ -193,6 +193,7 @@ void drawLogo(uint8_t x, uint8_t y)
 }
 
 
+#ifndef SINGLE_LOCAL_PLAYER
 void showPlayerGroupScreen() {
   static bool redrawScreen;
   
@@ -255,6 +256,7 @@ void showPlayerGroupScreen() {
   }
   
 }
+#endif /* SINGLE_LOCAL_PLAYER */
 
 void showPlayerNameScreen(uint8_t p) {
   static char* playerName;
@@ -296,6 +298,11 @@ void showPlayerNameScreen(uint8_t p) {
   
   resetInputField();
   clearCommonInput();
+#ifdef ON_SCREEN_KEYBOARD
+  // No keyboard: the platform draws a letter grid and types from it through
+  // kbhit()/cgetc(), so inputFieldCycle() below works unchanged.
+  oskOpen();
+#endif
   while (true) {
 
     while (!inputFieldCycle(WIDTH/2-4, 11, PLAYER_NAME_MAX, tempBuffer)) {
@@ -353,6 +360,9 @@ void showPlayerNameScreen(uint8_t p) {
 
   // reset input field in case we broke early from the input loop (remove, cancel)
   resetInputField();
+#ifdef ON_SCREEN_KEYBOARD
+  oskClose();
+#endif
 
   if (input.key != KEY_ESCAPE) {
     
@@ -480,7 +490,9 @@ void showTableSelectionScreen() {
       strcpy(tempBuffer,"HELLO "); 
       strcat(tempBuffer, prefs.localPlayer[0].name);
       centerTextAlt(18, tempBuffer);
+#ifndef SINGLE_LOCAL_PLAYER
       centerTextAlt(20, "PRESS p TO ADD LOCAL PLAYERS");
+#endif
       
       #ifdef COLOR_TOGGLE
       if (prefs.color)
@@ -536,7 +548,7 @@ void showTableSelectionScreen() {
       centerText(12, "no servers are available");
     }
 
-    centerStatusText("Refresh  Help  Players  Quit");
+    centerStatusText(LOBBY_STATUS_TEXT);
     
     #ifdef COLOR_TOGGLE
     if (prefs.color) {
@@ -580,10 +592,12 @@ void showTableSelectionScreen() {
         prefs.disableSound = !prefs.disableSound;
         soundCursor();
         savePrefs();
+#ifndef SINGLE_LOCAL_PLAYER
       } else if (input.key == 'p' || input.key =='P') {
         showPlayerGroupScreen();
         resetScreenWithBorder();
         break;
+#endif
       } else if (input.key == 'q' || input.key =='Q') {
         quit();
       } /*else if (input.key != 0) {
@@ -678,13 +692,13 @@ void showInGameMenuScreen() {
     drawBox(INGAME_MENU_X-2,y-2,19,9);
     #endif
 
-    drawTextAlt(INGAME_MENU_X,y,    "  Q: quit table");
-    drawTextAlt(INGAME_MENU_X,y+=2, "  H: how to play"); 
+    drawTextAlt(INGAME_MENU_X,y,    MENU_QUIT_TEXT);
+    drawTextAlt(INGAME_MENU_X,y+=2, MENU_HELP_TEXT); 
     #ifdef COLOR_CYCLE
     drawTextAlt(INGAME_MENU_X,y+=2, "  C: color mode");
     #endif
-    drawTextAlt(INGAME_MENU_X,y+=2, prefs.disableSound ?  "  S: sound OFF" : "  S: sound ON");
-    drawTextAlt(INGAME_MENU_X,y+=2, ESC ": keep playing"); 
+    drawTextAlt(INGAME_MENU_X,y+=2, prefs.disableSound ?  MENU_SOUND_OFF_TEXT : MENU_SOUND_ON_TEXT);
+    drawTextAlt(INGAME_MENU_X,y+=2, MENU_ESC_TEXT); 
     
     strcpy(tempBuffer,  "CURRENTLY AT ");
     strcat(tempBuffer, clientState.game.serverName);
@@ -705,7 +719,7 @@ void showInGameMenuScreen() {
         case 's':
         case 'S':
           prefs.disableSound = !prefs.disableSound;
-          drawTextAlt(INGAME_MENU_X,y-2, prefs.disableSound ?  "  S: sound OFF" : "  S: sound ON ");
+          drawTextAlt(INGAME_MENU_X,y-2, prefs.disableSound ?  MENU_SOUND_OFF_TEXT : MENU_SOUND_ON_TEXT);
           soundScore();
           savePrefs();
           break;

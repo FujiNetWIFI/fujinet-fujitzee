@@ -36,7 +36,7 @@ fi
 
 pkill -f "mame a2600" 2>/dev/null || true
 
-args=(a2600 -cartslot "$SLOT" -cart "$HERE/build/$ROM.bin"
+args=(a2600 -window -cartslot "$SLOT" -cart "$HERE/build/$ROM.bin"
       -snapshot_directory "${SNAP:-$HERE/build/snap}")
 
 if [ -n "$SCRIPT" ]; then

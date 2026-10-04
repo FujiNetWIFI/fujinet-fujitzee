@@ -9,6 +9,7 @@ Fujitzee is a clone of the popular Yahtzee dice game.
 * **Coleco Adam**
 * **ColecoVision** *(cartridge, over the FujiNet cart mailbox)*
 * **Fairchild Channel F** *(cartridge, over the FujiNet cart mailbox)*
+* **NES** *(cartridge, over the FujiNet cart mailbox)*
 * **C64** *(planned)*
 * *Please contribute to add more!*
 
@@ -72,6 +73,31 @@ cd channelf && ./run.sh          # MAME, against a fujinet-pc BoIP listener
 Needs Macroassembler AS (`asl`/`p2bin`) and, to run, a MAME tree with the
 FujiNet cart device grafted in. See `channelf/README.md` for the layout, the
 banded palette and the F8 traps.
+
+### To build: *NES*
+
+The shared C core, built by mekkogx with cc65: the FujiNet NES cartridge
+serves 8K of RAM at `$6000`, which holds the core's statics comfortably. The
+platform layer is `src/nes/`: the MS-DOS client's CGA art converted tile for
+tile (`src/nes/mkchr.py`), drawn on the Adam's 32-column grid with the MS-DOS
+25 rows, the Adam's three-voice sound on the 2A03, and an on-screen keyboard
+for the player's name. One controller means one local player.
+
+```
+make nes                         # -> r2r/nes/fujitzee.nes (NROM-256, "FUJI" claim stamped)
+make nes-smoke EXPECT="..."      # headless MAME, screen read out of the nametable
+make nes-play                    # MAME in a window
+```
+
+Needs cc65 and the `add-nes` branch of `fujinet-lib-experimental` checked out
+(and built for nes) at `~/Workspace/fujinet-lib-experimental`, or pass
+`FUJINET_LIB=<path>`. To run, a MAME tree with the cartridge device grafted in
+by `fujinet-firmware/pico/nes/emu/apply.sh`, and fujinet-pc listening on
+`127.0.0.1:9995`.
+
+Buttons: **A** is the trigger, **B** help, **START** the menu, **SELECT**
+refreshes the table list, **SELECT+B** toggles sound and **SELECT+START**
+quits.
 
 ### To build: *Atari | Apple ][ | C64*
 

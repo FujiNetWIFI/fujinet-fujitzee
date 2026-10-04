@@ -6,7 +6,14 @@
 #include "platform-specific/input.h"
 #include "platform-specific/sound.h"
 #include "misc.h"
+#ifdef CUSTOM_FUJINET_CALLS
+// Implemented in platform-specific code, for a platform whose fujinet-lib
+// headers cannot be included alongside the game's (see src/nes/fujinet.c)
+uint16_t custom_read_appkey(uint16_t creator_id, uint8_t app_id, uint8_t key_id, char *destination);
+void custom_write_appkey(uint16_t creator_id, uint8_t app_id, uint8_t key_id, uint16_t count, char *data);
+#else
 #include "fujinet-fuji.h"
+#endif
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -127,9 +134,13 @@ void loadPrefs() {
   }
   
   // Ensure local player count is at least one (older appkeys may have this set to 0)
+#ifdef SINGLE_LOCAL_PLAYER
+  prefs.localPlayerCount=1;
+#else
   if (prefs.localPlayerCount==0 || prefs.localPlayerCount>4) {
     prefs.localPlayerCount=1;
   }
+#endif
 
   setColorMode(prefs.color);
 }
@@ -142,9 +153,13 @@ void savePrefs() {
 uint16_t read_appkey(uint16_t creator_id, uint8_t app_id, uint8_t key_id, char* destination) {
   uint16_t read=0;
   
+#ifdef CUSTOM_FUJINET_CALLS
+  read = custom_read_appkey(creator_id, app_id, key_id, destination);
+#else
   fuji_set_appkey_details(creator_id, app_id, DEFAULT);
   if (!fuji_read_appkey(key_id, &read, (uint8_t*)destination))
     read=0;
+#endif
 
   // Add string terminator after the data ends in case it is being interpreted as a string
   destination[read] = 0;
@@ -153,6 +168,10 @@ uint16_t read_appkey(uint16_t creator_id, uint8_t app_id, uint8_t key_id, char* 
  
 void write_appkey(uint16_t creator_id, uint8_t app_id, uint8_t key_id,  uint16_t count, char *data)
 {
+#ifdef CUSTOM_FUJINET_CALLS
+  custom_write_appkey(creator_id, app_id, key_id, count, data);
+#else
   fuji_set_appkey_details(creator_id, app_id, DEFAULT);
   fuji_write_appkey(key_id, count, (uint8_t*)data);
+#endif
 }

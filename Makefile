@@ -37,6 +37,20 @@ ifeq ($(PLATFORM),adam)
 endif
 LDFLAGS_EXTRA_ADAM = -m
 
+# NES (cc65, FujiNet mailbox cartridge). Not in PLATFORMS: the nes bus exists
+# only on the add-nes branch of fujinet-lib-experimental, so it builds against
+# that checkout:  make nes   (or FUJINET_LIB=<path> to point elsewhere).
+# src/nes is guarded by BUILD_NES; CUSTOM_FUJINET_CALLS routes the network and
+# AppKey calls through src/nes/fujinet.c, the one file that can see the
+# library's own headers. The linker config is the lib's FujiNet layout with
+# the CHR-ROM split so the game's pattern table (src/nes/chr.s, from the
+# msdos art) sits at $1000 beside the cc65 font the runtime insists on.
+ifeq ($(PLATFORM),nes)
+  FUJINET_LIB = $(HOME)/Workspace/fujinet-lib-experimental
+endif
+CFLAGS_EXTRA_NES = -DBUILD_NES -DCUSTOM_FUJINET_CALLS -Os
+NES_CFG = src/nes/nes.cfg
+
 # CoCo: optimization + memory layout from old Makefile.coco
 CFLAGS_EXTRA_COCO  += -fomit-frame-pointer -O2 -Wno-const
 
@@ -68,6 +82,10 @@ LDFLAGS_EXTRA_DRAGON = --limit=7b00 --org=$(COCO_ORG) --dragon
 # Apple II: custom HGR-aware linker config
 LDFLAGS_EXTRA_APPLE2 += -C src/apple2/apple2-hgr.cfg
 
+# NES: regenerate the pattern table from the msdos art before every build
+nes/r2r::
+	python3 src/nes/mkchr.py
+
 # MS-DOS (Watcom): bundle AUTOEXEC.BAT into the disk image
 msdos/disk-post::
 	mcopy -t -i $(DISK) src/msdos/AUTOEXEC.BAT "::AUTOEXEC.BAT"
@@ -78,6 +96,10 @@ adam/r2r-post::
 	-@[ -d ~/tnfs ] && cp $(EXECUTABLE) ~/tnfs/ && echo "Copied $(EXECUTABLE) to ~/tnfs/" || true
 
 include mekkogx/toplevel-rules.mk
+
+# NES is not in PLATFORMS (see above), so `make nes` needs spelling out
+.PHONY: nes
+nes: $(R2R_DIR)/nes/$(PRODUCT)
 
 #################################################################
 ## CUSTOM DISTRIBUTION RECIPES                                 ##
@@ -109,3 +131,45 @@ coco-dist:
 	decb copy -b -2 $(R2R_PRODUCT).bin  $(COCO_DISK),$(PRODUCT_UPPER).BIN
 	decb copy -b -2 $(R2R_PRODUCT)1.bin $(COCO_DISK),FUJITZE1.BIN
 	decb copy -b -2 $(R2R_PRODUCT)3.bin $(COCO_DISK),FUJITZE3.BIN
+
+#################################################################
+## NES TESTING                                                 ##
+#################################################################
+
+# Headless smoke test in MAME's nes driver. The MAME tree needs
+# fn-nes/pico/nes/emu/apply.sh run against it once for -nes_slot fujinet to
+# exist, and fujinet-pc listening on 127.0.0.1:9995 (bus over IP). The screen
+# is read out of the nametable through support/nes/tilemap.lua, which
+# src/nes/mkchr.py writes.
+#
+#   make nes-smoke                           print the screen
+#   make nes-smoke EXPECT="choose a game"    and assert on it
+#   make nes-smoke SCRIPT="a,wait5,a"        drive the joypad first
+#                                            (a b select start up down left right waitN)
+#   make nes-smoke SNAP=/tmp/fz.png          and save a screenshot
+#   make nes-play                            play it in a window, with sound
+#
+# MAME runs throttled: unthrottled it races the live game server, whose
+# clocks are wall time.
+MAME_DIR    ?= $(HOME)/Workspace/mame
+NES_ROM     := $(CURDIR)/r2r/nes/$(PRODUCT).nes
+AT          ?= 8
+EXPECT      ?=
+SCRIPT      ?=
+SNAP        ?=
+SETTLE      ?= 8
+comma       := ,
+SECS        ?= $(shell echo $$(( $(AT) + $(SETTLE) + 4 + 2 * $(words $(subst $(comma), ,$(SCRIPT))) )))
+
+.PHONY: nes-smoke nes-play
+
+nes-smoke:
+	cd $(MAME_DIR) && \
+	FZ_TILEMAP=$(CURDIR)/support/nes/tilemap.lua FZ_AT=$(AT) FZ_EXPECT="$(EXPECT)" \
+	FZ_SCRIPT="$(SCRIPT)" FZ_SETTLE=$(SETTLE) FZ_SNAP="$(SNAP)" \
+	./mame nes -nes_slot fujinet -cart $(NES_ROM) \
+	    -video none -sound none -seconds_to_run $(SECS) \
+	    -autoboot_script $(CURDIR)/support/nes/smoke.lua
+
+nes-play:
+	cd $(MAME_DIR) && ./mame nes -nes_slot fujinet -cart $(NES_ROM) -window

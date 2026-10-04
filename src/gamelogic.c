@@ -113,7 +113,7 @@ void renderBoardNamesMessages() {
 
       drawLine(READY_LEFT,7,16);
       centerTextAlt(18,"press " ESCAPE " for menu");  
-      centerTextAlt(HEIGHT-1,"press TRIGGER/SPACE to toggle");
+      centerTextAlt(HEIGHT-1,"press " TRIGGER_TEXT " to toggle");
     }
   
    
@@ -413,7 +413,7 @@ void renderBoardNamesMessages() {
 
         centerTextAlt(HEIGHT-1, "please wait..");
         pause(240);
-        centerTextAlt(HEIGHT-1,"press TRIGGER/SPACE to continue");
+        centerTextAlt(HEIGHT-1,"press " TRIGGER_TEXT " to continue");
         state.waitingOnEndGameContinue = true;
         state.countdownStarted = false;
       } 
