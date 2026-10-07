@@ -10,6 +10,7 @@ Fujitzee is a clone of the popular Yahtzee dice game.
 * **ColecoVision** *(cartridge, over the FujiNet cart mailbox)*
 * **Fairchild Channel F** *(cartridge, over the FujiNet cart mailbox)*
 * **NES** *(cartridge, over the FujiNet cart mailbox)*
+* **Atari 7800** *(cartridge, over the FujiNet cart mailbox)*
 * **C64** *(planned)*
 * *Please contribute to add more!*
 
@@ -98,6 +99,32 @@ by `fujinet-firmware/pico/nes/emu/apply.sh`, and fujinet-pc listening on
 Buttons: **A** is the trigger, **B** help, **START** the menu, **SELECT**
 refreshes the table list, **SELECT+B** toggles sound and **SELECT+START**
 quits.
+
+### To build: *Atari 7800*
+
+The shared C core, built by mekkogx with cc65: the FujiNet 7800 cartridge
+runs a 32K client at `$8000` and serves it 16K of RAM at `$4000`. The
+platform layer is `src/atari7800/`: the MS-DOS client's art converted for
+the MARIA tile engine CONFIG also uses (`maria.s`, `src/atari7800/mkchr.py`
+then `mktiles.py`), drawn on the Adam's 32x24 grid, the NES client's sound
+cues on the cartridge's POKEY and its on-screen keyboard for the player's
+name. One joystick means one local player.
+
+```
+make atari7800                   # -> r2r/atari7800/fujitzee.bin (for the cart) and .a78 (for MAME)
+make atari7800-smoke EXPECT="..." # headless MAME, screen read out of the engine's map
+make atari7800-play              # MAME in a window
+```
+
+Needs cc65 and the `add-atari7800` branch of `fujinet-lib-experimental`
+checked out (and built for atari7800) at `~/Workspace/fnlib-7800`, or pass
+`FUJINET_LIB=<path>`. To run, a MAME tree with the cartridge device grafted
+in by `fujinet-firmware/pico/atari-7800/emu/apply.sh`, the 7800 BIOS, and
+fujinet-pc listening on `127.0.0.1:9995` (`FUJINET_TCP=` to change it).
+
+Controls: **FIRE** (button 1) is the trigger, button **2** help, **PAUSE**
+the menu, **SELECT** refreshes the table list, **SELECT+2** toggles sound and
+**RESET** quits.
 
 ### To build: *Atari | Apple ][ | C64*
 
