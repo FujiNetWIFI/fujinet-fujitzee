@@ -51,6 +51,19 @@ endif
 CFLAGS_EXTRA_NES = -DBUILD_NES -DCUSTOM_FUJINET_CALLS -Os
 NES_CFG = src/nes/nes.cfg
 
+# Atari 7800 (cc65, FujiNet cartridge). Not in PLATFORMS, for the same
+# reason: the atari7800 bus exists only on the add-atari7800 branch of
+# fujinet-lib-experimental, so it builds against a checkout of that branch:
+# make atari7800 looks in ~/Workspace/fnlib-7800 (or FUJINET_LIB=<path>).
+# src/atari7800 is guarded by BUILD_ATARI7800 and routes its cartridge calls
+# through src/atari7800/fujinet.c, as the NES does. The image is the lib's
+# layout (mekkogx/atari7800-fujinet.cfg): 32K of ROM at $8000 and the
+# cartridge's 16K of RAM at $4000.
+ifeq ($(PLATFORM),atari7800)
+  FUJINET_LIB = $(HOME)/Workspace/fnlib-7800
+endif
+CFLAGS_EXTRA_ATARI7800 = -DBUILD_ATARI7800 -DCUSTOM_FUJINET_CALLS -Os
+
 # CoCo: optimization + memory layout from old Makefile.coco
 CFLAGS_EXTRA_COCO  += -fomit-frame-pointer -O2 -Wno-const
 
@@ -86,6 +99,11 @@ LDFLAGS_EXTRA_APPLE2 += -C src/apple2/apple2-hgr.cfg
 nes/r2r::
 	python3 src/nes/mkchr.py
 
+# Atari 7800: the same for the MARIA tile set, by way of NES-style CHR
+atari7800/r2r::
+	python3 src/atari7800/mkchr.py $(BUILD_DIR)/atari7800/tiles.chr
+	python3 src/atari7800/mktiles.py --chr $(BUILD_DIR)/atari7800/tiles.chr src/atari7800/tiles.s
+
 # MS-DOS (Watcom): bundle AUTOEXEC.BAT into the disk image
 msdos/disk-post::
 	mcopy -t -i $(DISK) src/msdos/AUTOEXEC.BAT "::AUTOEXEC.BAT"
@@ -97,9 +115,11 @@ adam/r2r-post::
 
 include mekkogx/toplevel-rules.mk
 
-# NES is not in PLATFORMS (see above), so `make nes` needs spelling out
-.PHONY: nes
+# NES and Atari 7800 are not in PLATFORMS (see above), so `make nes` and
+# `make atari7800` need spelling out
+.PHONY: nes atari7800
 nes: $(R2R_DIR)/nes/$(PRODUCT)
+atari7800: $(R2R_DIR)/atari7800/$(PRODUCT)
 
 #################################################################
 ## CUSTOM DISTRIBUTION RECIPES                                 ##
@@ -173,3 +193,48 @@ nes-smoke:
 
 nes-play:
 	cd $(MAME_DIR) && ./mame nes -nes_slot fujinet -cart $(NES_ROM) -window
+
+#################################################################
+## ATARI 7800 TESTING                                          ##
+#################################################################
+
+# The same smoke test in MAME's a7800 driver, with the cartridge device
+# grafted in by fujinet-firmware/pico/atari-7800/emu/apply.sh (a single-driver
+# build is enough), the console BIOS in A7800_ROMS, and fujinet-pc listening
+# on FUJINET_TCP (bus over IP). The screen is read out of the engine's map
+# through support/atari7800/tilemap.lua, which src/atari7800/mkchr.py writes.
+# MAME's snapshots, NVRAM and settings go under build/atari7800/mame.
+#
+#   make atari7800-smoke                     print the screen
+#   make atari7800-smoke EXPECT="choose a"   and assert on it
+#   make atari7800-smoke SCRIPT="fire,wait5,fire"
+#                                            drive the joystick first (up down
+#                                            left right fire two select pause
+#                                            reset waitN)
+#   make atari7800-smoke SNAP=/tmp/fz.png    and save a screenshot
+#   make atari7800-play                      play it in a window, with sound
+#   A7800_SYSTEM=a7800p ...                  on a PAL console
+A7800_MAME   ?= $(HOME)/Workspace/mame-a7800
+A7800_BIN    ?= ./a7800
+A7800_ROMS   ?= $(HOME)/Workspace/mame/roms
+A7800_SYSTEM ?= a7800
+A7800_ROM    := $(CURDIR)/r2r/atari7800/$(PRODUCT).a78
+A7800_RUN    := $(CURDIR)/$(BUILD_DIR)/atari7800/mame
+A7800_ARGS    = $(A7800_SYSTEM) -rompath $(A7800_ROMS) -cartslot fujinet -cart $(A7800_ROM) \
+                -snapshot_directory $(A7800_RUN)/snap -nvram_directory $(A7800_RUN)/nvram \
+                -cfg_directory $(A7800_RUN)/cfg
+FUJINET_TCP  ?= 127.0.0.1:9995
+
+.PHONY: atari7800-smoke atari7800-play
+
+atari7800-smoke:
+	mkdir -p $(A7800_RUN)
+	cd $(A7800_MAME) && FUJINET_TCP=$(FUJINET_TCP) \
+	FZ_TILEMAP=$(CURDIR)/support/atari7800/tilemap.lua FZ_AT=$(AT) FZ_EXPECT="$(EXPECT)" \
+	FZ_SCRIPT="$(SCRIPT)" FZ_SETTLE=$(SETTLE) FZ_SNAP="$(SNAP)" \
+	$(A7800_BIN) $(A7800_ARGS) -video none -sound none -seconds_to_run $(SECS) \
+	    -autoboot_script $(CURDIR)/support/atari7800/smoke.lua
+
+atari7800-play:
+	mkdir -p $(A7800_RUN)
+	cd $(A7800_MAME) && FUJINET_TCP=$(FUJINET_TCP) $(A7800_BIN) $(A7800_ARGS) -window -nomax
