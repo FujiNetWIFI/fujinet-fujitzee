@@ -1,4 +1,4 @@
-#if !defined(__WATCOMC__) && !defined(__ADAM__)
+#if !defined(__WATCOMC__) && !defined(__ADAM__) && !defined(BUILD_SMS)
 #include <joystick.h>
 #endif
 #include <string.h>

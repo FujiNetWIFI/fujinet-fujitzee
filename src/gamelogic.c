@@ -7,7 +7,7 @@
 #include "misc.h"
 #include "stateclient.h"
 #include "screens.h"
-#if !defined(__WATCOMC__) && !defined(__ADAM__)
+#if !defined(__WATCOMC__) && !defined(__ADAM__) && !defined(BUILD_SMS)
 #include <peekpoke.h>
 #endif
 
@@ -337,13 +337,15 @@ void renderBoardNamesMessages() {
       if (clientState.game.round>0 && clientState.game.round< 14) {
         // Display static round details
         itoa(clientState.game.round, tempBuffer, 10);
+        // A ternary, not 8-(round>9): z88dk's sccz80 (Adam, SMS) drops the
+        // 0/1 of a > comparison that feeds arithmetic, and draws round n at x-n
         if (fullWidth) {
           drawTextAlt(1,3,"round ");
           drawTextAlt(1,4,"   of ");
           drawText(7,4,"13"); 
-          drawText(8-(clientState.game.round>9),3,tempBuffer);
+          drawText(clientState.game.round>9 ? 7 : 8,3,tempBuffer);
         } else {
-          drawText(3-(clientState.game.round>9),1,tempBuffer);
+          drawText(clientState.game.round>9 ? 2 : 3,1,tempBuffer);
           drawTextAlt(4,1,"/");
           drawText(5,1,"13");
           

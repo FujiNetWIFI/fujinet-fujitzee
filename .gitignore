@@ -38,3 +38,6 @@ gen/charset
 # Compiled charset generators
 support/*/create_charset
 support/*/gencharset
+
+# Python bytecode
+__pycache__/

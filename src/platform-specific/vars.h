@@ -12,6 +12,7 @@
 //#include "../c64/vars.h"
 #include "../adam/vars.h"
 #include "../nes/vars.h"
+#include "../sms/vars.h"
 
 // Default vars (covers most platforms). A platform without a keyboard
 // overrides these with the names of its buttons.

@@ -10,6 +10,7 @@ Fujitzee is a clone of the popular Yahtzee dice game.
 * **ColecoVision** *(cartridge, over the FujiNet cart mailbox)*
 * **Fairchild Channel F** *(cartridge, over the FujiNet cart mailbox)*
 * **NES** *(cartridge, over the FujiNet cart mailbox)*
+* **Sega Master System** *(cartridge, over the FujiNet cart mailbox)*
 * **C64** *(planned)*
 * *Please contribute to add more!*
 
@@ -98,6 +99,40 @@ by `fujinet-firmware/pico/nes/emu/apply.sh`, and fujinet-pc listening on
 Buttons: **A** is the trigger, **B** help, **START** the menu, **SELECT**
 refreshes the table list, **SELECT+B** toggles sound and **SELECT+START**
 quits.
+
+### To build: *Sega Master System*
+
+The shared C core, built by mekkogx with z88dk (`+sms`, sccz80): the console's
+8K of RAM holds the core's statics and a shadow of the screen. The platform
+layer is `src/sms/`, whose hardware half (VDP access, the pad latch, the
+lobby boot) is fujinet-battleship's. The art is the MS-DOS client's, made into
+Mode 4 tiles by `src/sms/mktiles.py`, with the MS-DOS palette exactly and the
+active player's column blacked out per cell as MS-DOS does it, on the Adam's
+32x24 layout. The highlighted dice and the "cannot roll" mark, which the
+MS-DOS sheet lost, come back from the Atari original. Sound is the Adam's
+SN76489 set, unchanged: the Master System has the same chip at the same
+clock. An on-screen keyboard types the player's name; one pad means one local
+player.
+
+```
+make sms                         # -> r2r/sms/fujitzee.sms (48K, "FUJI" claim stamped)
+make sms-smoke EXPECT="..."      # headless MAME, screen read out of the name table
+make sms-play                    # MAME in a window
+```
+
+The image is 48K: the code fills most of the first 32K, which must end below
+the claim at `$7FDC`, and the 4bpp art is the third bank, kept in slot 2
+below the cartridge's mailbox arena at `$B000`. The build checks both, and
+that the cartridge will pick the Sega mapper for it (`support/sms/mapcheck.py`).
+
+Needs z88dk (from `~/Workspace/z88dk` when `zcc` is not on `PATH`) and the
+`add-sms` branch of `fujinet-lib-experimental` checked out (and built for sms)
+at `~/Workspace/fnlib-sms`, or pass `FUJINET_LIB=<path>`. To run, a MAME tree
+with the cartridge device grafted in by `fujinet-firmware/pico/sms/emu/apply.sh`,
+and fujinet-pc listening on `127.0.0.1:9995`.
+
+Buttons: **1** is the trigger, **Pause** the menu, **2** (tapped) refreshes
+the table list, **2+Up** help, **2+Down** toggles sound and **2+1** quits.
 
 ### To build: *Atari | Apple ][ | C64*
 

@@ -51,6 +51,33 @@ endif
 CFLAGS_EXTRA_NES = -DBUILD_NES -DCUSTOM_FUJINET_CALLS -Os
 NES_CFG = src/nes/nes.cfg
 
+# Sega Master System (z88dk +sms, FujiNet mailbox cartridge). Not in
+# PLATFORMS: the sms bus exists only on the add-sms branch of
+# fujinet-lib-experimental, checked out as the worktree ~/Workspace/fnlib-sms,
+# so it builds against that:  make sms   (or FUJINET_LIB=<path>).
+# src/sms is guarded by BUILD_SMS, and CUSTOM_FUJINET_CALLS routes the network
+# and AppKey calls through src/sms/fujinet.c, as on the NES. The image is 48K:
+# the code in the first 32K, ending below the "FUJI" claim that
+# mekkogx/sms-romstamp.py stamps at $7FDC, and the MS-DOS art as 4bpp tiles in
+# the third bank (src/sms/tiles.asm, SECTION BANK_02), which appmake appends.
+ifeq ($(PLATFORM),sms)
+  FUJINET_LIB = $(HOME)/Workspace/fnlib-sms
+  # z88dk from its checkout when it is not on PATH
+  Z88DK ?= $(HOME)/Workspace/z88dk
+  ifeq ($(shell command -v zcc),)
+    export PATH := $(Z88DK)/bin:$(PATH)
+    export ZCCCFG := $(Z88DK)/lib/config
+  endif
+endif
+CFLAGS_EXTRA_SMS = -DBUILD_SMS -DCUSTOM_FUJINET_CALLS -O3
+# 8K of RAM at $C000, stack from $DFF0 down; -m leaves the map beside the
+# image so BSS and the code's end ($7FD8 is the limit) can be read off. No
+# stdio: the game drives the VDP itself (src/sms/graphics.c).
+LDFLAGS_EXTRA_SMS += -m \
+  -pragma-define:CRT_ENABLE_STDIO=0 \
+  -pragma-define:CLIB_FOPEN_MAX=0 \
+  -pragma-define:CLIB_EXIT_STACK_SIZE=0
+
 # CoCo: optimization + memory layout from old Makefile.coco
 CFLAGS_EXTRA_COCO  += -fomit-frame-pointer -O2 -Wno-const
 
@@ -86,6 +113,14 @@ LDFLAGS_EXTRA_APPLE2 += -C src/apple2/apple2-hgr.cfg
 nes/r2r::
 	python3 src/nes/mkchr.py
 
+# SMS: regenerate the tile set from the msdos art before every build, and
+# hold the image to the Sega mapper after it (support/sms/mapcheck.py)
+sms/r2r::
+	python3 src/sms/mktiles.py
+
+sms/r2r-post::
+	python3 support/sms/mapcheck.py $(EXECUTABLE)
+
 # MS-DOS (Watcom): bundle AUTOEXEC.BAT into the disk image
 msdos/disk-post::
 	mcopy -t -i $(DISK) src/msdos/AUTOEXEC.BAT "::AUTOEXEC.BAT"
@@ -97,9 +132,11 @@ adam/r2r-post::
 
 include mekkogx/toplevel-rules.mk
 
-# NES is not in PLATFORMS (see above), so `make nes` needs spelling out
-.PHONY: nes
+# NES and SMS are not in PLATFORMS (see above), so `make nes` and `make sms`
+# need spelling out
+.PHONY: nes sms
 nes: $(R2R_DIR)/nes/$(PRODUCT)
+sms: $(R2R_DIR)/sms/$(PRODUCT)
 
 #################################################################
 ## CUSTOM DISTRIBUTION RECIPES                                 ##
@@ -173,3 +210,41 @@ nes-smoke:
 
 nes-play:
 	cd $(MAME_DIR) && ./mame nes -nes_slot fujinet -cart $(NES_ROM) -window
+
+#################################################################
+## SMS TESTING                                                 ##
+#################################################################
+
+# Headless smoke test in MAME's sms1 driver, the same shape as nes-smoke. The
+# MAME tree needs fn-sms/pico/sms/emu/apply.sh run against it once for -slot
+# fujinet to exist, and fujinet-pc listening on 127.0.0.1:9995 (bus over IP).
+# A claimed image over 32K boots straight into the cartridge's APP mode. The
+# screen is read out of the name table through support/sms/tilemap.lua, which
+# src/sms/mktiles.py writes.
+#
+#   make sms-smoke                             print the screen
+#   make sms-smoke EXPECT="choose a game"      and assert on it
+#   make sms-smoke SCRIPT="b1,wait5,pause"     drive the joypad first
+#                                              (b1 b2 pause up down left right,
+#                                               b2+X chords, waitN, shot, snap)
+#   make sms-smoke SNAP=/tmp/fz.png            and save a screenshot
+#   make sms-play                              play it in a window, with sound
+#
+# The BIOS's logo takes the first few seconds, hence the longer settle. MAME
+# runs throttled, as for the NES: the live game server's clocks are wall time.
+SMS_ROM     := $(CURDIR)/r2r/sms/$(PRODUCT).sms
+SMS_SETTLE  ?= 16
+SMS_SECS    ?= $(shell echo $$(( $(AT) + $(SMS_SETTLE) + 4 + 2 * $(words $(subst $(comma), ,$(SCRIPT))) )))
+
+.PHONY: sms-smoke sms-play
+
+sms-smoke:
+	cd $(MAME_DIR) && \
+	FZ_TILEMAP=$(CURDIR)/support/sms/tilemap.lua FZ_AT=$(AT) FZ_EXPECT="$(EXPECT)" \
+	FZ_SCRIPT="$(SCRIPT)" FZ_SETTLE=$(SMS_SETTLE) FZ_SNAP="$(SNAP)" \
+	./mame sms1 -slot fujinet -cart $(SMS_ROM) \
+	    -video none -sound none -seconds_to_run $(SMS_SECS) \
+	    -autoboot_script $(CURDIR)/support/sms/smoke.lua
+
+sms-play:
+	cd $(MAME_DIR) && ./mame sms1 -slot fujinet -cart $(SMS_ROM) -window
