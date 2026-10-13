@@ -64,6 +64,21 @@ ifeq ($(PLATFORM),atari7800)
 endif
 CFLAGS_EXTRA_ATARI7800 = -DBUILD_ATARI7800 -DCUSTOM_FUJINET_CALLS -Os
 
+# Atari 5200 (cc65, FujiNet cartridge). Not in PLATFORMS either: the
+# atari5200 bus exists only on the add-atari5200 branch of
+# fujinet-lib-experimental, so make atari5200 looks in ~/Workspace/fnlib-5200
+# (or FUJINET_LIB=<path>). src/atari5200 is guarded by BUILD_ATARI5200 and
+# routes its cartridge calls through src/atari5200/fujinet.c, as the 7800
+# does. The image is the lib's layout (mekkogx/atari5200-fujinet.cfg): 32K
+# of ROM at $4000 around the cart's mailbox, and the console's 16K of RAM,
+# whose top 4K is kept from the linker for the screen and player/missile
+# graphics (src/atari5200/antic.s).
+ifeq ($(PLATFORM),atari5200)
+  FUJINET_LIB = $(HOME)/Workspace/fnlib-5200
+endif
+CFLAGS_EXTRA_ATARI5200 = -DBUILD_ATARI5200 -DCUSTOM_FUJINET_CALLS -Os
+LDFLAGS_EXTRA_ATARI5200 = -Wl -D,__RESERVED_MEMORY__=0x1000
+
 # CoCo: optimization + memory layout from old Makefile.coco
 CFLAGS_EXTRA_COCO  += -fomit-frame-pointer -O2 -Wno-const
 
@@ -115,11 +130,12 @@ adam/r2r-post::
 
 include mekkogx/toplevel-rules.mk
 
-# NES and Atari 7800 are not in PLATFORMS (see above), so `make nes` and
-# `make atari7800` need spelling out
-.PHONY: nes atari7800
+# NES, Atari 7800 and Atari 5200 are not in PLATFORMS (see above), so
+# `make nes`, `make atari7800` and `make atari5200` need spelling out
+.PHONY: nes atari7800 atari5200
 nes: $(R2R_DIR)/nes/$(PRODUCT)
 atari7800: $(R2R_DIR)/atari7800/$(PRODUCT)
+atari5200: $(R2R_DIR)/atari5200/$(PRODUCT)
 
 #################################################################
 ## CUSTOM DISTRIBUTION RECIPES                                 ##
@@ -238,3 +254,46 @@ atari7800-smoke:
 atari7800-play:
 	mkdir -p $(A7800_RUN)
 	cd $(A7800_MAME) && FUJINET_TCP=$(FUJINET_TCP) $(A7800_BIN) $(A7800_ARGS) -window -nomax
+
+#################################################################
+## ATARI 5200 TESTING                                          ##
+#################################################################
+
+# The same smoke test in MAME's a5200 driver, with the cartridge device
+# grafted in by fujinet-firmware/pico/atari-5200/emu/apply.sh (a single-driver
+# build is enough), the 5200 BIOS in A5200_ROMS, and fujinet-pc listening on
+# FUJINET_TCP (bus over IP). The screen is read straight out of the console's
+# RAM by support/atari5200/smoke.lua. MAME's snapshots, NVRAM and settings go
+# under build/atari5200/mame.
+#
+#   make atari5200-smoke                     print the screen
+#   make atari5200-smoke EXPECT="choose a"   and assert on it
+#   make atari5200-smoke SCRIPT="fire,wait5,fire"
+#                                            drive the controller first (up
+#                                            down left right fire two start
+#                                            pause reset star hash k0-k9 waitN)
+#   make atari5200-smoke SNAP=/tmp/fz.png    and save a screenshot
+#   make atari5200-play                      play it in a window, with sound
+A5200_MAME   ?= $(HOME)/Workspace/mame-a5200
+A5200_BIN    ?= ./a5200
+A5200_ROMS   ?= $(HOME)/Workspace/mame/roms
+A5200_SYSTEM ?= a5200
+A5200_ROM    := $(CURDIR)/r2r/atari5200/$(PRODUCT).bin
+A5200_RUN    := $(CURDIR)/$(BUILD_DIR)/atari5200/mame
+A5200_ARGS    = $(A5200_SYSTEM) -rompath $(A5200_ROMS) -skip_gameinfo -cartslot fujinet \
+                -cart $(A5200_ROM) -snapshot_directory $(A5200_RUN)/snap \
+                -nvram_directory $(A5200_RUN)/nvram -cfg_directory $(A5200_RUN)/cfg
+
+.PHONY: atari5200-smoke atari5200-play
+
+atari5200-smoke:
+	mkdir -p $(A5200_RUN)
+	cd $(A5200_MAME) && FUJINET_TCP=$(FUJINET_TCP) \
+	FZ_AT=$(AT) FZ_EXPECT="$(EXPECT)" FZ_SCRIPT="$(SCRIPT)" FZ_SETTLE=$(SETTLE) \
+	FZ_SNAP="$(SNAP)" \
+	$(A5200_BIN) $(A5200_ARGS) -video none -sound none -seconds_to_run $(SECS) \
+	    -autoboot_script $(CURDIR)/support/atari5200/smoke.lua
+
+atari5200-play:
+	mkdir -p $(A5200_RUN)
+	cd $(A5200_MAME) && FUJINET_TCP=$(FUJINET_TCP) $(A5200_BIN) $(A5200_ARGS) -window -nomax
