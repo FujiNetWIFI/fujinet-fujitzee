@@ -12,6 +12,8 @@
 //#include "../c64/vars.h"
 #include "../adam/vars.h"
 #include "../nes/vars.h"
+#include "../atari7800/vars.h"
+#include "../atari5200/vars.h"
 
 // Default vars (covers most platforms). A platform without a keyboard
 // overrides these with the names of its buttons.
