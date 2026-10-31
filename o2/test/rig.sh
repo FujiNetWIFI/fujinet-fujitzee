@@ -13,7 +13,8 @@
 # everyday fujinet-pc on 9995.
 #
 # The image must point at the same server: build with
-# ENDPOINT=http://localhost:8091/ (make rig does). HOLD=1 leaves the rig up
+# ENDPOINT=http://localhost:8091/ (make rig does, into build/rigimg: never
+# over build/fujitzee.bin, which run.sh plays against the live server). HOLD=1 leaves the rig up
 # after the scenario, for a window (./run.sh), until ^C. PLAYER="--table kit
 # ..." plays a second human (test/player.py) alongside; build/rig/player.log.
 # ENDGAME="--table ai2 ..." skips the game to its end (test/endgame.py).
@@ -38,7 +39,7 @@ trap cleanup EXIT
 
 # The image has to talk to this rig's server: one built for any other
 # (make, not make rig) would play the live server from here.
-IMAGE=${4:-build/fujitzee.bin}
+IMAGE=${4:-build/rigimg/fujitzee.bin}
 if ! grep -aq "http://localhost:$FZ_PORT/" "$IMAGE"; then
     echo "rig: $IMAGE isn't built for http://localhost:$FZ_PORT/ (make rig)" >&2
     exit 1

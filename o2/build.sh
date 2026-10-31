@@ -65,5 +65,5 @@ cat "$OUT/fujitzee_fx0.bin" $parts > "$OUT/fujitzee.bin"
 size=$(wc -c < "$OUT/fujitzee.bin")
 [ "$size" -eq $((1024 + 2048 * NPAGES)) ] \
   || { echo "build.sh: fujitzee.bin is $size bytes" >&2; exit 1; }
-echo "build/fujitzee.bin: $size bytes, $NPAGES pages"
+echo "${OUT#$HERE/}/fujitzee.bin: $size bytes, $NPAGES pages"
 if [ "$SPIKE" = 1 ]; then echo "  (the SPIKE test pattern)"; fi

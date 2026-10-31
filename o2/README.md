@@ -141,7 +141,8 @@ builds and starts the server from `~/Workspace/servers/fujinet-game-system/
 fujitzee/server` on port 8091 (without `GO_PROD` it never posts to the
 lobby) and a private fujinet-pc-rs232 on BoIP 19974, with the name appkey
 seeded (`NAME=`) and the room appkey if `ROOM=` is set; it refuses an image
-not built for it. MAME runs throttled: the server's clocks are wall time.
+not built for it. `make rig` builds that image into `build/rigimg/`, so
+`build/fujitzee.bin` is always the live server's. MAME runs throttled: the server's clocks are wall time.
 
 ```
 make shot      # the spike: snapshots + tools/rowcheck.py
