@@ -1,0 +1,48 @@
+# play.scen -- at ai2: our turn -- dice 1 and 3 held (keys), a roll (R),
+# the cursor up onto the dice and left onto the card, chance scored; the
+# bots' turns (their slots lit), the standings (S) and back, the help (H)
+# and back, a burst for tools/rowcheck.py, then L leaves for the list.
+wait 360
+press down
+wait 10
+press fire
+wait 300
+press fire
+until 7A 1 900
+wait 60
+snap turn
+key 1
+key 3
+wait 20
+snap held
+key R
+wait 90
+snap rolled
+xram 20 16
+press up
+press left
+wait 20
+snap cursor
+press fire
+wait 40
+snap scored
+wait 60
+snap reveal
+until 7A 1 900
+wait 30
+snap turn2
+burst live 60
+key S 8
+wait 120
+snap stand
+key S 8
+wait 120
+snap back
+key H 8
+wait 40
+snap help
+key SPACE
+wait 120
+key L 8
+wait 300
+snap left

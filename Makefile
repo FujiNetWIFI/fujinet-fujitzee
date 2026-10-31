@@ -51,6 +51,33 @@ endif
 CFLAGS_EXTRA_NES = -DBUILD_NES -DCUSTOM_FUJINET_CALLS -Os
 NES_CFG = src/nes/nes.cfg
 
+# Atari 7800 (cc65, FujiNet cartridge). Not in PLATFORMS, for the same
+# reason: the atari7800 bus exists only on the add-atari7800 branch of
+# fujinet-lib-experimental, so it builds against a checkout of that branch:
+# make atari7800 looks in ~/Workspace/fnlib-7800 (or FUJINET_LIB=<path>).
+# src/atari7800 is guarded by BUILD_ATARI7800 and routes its cartridge calls
+# through src/atari7800/fujinet.c, as the NES does. The image is the lib's
+# layout (mekkogx/atari7800-fujinet.cfg): 32K of ROM at $8000 and the
+# cartridge's 16K of RAM at $4000.
+ifeq ($(PLATFORM),atari7800)
+  FUJINET_LIB = $(HOME)/Workspace/fnlib-7800
+endif
+CFLAGS_EXTRA_ATARI7800 = -DBUILD_ATARI7800 -DCUSTOM_FUJINET_CALLS -Os
+
+# Atari 5200 (cc65, FujiNet cartridge). Not in PLATFORMS either: the
+# atari5200 bus exists only on the add-atari5200 branch of
+# fujinet-lib-experimental, so make atari5200 looks in ~/Workspace/fnlib-5200
+# (or FUJINET_LIB=<path>). src/atari5200 is guarded by BUILD_ATARI5200 and
+# routes its cartridge calls through src/atari5200/fujinet.c, as the 7800
+# does. The image is the lib's layout (mekkogx/atari5200-fujinet.cfg): 32K
+# of ROM at $4000 around the cart's mailbox, and the console's 16K of RAM,
+# whose top 4K is kept from the linker for the screen and player/missile
+# graphics (src/atari5200/antic.s).
+ifeq ($(PLATFORM),atari5200)
+  FUJINET_LIB = $(HOME)/Workspace/fnlib-5200
+endif
+CFLAGS_EXTRA_ATARI5200 = -DBUILD_ATARI5200 -DCUSTOM_FUJINET_CALLS -Os
+LDFLAGS_EXTRA_ATARI5200 = -Wl -D,__RESERVED_MEMORY__=0x1000
 # Sega Master System (z88dk +sms, FujiNet mailbox cartridge). Not in
 # PLATFORMS: the sms bus exists only on the add-sms branch of
 # fujinet-lib-experimental, checked out as the worktree ~/Workspace/fnlib-sms,
@@ -154,6 +181,11 @@ LDFLAGS_EXTRA_APPLE2 += -C src/apple2/apple2-hgr.cfg
 nes/r2r::
 	python3 src/nes/mkchr.py
 
+# Atari 7800: the same for the MARIA tile set, by way of NES-style CHR
+atari7800/r2r::
+	python3 src/atari7800/mkchr.py $(BUILD_DIR)/atari7800/tiles.chr
+	python3 src/atari7800/mktiles.py --chr $(BUILD_DIR)/atari7800/tiles.chr src/atari7800/tiles.s
+
 # SMS: regenerate the tile set from the msdos art before every build, and
 # hold the image to the Sega mapper after it (support/sms/mapcheck.py)
 sms/r2r::
@@ -197,10 +229,13 @@ adam/r2r-post::
 
 include mekkogx/toplevel-rules.mk
 
-# NES, SMS and the H89 are not in PLATFORMS (see above), so `make nes`,
-# `make sms`, `make h89-cpm` and `make h89-hdos` need spelling out
-.PHONY: nes sms h89-cpm h89-hdos
+# NES, Atari 7800, Atari 5200, SMS and the H89 are not in PLATFORMS (see above), so
+# `make nes`, `make atari7800`, `make atari5200`, `make sms`, `make h89-cpm` and
+# `make h89-hdos` need spelling out
+.PHONY: nes atari7800 atari5200 sms h89-cpm h89-hdos
 nes: $(R2R_DIR)/nes/$(PRODUCT)
+atari7800: $(R2R_DIR)/atari7800/$(PRODUCT)
+atari5200: $(R2R_DIR)/atari5200/$(PRODUCT)
 sms: $(R2R_DIR)/sms/$(PRODUCT)
 h89-cpm: $(R2R_DIR)/h89-cpm/$(PRODUCT)
 h89-hdos: $(R2R_DIR)/h89-hdos/$(PRODUCT)
@@ -292,6 +327,94 @@ nes-smoke:
 
 nes-play:
 	cd $(MAME_DIR) && ./mame nes -nes_slot fujinet -cart $(NES_ROM) -window
+
+#################################################################
+## ATARI 7800 TESTING                                          ##
+#################################################################
+
+# The same smoke test in MAME's a7800 driver, with the cartridge device
+# grafted in by fujinet-firmware/pico/atari-7800/emu/apply.sh (a single-driver
+# build is enough), the console BIOS in A7800_ROMS, and fujinet-pc listening
+# on FUJINET_TCP (bus over IP). The screen is read out of the engine's map
+# through support/atari7800/tilemap.lua, which src/atari7800/mkchr.py writes.
+# MAME's snapshots, NVRAM and settings go under build/atari7800/mame.
+#
+#   make atari7800-smoke                     print the screen
+#   make atari7800-smoke EXPECT="choose a"   and assert on it
+#   make atari7800-smoke SCRIPT="fire,wait5,fire"
+#                                            drive the joystick first (up down
+#                                            left right fire two select pause
+#                                            reset waitN)
+#   make atari7800-smoke SNAP=/tmp/fz.png    and save a screenshot
+#   make atari7800-play                      play it in a window, with sound
+#   A7800_SYSTEM=a7800p ...                  on a PAL console
+A7800_MAME   ?= $(HOME)/Workspace/mame-a7800
+A7800_BIN    ?= ./a7800
+A7800_ROMS   ?= $(HOME)/Workspace/mame/roms
+A7800_SYSTEM ?= a7800
+A7800_ROM    := $(CURDIR)/r2r/atari7800/$(PRODUCT).a78
+A7800_RUN    := $(CURDIR)/$(BUILD_DIR)/atari7800/mame
+A7800_ARGS    = $(A7800_SYSTEM) -rompath $(A7800_ROMS) -cartslot fujinet -cart $(A7800_ROM) \
+                -snapshot_directory $(A7800_RUN)/snap -nvram_directory $(A7800_RUN)/nvram \
+                -cfg_directory $(A7800_RUN)/cfg
+FUJINET_TCP  ?= 127.0.0.1:9995
+
+.PHONY: atari7800-smoke atari7800-play
+
+atari7800-smoke:
+	mkdir -p $(A7800_RUN)
+	cd $(A7800_MAME) && FUJINET_TCP=$(FUJINET_TCP) \
+	FZ_TILEMAP=$(CURDIR)/support/atari7800/tilemap.lua FZ_AT=$(AT) FZ_EXPECT="$(EXPECT)" \
+	FZ_SCRIPT="$(SCRIPT)" FZ_SETTLE=$(SETTLE) FZ_SNAP="$(SNAP)" \
+	$(A7800_BIN) $(A7800_ARGS) -video none -sound none -seconds_to_run $(SECS) \
+	    -autoboot_script $(CURDIR)/support/atari7800/smoke.lua
+
+atari7800-play:
+	mkdir -p $(A7800_RUN)
+	cd $(A7800_MAME) && FUJINET_TCP=$(FUJINET_TCP) $(A7800_BIN) $(A7800_ARGS) -window -nomax
+
+#################################################################
+## ATARI 5200 TESTING                                          ##
+#################################################################
+
+# The same smoke test in MAME's a5200 driver, with the cartridge device
+# grafted in by fujinet-firmware/pico/atari-5200/emu/apply.sh (a single-driver
+# build is enough), the 5200 BIOS in A5200_ROMS, and fujinet-pc listening on
+# FUJINET_TCP (bus over IP). The screen is read straight out of the console's
+# RAM by support/atari5200/smoke.lua. MAME's snapshots, NVRAM and settings go
+# under build/atari5200/mame.
+#
+#   make atari5200-smoke                     print the screen
+#   make atari5200-smoke EXPECT="choose a"   and assert on it
+#   make atari5200-smoke SCRIPT="fire,wait5,fire"
+#                                            drive the controller first (up
+#                                            down left right fire two start
+#                                            pause reset star hash k0-k9 waitN)
+#   make atari5200-smoke SNAP=/tmp/fz.png    and save a screenshot
+#   make atari5200-play                      play it in a window, with sound
+A5200_MAME   ?= $(HOME)/Workspace/mame-a5200
+A5200_BIN    ?= ./a5200
+A5200_ROMS   ?= $(HOME)/Workspace/mame/roms
+A5200_SYSTEM ?= a5200
+A5200_ROM    := $(CURDIR)/r2r/atari5200/$(PRODUCT).bin
+A5200_RUN    := $(CURDIR)/$(BUILD_DIR)/atari5200/mame
+A5200_ARGS    = $(A5200_SYSTEM) -rompath $(A5200_ROMS) -skip_gameinfo -cartslot fujinet \
+                -cart $(A5200_ROM) -snapshot_directory $(A5200_RUN)/snap \
+                -nvram_directory $(A5200_RUN)/nvram -cfg_directory $(A5200_RUN)/cfg
+
+.PHONY: atari5200-smoke atari5200-play
+
+atari5200-smoke:
+	mkdir -p $(A5200_RUN)
+	cd $(A5200_MAME) && FUJINET_TCP=$(FUJINET_TCP) \
+	FZ_AT=$(AT) FZ_EXPECT="$(EXPECT)" FZ_SCRIPT="$(SCRIPT)" FZ_SETTLE=$(SETTLE) \
+	FZ_SNAP="$(SNAP)" \
+	$(A5200_BIN) $(A5200_ARGS) -video none -sound none -seconds_to_run $(SECS) \
+	    -autoboot_script $(CURDIR)/support/atari5200/smoke.lua
+
+atari5200-play:
+	mkdir -p $(A5200_RUN)
+	cd $(A5200_MAME) && FUJINET_TCP=$(FUJINET_TCP) $(A5200_BIN) $(A5200_ARGS) -window -nomax
 
 #################################################################
 ## SMS TESTING                                                 ##

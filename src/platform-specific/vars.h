@@ -12,6 +12,8 @@
 //#include "../c64/vars.h"
 #include "../adam/vars.h"
 #include "../nes/vars.h"
+#include "../atari7800/vars.h"
+#include "../atari5200/vars.h"
 #include "../sms/vars.h"
 #include "../h89/vars.h"
 

@@ -1,0 +1,19 @@
+# boot.scen -- the title, the name from the appkey, the table list, a join
+# at ai2 (two bots), the lobby, ready, and our first turn.
+wait 60
+snap title
+wait 300
+snap tables
+press down
+wait 10
+snap tables2
+press fire
+wait 300
+snap lobby
+press fire
+wait 60
+snap ready
+until 7A 1 900
+wait 60
+snap turn
+xram 20 16

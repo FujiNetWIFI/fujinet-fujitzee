@@ -9,7 +9,10 @@ Fujitzee is a clone of the popular Yahtzee dice game.
 * **Coleco Adam**
 * **ColecoVision** *(cartridge, over the FujiNet cart mailbox)*
 * **Fairchild Channel F** *(cartridge, over the FujiNet cart mailbox)*
+* **Magnavox Odyssey 2** *(cartridge, over the FujiNet cart mailbox)*
 * **NES** *(cartridge, over the FujiNet cart mailbox)*
+* **Atari 7800** *(cartridge, over the FujiNet cart mailbox)*
+* **Atari 5200** *(cartridge, over the FujiNet cart mailbox)*
 * **Sega Master System** *(cartridge, over the FujiNet cart mailbox)*
 * **Heathkit H89** *(HDOS and CP/M, on the H19 terminal, over the H89 FujiNet card)*
 * **C64** *(planned)*
@@ -76,6 +79,27 @@ Needs Macroassembler AS (`asl`/`p2bin`) and, to run, a MAME tree with the
 FujiNet cart device grafted in. See `channelf/README.md` for the layout, the
 banded palette and the F8 traps.
 
+### To build: *Magnavox Odyssey 2*
+
+A standalone 8048 client in the `o2/` directory, not part of the mekkogx
+build: the console has 64 bytes of RAM inside the CPU and 128 outside it, so
+the shared C core is out of the question. It is a protocol 2 (APPBANK)
+image -- the cart serves a fixed 1K and eight 2K pages -- built on the
+display engine and tooling of the other O2 FujiNet games (Texas Hold'em's,
+5 Card Stud's), with the Channel F port's game logic. The whole card is one
+screen, the dice down its right edge. It talks to the FujiNet cartridge
+from `fujinet-firmware/pico/o2` (APPBANK: PR #2177).
+
+```
+cd o2 && make                    # -> build/fujitzee.bin, 17408 bytes
+cd o2 && make run                # MAME, against a fujinet-pc BoIP listener
+cd o2 && make test               # MAME against a private server (test/rig.sh)
+```
+
+Needs Macroassembler AS (`asl`/`p2bin`) and, to run, a MAME tree with the
+FujiNet cart device grafted in. See `o2/README.md` for the screen, the
+controls, the pages and the tests.
+
 ### To build: *NES*
 
 The shared C core, built by mekkogx with cc65: the FujiNet NES cartridge
@@ -100,6 +124,61 @@ by `fujinet-firmware/pico/nes/emu/apply.sh`, and fujinet-pc listening on
 Buttons: **A** is the trigger, **B** help, **START** the menu, **SELECT**
 refreshes the table list, **SELECT+B** toggles sound and **SELECT+START**
 quits.
+
+### To build: *Atari 7800*
+
+The shared C core, built by mekkogx with cc65: the FujiNet 7800 cartridge
+runs a 32K client at `$8000` and serves it 16K of RAM at `$4000`. The
+platform layer is `src/atari7800/`: the MS-DOS client's art converted for
+the MARIA tile engine CONFIG also uses (`maria.s`, `src/atari7800/mkchr.py`
+then `mktiles.py`), drawn on the Adam's 32x24 grid, the NES client's sound
+cues on the cartridge's POKEY and its on-screen keyboard for the player's
+name. One joystick means one local player.
+
+```
+make atari7800                   # -> r2r/atari7800/fujitzee.bin (for the cart) and .a78 (for MAME)
+make atari7800-smoke EXPECT="..." # headless MAME, screen read out of the engine's map
+make atari7800-play              # MAME in a window
+```
+
+Needs cc65 and the `add-atari7800` branch of `fujinet-lib-experimental`
+checked out (and built for atari7800) at `~/Workspace/fnlib-7800`, or pass
+`FUJINET_LIB=<path>`. To run, a MAME tree with the cartridge device grafted
+in by `fujinet-firmware/pico/atari-7800/emu/apply.sh`, the 7800 BIOS, and
+fujinet-pc listening on `127.0.0.1:9995` (`FUJINET_TCP=` to change it).
+
+Controls: **FIRE** (button 1) is the trigger, button **2** help, **PAUSE**
+the menu, **SELECT** refreshes the table list, **SELECT+2** toggles sound and
+**RESET** quits.
+
+### To build: *Atari 5200*
+
+The shared C core, built by mekkogx with cc65: the FujiNet 5200 cartridge
+runs a 32K client at `$4000` around its mailbox, and the console's 16K of
+RAM holds the game's state, the screen and the player/missile graphics. The
+platform layer is `src/atari5200/`: the Atari 8-bit client's screen on the
+same ANTIC and GTIA (mode 4 at 40x26 in `support/atari/charset.fnt`, the
+player highlight and board wall in player/missile graphics), its sound cues
+on the same POKEY, and the 7800 client's on-screen keyboard for the player's
+name. One controller means one local player.
+
+```
+make atari5200                   # -> r2r/atari5200/fujitzee.bin (for the cart and for MAME)
+make atari5200-smoke EXPECT="..." # headless MAME, screen read out of the console's RAM
+make atari5200-play              # MAME in a window
+```
+
+Needs cc65 and the `add-atari5200` branch of `fujinet-lib-experimental`
+checked out (and built for atari5200) at `~/Workspace/fnlib-5200`, or pass
+`FUJINET_LIB=<path>`. To run, a MAME tree with the cartridge device grafted
+in by `fujinet-firmware/pico/atari-5200/emu/apply.sh`, the 5200 BIOS, and
+fujinet-pc listening on `127.0.0.1:9995` (`FUJINET_TCP=` to change it).
+
+Controls: the stick (or keypad **2 4 6 8**) moves, top **FIRE** (or **#**)
+is the trigger, lower fire (or **1**) help, **PAUSE** (or **\***) the menu,
+**START** refreshes the table list, **0** toggles sound and **RESET** quits
+to the lobby, or to CONFIG when the lobby cannot be loaded. On the name
+screen, lower fire (or **\***) deletes and **START** accepts.
 
 ### To build: *Sega Master System*
 

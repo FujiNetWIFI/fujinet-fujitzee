@@ -1,0 +1,7 @@
+# autoplay.scen -- an AUTOPLAY build (it rolls once, then scores the slot
+# that pays most) joins ai4 (four bots), says it's ready and plays all
+# thirteen rounds and on to the next lobby; O2SIM_SHOTS takes a snapshot every so often.
+wait 360
+press fire
+wait 30000
+xram 57 4

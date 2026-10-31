@@ -1,0 +1,47 @@
+# shots.scen -- the README's screenshots (make shots): NAME= so the boot
+# asks (typed THOM), ai2, a turn (dice 1 and 2 held, a roll, the cursor on
+# chance), a bot's slot lit, the standings, the help; ENDGAME skips the game
+# to its end a minute in, for game over.
+wait 60
+snap 01_title
+wait 240
+type THOM
+wait 10
+snap 02_name
+key ENT
+wait 300
+press down
+wait 10
+snap 03_tables
+press fire
+wait 300
+snap 04_lobby
+press fire
+until 7A 1 900
+wait 60
+key 1
+key 2
+wait 10
+key R
+wait 120
+press up
+press left
+wait 30
+snap 05_your_turn
+press fire
+until 30 60 900
+snap 06_their_turn
+until 7A 1 900
+wait 30
+key S 8
+wait 120
+snap 07_standings
+key S 8
+wait 60
+key H 8
+wait 60
+snap 08_help
+key SPACE
+until 58 99 4000
+wait 300
+snap 09_game_over
