@@ -1,0 +1,9 @@
+# room.scen -- the room appkey (ROOM="<server>?table=ai2"): no list, straight
+# to the table; then L leaves, the room is cleared and the list shown.
+wait 360
+snap joined
+xram 4B 9
+wait 120
+key L 8
+wait 300
+snap left

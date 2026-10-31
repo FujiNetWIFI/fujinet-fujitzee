@@ -9,6 +9,7 @@ Fujitzee is a clone of the popular Yahtzee dice game.
 * **Coleco Adam**
 * **ColecoVision** *(cartridge, over the FujiNet cart mailbox)*
 * **Fairchild Channel F** *(cartridge, over the FujiNet cart mailbox)*
+* **Magnavox Odyssey 2** *(cartridge, over the FujiNet cart mailbox)*
 * **NES** *(cartridge, over the FujiNet cart mailbox)*
 * **Atari 7800** *(cartridge, over the FujiNet cart mailbox)*
 * **Atari 5200** *(cartridge, over the FujiNet cart mailbox)*
@@ -75,6 +76,27 @@ cd channelf && ./run.sh          # MAME, against a fujinet-pc BoIP listener
 Needs Macroassembler AS (`asl`/`p2bin`) and, to run, a MAME tree with the
 FujiNet cart device grafted in. See `channelf/README.md` for the layout, the
 banded palette and the F8 traps.
+
+### To build: *Magnavox Odyssey 2*
+
+A standalone 8048 client in the `o2/` directory, not part of the mekkogx
+build: the console has 64 bytes of RAM inside the CPU and 128 outside it, so
+the shared C core is out of the question. It is a protocol 2 (APPBANK)
+image -- the cart serves a fixed 1K and eight 2K pages -- built on the
+display engine and tooling of the other O2 FujiNet games (Texas Hold'em's,
+5 Card Stud's), with the Channel F port's game logic. The whole card is one
+screen, the dice down its right edge. It talks to the FujiNet cartridge
+from `fujinet-firmware/pico/o2` (APPBANK: PR #2177).
+
+```
+cd o2 && make                    # -> build/fujitzee.bin, 17408 bytes
+cd o2 && make run                # MAME, against a fujinet-pc BoIP listener
+cd o2 && make test               # MAME against a private server (test/rig.sh)
+```
+
+Needs Macroassembler AS (`asl`/`p2bin`) and, to run, a MAME tree with the
+FujiNet cart device grafted in. See `o2/README.md` for the screen, the
+controls, the pages and the tests.
 
 ### To build: *NES*
 

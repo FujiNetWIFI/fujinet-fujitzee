@@ -1,0 +1,15 @@
+# over.scen -- at ai2 (ENDGAME="--table ai2": test/endgame.py skips the
+# game to its end a few seconds in): game over, the winner named, and then
+# the lobby again.
+wait 360
+press down
+wait 10
+press fire
+wait 300
+press fire
+until 58 1 900
+wait 600
+snap over
+until 58 0 3600
+wait 120
+snap lobby
