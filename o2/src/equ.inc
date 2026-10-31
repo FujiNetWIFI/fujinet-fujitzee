@@ -75,6 +75,10 @@ C_BLUE   equ 4
 C_VIOLET equ 5
 C_CYAN   equ 6
 C_WHITE  equ 7
+; The info colour: the round in T0, the clock in T1 (tx_build's third, past
+; TXSPL). Each seat's colour is pcols' (p6, p7): you (seat 0) white, then
+; red, green, violet, cyan, yellow -- the six that read on blue and on black.
+C_INFO   equ C_TAN
 
 ; The colour register ($A3): bits 5-3 the background (MAME bitswap 3,4,5:
 ; bit 5 red, 4 green, 3 blue), bits 6 and 2-0 the grid (bitswap 6,0,1,2).

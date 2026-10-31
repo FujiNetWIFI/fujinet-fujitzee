@@ -35,14 +35,20 @@ on_text:
     call scr_text
     call rsig_clear
 ot_up:
+    mov r0,#SCR                 ; T0, T1 (game over's: after the leader's
+    movx a,@r0                  ; found, for the winner's colour)
+    xrl a,#SC_OVER
+    jz ot_st
     call t_lines
+ot_st:
     mov r0,#RNEXT               ; the steps from the first
     clr a
     movx @r0,a
     ret
 
-; list_row: row 1 + SEAT: the seat's name and, in the lobby, OK if it's
-; ready; else its total -- unless that's what the row shows (RSIG).
+; list_row: row 1 + SEAT: the seat's name in its colour and, in the lobby,
+; OK (green) if it's ready; else its total, white or the leader's C_INFO
+; -- unless that's what the row shows (RSIG).
 ; Clobbers A, r0-r7.
 list_row:
     call lb_clear
@@ -76,11 +82,10 @@ lr_n:
     inc r7
     djnz r6,lr_n
 lr_nd:
-    mov r0,#SEAT                ; us: cyan
+    mov r0,#SEAT                ; the seat's colour
     movx a,@r0
-    jnz lr_v
+    call seat_col
     mov r0,#TXCOL
-    mov a,#C_CYAN
     movx @r0,a
 lr_v:
     mov r0,#SCR
@@ -106,10 +111,13 @@ lr_v:
     movx @r0,a
     jmp lr_put
 lr_tot:
-    mov r0,#SEAT                ; its total
+    mov r0,#TXCOL2              ; its total: white, the leader's C_INFO
+    mov a,#C_WHITE
+    movx @r0,a
+    mov r0,#SEAT
     movx a,@r0
     call seat_total
-    mov r0,#TMP1                ; the leader's: tan
+    mov r0,#TMP1
     movx a,@r0
     xrl a,r4
     jnz lr_num
@@ -120,12 +128,20 @@ lr_tot:
     mov a,r4                    ; (not when it's 0: nobody leads yet)
     orl a,r5
     jz lr_num
-    mov r0,#TXCOL
-    mov a,#C_TAN
+    mov r0,#TXCOL2
+    mov a,#C_INFO
     movx @r0,a
 lr_num:
     mov r1,#LINEBUF+8           ; (num3 spends r5:r4)
     call num3
+    mov r1,#LINEBUF+8           ; (bit 7: TXCOL2)
+    mov r2,#3
+lr_b:
+    movx a,@r1
+    orl a,#80h
+    movx @r1,a
+    inc r1
+    djnz r2,lr_b
 lr_put:
     mov r0,#LINEBUF             ; the signature
     mov r2,#NCOLS
@@ -207,10 +223,15 @@ t_lines:
     mov r4,#L_BOT
     jmp line_say
 tl_over:
+    mov r0,#LEADS               ; in the winner's colour
+    movx a,@r0
+    call seat_col
+    mov r0,#TXCOL
+    movx @r0,a
     mov r7,#GAME_PROMPT         ; the prompt over both (the winner named
     mov r4,#L_TOP               ; whole), else GAME OVER under it
     call wire_line
-    mov r0,#TMP1
+    mov r0,#TMP0
     movx a,@r0
     mov r7,a
     call rx_get
@@ -250,8 +271,9 @@ CARDSCR equ 1
     include "rx.inc"
 
 ; wire_line: T-line r4 = the reply's string from byte r7 (in the first
-; window): what fits in 16, cut at a space if a word would be split; TMP1 =
-; where the rest starts. Clobbers A, r0-r7.
+; window): what fits in 16, cut at a space if a word would be split; TMP0 =
+; where the rest starts (TMP1:TMP2 hold the leader's total). Clobbers A,
+; r0-r7.
 wire_line:
     call lb_clear
     clr a
@@ -301,7 +323,7 @@ wl_sp:
 wl_end:
     mov a,r7
     add a,r6
-    mov r0,#TMP1
+    mov r0,#TMP0
     movx @r0,a
     ; fall into line_say
 
@@ -364,7 +386,12 @@ ts_lead:
     movx @r0,a
     ret
 ts_l2:
-    jmp lead_find
+    call lead_find
+    mov r0,#SCR                 ; game over: its lines now, the winner known
+    movx a,@r0
+    xrl a,#SC_OVER
+    jnz ts_x
+    jmp t_lines
 ts_hint:
     mov r0,#RNEXT               ; (the last step)
     mov a,#NROWS
@@ -383,6 +410,36 @@ ts_hint:
     jmp say_row
 ts_x:
     ret
+
+; rsig_clear: every row drawn with this state, and T0 and T1. Clobbers A,
+; r0, r1.
+rsig_clear:
+    mov r0,#RSIG
+    mov r1,#NROWS
+    mov a,#0FFh
+rs_l:
+    movx @r0,a
+    inc r0
+    djnz r1,rs_l
+    mov r0,#T0SIG
+    movx @r0,a
+    mov r0,#T1SIG
+    movx @r0,a
+    ret
+
+; seat_col: A = seat A's colour (pcols; white past the sixth, and for
+; 0FFh). Clobbers nothing else.
+seat_col:
+    add a,#256-6
+    jc scl_w
+    add a,#6+(pcols&0FFh)
+    movp a,@a
+    ret
+scl_w:
+    mov a,#C_WHITE
+    ret
+pcols:                          ; each seat's: you, then the others
+    db C_WHITE, C_RED, C_GREEN, C_VIOLET, C_CYAN, C_TAN
 
     if $ > 0E00h
     error "page $D has run out"
@@ -483,9 +540,13 @@ st_n:
     jnz st_l
     ret
 
-; lead_find: TMP1:TMP2 = the highest total of the seats listed (lo, hi).
+; lead_find: TMP1:TMP2 = the highest total of the seats listed (lo, hi),
+; LEADS its seat (0FFh: nobody has scored).
 ; Clobbers A, r0-r7.
 lead_find:
+    mov r0,#LEADS               ; (none yet)
+    mov a,#0FFh
+    movx @r0,a
     clr a
     mov r0,#TMP1
     movx @r0,a
@@ -522,6 +583,10 @@ lf_take:
     mov r0,#TMP2
     mov a,r5
     movx @r0,a
+    mov r0,#SEAT
+    movx a,@r0
+    mov r0,#LEADS
+    movx @r0,a
 lf_n:
     mov r0,#SEAT
     movx a,@r0
@@ -533,22 +598,6 @@ lf_x:
     ret
 
     include "num3.inc"
-
-; rsig_clear: every row drawn with this state, and T0 and T1. Clobbers A,
-; r0, r1.
-rsig_clear:
-    mov r0,#RSIG
-    mov r1,#NROWS
-    mov a,#0FFh
-rs_l:
-    movx @r0,a
-    inc r0
-    djnz r1,rs_l
-    mov r0,#T0SIG
-    movx @r0,a
-    mov r0,#T1SIG
-    movx @r0,a
-    ret
 
     if $ > 0F00h
     error "page $E has run out"

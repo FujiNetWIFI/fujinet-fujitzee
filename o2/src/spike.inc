@@ -88,26 +88,43 @@ spk_rows:                       ; ten characters, the values' colours
     include "text.inc"
     include "vdcreset.inc"
 
-s_t0:   db 80h|CH_ARROW,"CLYDE    R12/13",0
-s_t1:   db "LG STRT ",80h|'4',80h|'0',"   :45",0
+s_t0:   db CH_ARROW,"CLYDE    ",80h|'R',80h|'1',80h|'2',80h|'/',80h|'1',80h|'3',0
+s_t1:   db "LG STRT ",80h|'4',80h|'0',"  0:45",0
 
-; spk_t0, spk_t1: the lines. spk_line: line r4 = string A of this page
-; (LINEBUF cleared), white, bit 7 in TXCOL2. Clobbers A, r0-r7.
+; spk_t0, spk_t1: the lines -- T0 seat 1's red and the round's C_INFO; T1
+; white, the value green, the clock C_INFO (past TXSPL). spk_line: line
+; r4 = string A of this page (LINEBUF cleared). Clobbers A, r0-r7.
 spk_t0:
     call lb_clear
+    mov r0,#TXCOL
+    mov a,#C_RED
+    movx @r0,a
+    inc r0
+    mov a,#C_INFO
+    movx @r0,a
     mov r4,#L_TOP
     mov a,#s_t0&0FFh
     jmp spk_line
 spk_t1:
     call lb_clear
+    mov r0,#TXCOL
+    mov a,#C_WHITE
+    movx @r0,a
+    inc r0
+    mov a,#C_GREEN
+    movx @r0,a
+    mov r0,#TXSPL
+    mov a,#11
+    movx @r0,a
     mov r4,#L_BOT
     mov a,#s_t1&0FFh
 spk_line:
     call lb_str
-    mov r0,#TXCOL
-    mov a,#C_WHITE
+    call say_line_c
+    mov r0,#TXSPL
+    mov a,#0FFh
     movx @r0,a
-    jmp say_line_c
+    ret
 
     if $ > 0C00h
     error "page $B has run out"
@@ -135,6 +152,9 @@ CARDSCR equ 1
 
 boot:
     call vdc_reset
+    mov r0,#TXSPL               ; (tx_build's third colour off)
+    mov a,#0FFh
+    movx @r0,a
     mov r0,#DICE                ; the dice: 6 5 4 3 2, the 5 and 3 held
     mov r1,#spk_dice&0FFh
     mov r2,#NDICE
@@ -160,9 +180,6 @@ bt_d:
     strt cnt
     en tcnti
     en i
-    mov r0,#TXCOL2
-    mov a,#C_GREEN
-    movx @r0,a
     call spk_t0
     call spk_t1
     call spk_load

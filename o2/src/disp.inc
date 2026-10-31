@@ -72,7 +72,8 @@ gp_nb:
     ret
 
 ; tx_build: LINEBUF into the text table at r2:r3, for the line at Y = r4.
-; Colour TXCOL, or TXCOL2 for a character with bit 7 set. The table's order
+; Colour TXCOL, or TXCOL2 for a character with bit 7 set, or C_INFO for one
+; without it in a column past TXSPL (0FFh: none). The table's order
 ; is the writer's: quad A takes columns 0, 2, 4, 6, B 1, 3, 5, 7, C and D the
 ; next eight (txorder).
 ; Clobbers A, r0-r7.
@@ -103,11 +104,19 @@ txb_l:
     mov a,r7
     mov r0,#TXCOL
     jb7 txb_c2
+    mov r0,#TXSPL               ; past TXSPL: the info colour
+    movx a,@r0
+    cpl a
+    add a,r2                    ; (carry iff the column > TXSPL)
+    mov a,#C_INFO
+    jc txb_c3
+    mov r0,#TXCOL
     jmp txb_c1
 txb_c2:
     inc r0                      ; TXCOL2
 txb_c1:
     movx a,@r0
+txb_c3:
     rl a
     orl a,r1
     call poke_b                 ; colour and pointer bit 8

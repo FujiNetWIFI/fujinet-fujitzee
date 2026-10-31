@@ -220,14 +220,15 @@ tt_t1:  db "FUJINET ODYSSEY2"
     org 0A00h
     include "text.inc"
 
-s_rnd:   db "R",0
-s_of13:  db "/13",0
+s_rnd:   db 80h|'R',0          ; (bit 7: the round in TXCOL2, C_INFO)
+s_of13:  db 80h|'/',80h|'1',80h|'3',0
 
-; t0_draw: T0 = the card's seat: an arrow when it's to move, its name, and
-; the round -- unless that's what it shows (T0SIG). Clobbers A, r0-r7.
+; t0_draw: T0 = the card's seat: an arrow when it's to move and its name,
+; in the seat's colour, and the round in C_INFO -- unless that's what it
+; shows (T0SIG). Clobbers A, r0-r7.
 t0_draw:
     call lb_clear
-    mov r0,#ACTV                ; to move: the arrow (bit 7: tan)
+    mov r0,#ACTV                ; to move: the arrow
     movx a,@r0
     mov r6,a
     mov r0,#VIEW
@@ -235,7 +236,7 @@ t0_draw:
     xrl a,r6
     jnz t0_name
     mov r0,#LINEBUF
-    mov a,#80h|CH_ARROW
+    mov a,#CH_ARROW
     movx @r0,a
 t0_name:
     mov r0,#VIEW
@@ -264,53 +265,29 @@ t0_10:
     inc r6
     add a,#256-10
     jc t0_10
-    add a,#'0'+10
+    add a,#80h|('0'+10)
     mov r0,#LINEBUF+12
     movx @r0,a
     mov a,r6
     xrl a,#'0'
     jz t0_of
     mov a,r6
+    orl a,#80h
     mov r0,#LINEBUF+11
     movx @r0,a
 t0_of:
     mov r0,#LINEBUF+13
     mov a,#s_of13&0FFh
     call lb_at
+    mov r0,#VIEW                ; the seat's colour; the round's
+    movx a,@r0
+    call seat_col
     mov r0,#TXCOL
-    mov a,#C_WHITE
     movx @r0,a
     inc r0
-    mov a,#C_TAN
+    mov a,#C_INFO
     movx @r0,a
     mov r4,#L_TOP
-    jmp line_say
-
-; t1_prompt: T1 = the server's prompt, its first 16 characters.
-; Clobbers A, r0-r7.
-t1_prompt:
-    call lb_clear
-    clr a
-    mov r2,a
-    call rx_winr
-    mov r1,#LINEBUF
-    mov r6,#TXT_LEN
-    mov r7,#GAME_PROMPT
-tp_l:
-    mov a,r7
-    call rx_get
-    jz tp_end
-    movx @r1,a
-    inc r1
-    inc r7
-    djnz r6,tp_l
-tp_end:
-    mov r0,#TXCOL
-    mov a,#C_WHITE
-    movx @r0,a
-    inc r0
-    movx @r0,a
-    mov r4,#L_BOT
     jmp line_say
 
     if $ > 0B00h
@@ -332,6 +309,45 @@ CARDSCR equ 1
     org 0C00h
     include "card.inc"
     include "rx.inc"
+
+; t1_prompt: T1 = the server's prompt, its first 16 characters, in the
+; colour of the seat to move (white: nobody). Clobbers A, r0-r7.
+t1_prompt:
+    call lb_clear
+    clr a
+    mov r2,a
+    call rx_winr
+    mov r1,#LINEBUF
+    mov r6,#TXT_LEN
+    mov r7,#GAME_PROMPT
+tp_l:
+    mov a,r7
+    call rx_get
+    jz tp_end
+    movx @r1,a
+    inc r1
+    inc r7
+    djnz r6,tp_l
+tp_end:
+    mov r0,#ACTV
+    movx a,@r0
+    mov r6,a
+    call seat_ok
+    mov a,#C_WHITE
+    jnc tp_col
+    mov a,r6
+    call seat_col
+tp_col:
+    mov r0,#TXCOL
+    movx @r0,a
+    inc r0
+    movx @r0,a
+    mov r4,#L_BOT
+    jmp line_say
+
+    if $ > 0E00h
+    error "page $D has run out"
+    endif
 
 ; ===========================================================================
     org 0E00h
@@ -493,6 +509,20 @@ ct_n:
     jnz ct_l
     mov r3,#C_WHITE
     jmp ce_num
+
+; seat_col: A = seat A's colour (pcols; white past the sixth). Clobbers
+; nothing else.
+seat_col:
+    add a,#256-6
+    jc sc_w
+    add a,#6+(pcols&0FFh)
+    movp a,@a
+    ret
+sc_w:
+    mov a,#C_WHITE
+    ret
+pcols:                          ; each seat's: you, then the others
+    db C_WHITE, C_RED, C_GREEN, C_VIOLET, C_CYAN, C_TAN
 
 lbls:                           ; each slot's label
     db "1S2S3S4S5S6SUPBN3K4KFHSMLGCHFZTT"

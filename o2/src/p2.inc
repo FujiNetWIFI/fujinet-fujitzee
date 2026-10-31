@@ -138,7 +138,13 @@ ml_tick:
     mov r0,#MYTURN
     movx a,@r0
     jz ml_snd
+    mov r0,#TXSPL               ; (the clock, columns 12-15: C_INFO)
+    mov a,#11
+    movx @r0,a
     call t1_mine
+    mov r0,#TXSPL
+    mov a,#0FFh
+    movx @r0,a
 ml_snd:
     call snd_go
     jmp ml
@@ -334,7 +340,8 @@ d3_t:
     org 0D00h
 
 ; t1_mine: T1 on our move: under the cursor a slot's name and what it
-; would score (green), or ROLL and the rolls left; and the clock, m:ss.
+; would score (green), or ROLL and the rolls left; and the clock, m:ss (in
+; C_INFO: the caller sets TXSPL).
 ; Unless it shows that already. Clobbers A, r0-r7.
 t1_mine:
     call lb_clear

@@ -224,15 +224,12 @@ ak_wopen5:
     jmp fn_begin
 
 
-    if $ > 900h
-    error "page $8 has run out"
-    endif
-
-    org 900h
-    include "disp.inc"
-
-; ints_on: the line counter and the vblank interrupt.
+; ints_on: the line counter and the vblank interrupt; tx_build's third
+; colour off (XRAM isn't cleared at power on).
 ints_on:
+    mov r0,#TXSPL
+    mov a,#0FFh
+    movx @r0,a
     clr a
     mov t,a
     strt cnt
@@ -240,16 +237,12 @@ ints_on:
     en i
     ret
 
-; wait_fire: until the button is pressed. Clobbers A, r0-r4.
-wait_fire:
-    call frame_wait
-    call joy_poll
-    mov r0,#JOYEV
-    movx a,@r0
-    anl a,#J_FIRE
-    jz wait_fire
-    ret
+    if $ > 900h
+    error "page $8 has run out"
+    endif
 
+    org 900h
+    include "disp.inc"
 
     if $ > 0A00h
     error "page $9 has run out"
@@ -568,6 +561,17 @@ nc_no:
 nc_ok:
     mov a,r6
     ret
+
+; wait_fire: until the button is pressed. Clobbers A, r0-r4.
+wait_fire:
+    call frame_wait
+    call joy_poll
+    mov r0,#JOYEV
+    movx a,@r0
+    anl a,#J_FIRE
+    jz wait_fire
+    ret
+
 
     if $ > 0D00h
     error "page $C has run out"

@@ -49,17 +49,25 @@ only at game over.
 
 The dice stand down the right: white cells of the VDC grid in fill mode,
 the face a digit on each. A held die is red, with a red ball beside it. The
-cursor is a tan arrow. T0 at the top is whose card it is (an arrow when
-they're to move) and the round; T1 at the bottom, on your turn, is what's
-under the cursor -- the slot's name and what it would score (0 included),
-or ROLL and the rolls left -- and the clock (m:ss); otherwise the server's
-prompt.
+cursor is a yellow arrow. T0 at the top is whose card it is (an arrow when
+they're to move), in that player's colour, and the round in yellow; T1 at
+the bottom, on your turn, is what's under the cursor -- the slot's name and
+what it would score (green, 0 included), or ROLL and the rolls left -- and
+the clock (m:ss) in yellow; otherwise the server's prompt, in the colour of
+the player it's waiting for.
+
+Each player has a colour, wherever their name is: you white, then red,
+green, violet, cyan and yellow, by seat. The VDC has eight character
+colours, and these are the six that read on both the blue card and the
+black text screens. The card's numbers keep their own: white filled, green
+what you'd score, yellow the slot just taken.
 
 The card follows whoever is rolling. When somebody else's turn ends, their
 card stays up for a second and a half with the slot they took lit, and a
 falling note. The lobby, the standings and game over are text screens: the
-seats with OK when they're ready, or their totals with the leader in tan;
-game over's prompt (the winner) is wrapped over T0 and T1.
+seats in their colours, with OK when they're ready, or their totals with
+the leader's in yellow; game over's prompt (the winner) is wrapped over T0
+and T1 in the winner's colour.
 
 ### Screenshots
 
@@ -70,11 +78,15 @@ From MAME, against a private server:
 | ![title](screenshots/01_title.png) | ![name](screenshots/02_name.png) | ![tables](screenshots/03_tables.png) |
 | The title: five 5s | Your name, the first time | The tables |
 | ![lobby](screenshots/04_lobby.png) | ![your turn](screenshots/05_your_turn.png) | ![their turn](screenshots/06_their_turn.png) |
-| The lobby | Your turn: two dice held, a roll left, the cursor on chance | A bot's turn: Clyd's sixes just taken |
+| The lobby, each player in their colour | Your turn: two dice held, the cursor on chance | A bot's turn: the slot it just took in yellow |
 | ![standings](screenshots/07_standings.png) | ![help](screenshots/08_help.png) | ![game over](screenshots/09_game_over.png) |
-| The standings (S), the leader in tan | Help (H or ?) | Game over |
+| The standings (S), the leader's total in yellow | Help (H or ?) | Game over, in the winner's colour |
 
 ### How it's drawn
+
+A text line (T0, T1) takes three colours: `TXCOL`, `TXCOL2` for a
+character with bit 7 set, and `C_INFO` (yellow) for one without it past
+column `TXSPL` -- the clock (`src/disp.inc` tx_build).
 
 `src/fixed.inc` re-points the 12 single characters between rows from a
 line-counter interrupt (Hold'em's engine, its code unchanged). Every screen

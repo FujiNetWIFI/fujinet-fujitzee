@@ -36,6 +36,7 @@ JOY     equ 017h                ; the stick now: J_* bits
 JOYP    equ 018h                ; last time's
 JOYEV   equ 019h                ; pressed since last time (and repeating)
 T1SIG   equ 01Ah                ; a signature of what T1 shows
+TXSPL   equ 01Bh                ; tx_build: columns past it in C_INFO (0FFh none)
 REP     equ 01Ch                ; a held direction's repeat countdown
 ; a card row being built (card.inc)
 ROWN    equ 01Dh                ; the row
@@ -100,6 +101,7 @@ JOINS   equ 07Bh                ; the boot: failed joins
 LCUR    equ 07Ch                ; the cursor as drawn (0FFh: hidden)
 MYREADY equ 07Dh                ; the lobby: we said we're ready
 RNEXT   equ 07Eh                ; the card's next row to draw (NROWS: done)
+LEADS   equ 07Fh                ; the leader's seat (0FFh: none yet)
     if JOINS > 07Fh
     error "external RAM is full"
     endif
