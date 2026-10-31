@@ -15,6 +15,20 @@
 #define REMOVE_PLAYER_KEY '/'
 #define INGAME_MENU_X WIDTH/2-8
 
+// The table list draws the selected table in the normal style and the others
+// in the alternate one. A platform whose alternate style is reverse video
+// (the H89) turns that around.
+#ifndef LOBBY_SEL_TEXT
+#define LOBBY_SEL_TEXT drawText
+#define LOBBY_UNSEL_TEXT drawTextAlt
+#endif
+
+// Server names are mixed case, which the alternate style splits up on some
+// platforms (see gamelogic.c)
+#ifndef CENTER_SERVER_TEXT
+#define CENTER_SERVER_TEXT centerTextAlt
+#endif
+
 char query[20] = "";
 bool inBorderedScreen=false, prevBorderedScreen=false, savedScreen=false;
 
@@ -59,7 +73,13 @@ void resetScreenWithBorder() {
 
 // Draws a help line and advances the row; keeps showHelpScreen's code compact.
 static unsigned char hy;
+// HELP_LEFT moves the 40 column help text right, to centre it on a wider
+// screen.
+#ifdef HELP_LEFT
+static void helpLn(unsigned char x, char *s) { drawTextAlt(x + HELP_LEFT, ++hy, s); }
+#else
 static void helpLn(unsigned char x, char *s) { drawTextAlt(x, ++hy, s); }
+#endif
 
 /// @brief Shows information about the game
 void showHelpScreen() {
@@ -143,8 +163,13 @@ void showHelpScreen() {
   drawFujitzee(2,hy);
   #else
   hy=4;centerTextAlt(hy, "upper scores");
+#ifdef HELP_LEFT
+  hy+=2;drawText(5+HELP_LEFT,hy, "total all dice that match the");
+  hy++;drawText(5+HELP_LEFT,hy, "number");
+#else
   hy+=2;drawText(5,hy, "total all dice that match the");
   hy++;drawText(5,hy, "number");
+#endif
   hy+=2;centerTextAlt(hy, "upper bonus");
   hy++;
   helpLn(5, "IF UPPER TOTAL IS 63 OR HIGHER");
@@ -156,7 +181,11 @@ void showHelpScreen() {
   helpLn(4, "run   - RUN OF x - EXAMPLE 12345");
   helpLn(4, "count - SCORE TOTAL OF ALL DICE");
   helpLn(4, "      - 5 OF A KIND");
+#ifdef HELP_LEFT
+  drawFujitzee(4+HELP_LEFT,hy);
+#else
   drawFujitzee(4,hy);
+#endif
   #endif
 #endif
 
@@ -457,8 +486,8 @@ static void redrawLobbyCursor(int8_t dy) {
   strcpy(playersBuf, t->players);
   row = 9 + lobbyTableIndex * 2;
   drawBlank(LMAR-2, row);
-  drawTextAlt(LMAR, row, nameBuf);
-  drawTextAlt(RMAR-5, row, playersBuf);
+  LOBBY_UNSEL_TEXT(LMAR, row, nameBuf);
+  LOBBY_UNSEL_TEXT(RMAR-5, row, playersBuf);
 
   // Move to new index
   lobbyTableIndex = (dy + lobbyTableIndex + clientState.tables.count) % clientState.tables.count;
@@ -469,8 +498,8 @@ static void redrawLobbyCursor(int8_t dy) {
   strcpy(playersBuf, t->players);
   row = 9 + lobbyTableIndex * 2;
   drawIcon(LMAR-2, row, ICON_MARK);
-  drawText(LMAR, row, nameBuf);
-  drawText(RMAR-5, row, playersBuf);
+  LOBBY_SEL_TEXT(LMAR, row, nameBuf);
+  LOBBY_SEL_TEXT(RMAR-5, row, playersBuf);
 }
 
 /// @brief Shows a screen to select a table to join
@@ -537,8 +566,8 @@ void showTableSelectionScreen() {
         j=9+i*2;
         k=RMAR-strlen(table->players);
 
-        drawTextAlt(k, j, table->players);
-        drawTextAlt(LMAR,j, table->name);
+        LOBBY_UNSEL_TEXT(k, j, table->players);
+        LOBBY_UNSEL_TEXT(LMAR,j, table->name);
         
         if (table->players[0]>'0') {
           drawIcon(k-2, j, ICON_PLAYER);
@@ -703,7 +732,7 @@ void showInGameMenuScreen() {
     strcpy(tempBuffer,  "CURRENTLY AT ");
     strcat(tempBuffer, clientState.game.serverName);
 
-    centerTextAlt(y+6, tempBuffer);
+    CENTER_SERVER_TEXT(y+6, tempBuffer);
     clearCommonInput();
     i=1;
     while (i==1) {

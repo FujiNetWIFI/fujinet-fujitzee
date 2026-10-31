@@ -14,5 +14,5 @@ MAME_DIR="${MAME_DIR:-$HOME/Workspace/mame}"
 export FUJINET_TCP="${FUJINET_TCP:-127.0.0.1:9995}"
 
 [ -f build/fujitzee.bin ] || ./build.sh
-exec "$MAME_DIR/mame" arcadia -cartslot fujinet -cart "$PWD/build/fujitzee.bin" \
+exec "$MAME_DIR/mame" arcadia -nofilter -cartslot fujinet -cart "$PWD/build/fujitzee.bin" \
     -window -nomax "$@"

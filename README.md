@@ -11,6 +11,7 @@ Fujitzee is a clone of the popular Yahtzee dice game.
 * **Fairchild Channel F** *(cartridge, over the FujiNet cart mailbox)*
 * **NES** *(cartridge, over the FujiNet cart mailbox)*
 * **Sega Master System** *(cartridge, over the FujiNet cart mailbox)*
+* **Heathkit H89** *(HDOS and CP/M, on the H19 terminal, over the H89 FujiNet card)*
 * **C64** *(planned)*
 * *Please contribute to add more!*
 
@@ -133,6 +134,47 @@ and fujinet-pc listening on `127.0.0.1:9995`.
 
 Buttons: **1** is the trigger, **Pause** the menu, **2** (tapped) refreshes
 the table list, **2+Up** help, **2+Down** toggles sound and **2+1** quits.
+
+### To build: *Heathkit H89*
+
+The shared C core, built by mekkogx with z88dk twice from one tree: `+hdos`
+(`FUJITZEE.ABS`) and `+cpm` (`FUJITZEE.COM`), both from `src/h89/` through
+`PLATFORM_COMBOS`, guarded by `__H89__`. They talk to the H89 FujiNet card
+(the 82C55 at 0xD0) through fujinet-lib's `h89-support` branch.
+
+The game is drawn on the H19 terminal in 80 columns, with nothing but the
+terminal's own character set: the line drawing and edge bar characters, the
+bullet and the checkerboard, and reverse video, which is the alternate text
+style. The score sheet is the 40 column one widened, with the score names in
+full and six player columns eight wide. The active player's column header is
+a reverse video tab, and the potential scores are reversed. The dice are 7x3,
+which is square on the H19's tall cells: a free die is a solid block with
+dark pips, and a kept one is hollow. The bordered screens hang their boxes
+from a frame between four corner dice, and the 25th line is the status line.
+The console runs at 9600 baud, so `src/h89/console.c` keeps a shadow of the
+screen and sends only the cells that change. That code comes from
+fujinet-5cardstud and fujinet-battleship.
+
+```
+make h89-hdos    # -> r2r/h89-hdos/fujitzee.h8d: MOUNT SY1: then RUN SY1:FUJITZEE.ABS
+make h89-cpm     # -> r2r/h89-cpm/fujitzee.h8d:  B:FUJITZEE
+make h89-smoke [H89_OS=hdos] [EXPECT="..."] [STEPS="..."] [SHOT=x.ppm]
+```
+
+Each `.h8d` is a 100K H17 data disk. The HDOS build loads at z88dk's
+`$4480` and needs a 64K H89, where HDOS 2.0 keeps itself above `$EDB0`. The
+build fails if the program would reach that. The CP/M build runs in the
+64K CP/M 2.2.04 that FujiNet Go H89 ships.
+
+Needs z88dk (from `~/Workspace/z88dk` when `zcc` is not on `PATH`) and
+fujinet-lib's `h89-support` branch checked out (with `r2r/h89-cpm` and
+`r2r/h89-hdos` built) at `~/Workspace/fujinet-lib`. `make h89-smoke` runs the
+game headless in FujiNet Go H89 (`~/Workspace/fujinet-go-h89-desktop`, built)
+against the live server; see `support/h89/smoke.sh`.
+
+Keys: the keypad arrows (or `, . - =`) move, **SPACE** or **RETURN** selects,
+**ESC** (or f1-f5) opens the menu, and **H** toggles help on your turn. There
+is no H89 lobby: **Q** at the table list returns to HDOS or CP/M.
 
 ### To build: *Atari | Apple ][ | C64*
 
