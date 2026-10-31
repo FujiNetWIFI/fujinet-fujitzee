@@ -179,35 +179,14 @@ K   set K+1
 h_top_b:
     ISR_CTL CTL_OFF
     mov r4,#Y_ROW0
+    mov r3,#CTL_OFF
+    mov r2,#CTL_OFF
     call row_write
     ISR_CTL CTL_TOP
     call grid_write
     call band_arg
     call row_copy
     ISR_OUT
-
-; h_grid_b: T0 has ended: the cards on (h_grid). GRIDNOP pads the write
-; into the horizontal blank: mid-line it would split a line, jittering.
-h_grid_b:
-    rept GRIDNOP
-    nop
-    endm
-    ISR_CTL CTL_TBL
-    call band_arg
-    ISR_OUT
-
-; snd_vbl: the vblank's sound, A = SNDCNT (nonzero), r1 at it. A queued one
-; waits for the main loop; a playing one counts down and stops at 0. VDC
-; selected. Clobbers A, r0.
-snd_vbl:
-    jb7 sv_x
-    dec a
-    mov @r1,a
-    jnz sv_x
-    mov r0,#vdc_soundctrl
-    movx @r0,a
-sv_x:
-    ret
 
     if $ > 500h
     error "page $4 has left the page"
@@ -510,9 +489,12 @@ h_grid:
     jmp h_grid_b
 
 ; h_row: a row, the next one staged (argument: its table, 0FFh none). The
-; grid stays on throughout: its rules run through the bands.
+; grid goes off for a few lines (SEPA-SEPB), so two dice don't touch, and
+; on again by the line its rule starts on.
 h_row:
     ISR_CTL CTL_GON
+    mov r3,#CTL_OFF
+    mov r2,#CTL_GON
     call row_write
     if PADN>0
     mov r2,#PADN
@@ -576,6 +558,29 @@ sw_l:
     inc r0
     inc r1
     djnz r2,sw_l
+    ret
+
+; h_grid_b: T0 has ended: the cards on (h_grid). GRIDNOP pads the write
+; into the horizontal blank: mid-line it would split a line, jittering.
+h_grid_b:
+    rept GRIDNOP
+    nop
+    endm
+    ISR_CTL CTL_TBL
+    call band_arg
+    ISR_OUT
+
+; snd_vbl: the vblank's sound, A = SNDCNT (nonzero), r1 at it. A queued one
+; waits for the main loop; a playing one counts down and stops at 0. VDC
+; selected. Clobbers A, r0.
+snd_vbl:
+    jb7 sv_x
+    dec a
+    mov @r1,a
+    jnz sv_x
+    mov r0,#vdc_soundctrl
+    movx @r0,a
+sv_x:
     ret
 
 SPRTAB:                         ; 4 x (Y, X, attribute)

@@ -1,10 +1,9 @@
 ; card.inc -- the card screen: eight rows between T0 and T1 on blue, each
 ; two cells of the scorecard (a label and a value: slot r on the left, slot
-; 8 + r on the right) and, on rows DICEROW to DICEROW+4, a die: its face, a
-; digit, in a box of the grid -- red and marked with a ball (sprite 1, which
-; each row band moves down a row) when it is held. The grid in line mode
-; rules the card: under every row, and between each label and value and
-; each cell. A row's table is the fixed half's page $6 (ROWS), the grid's
+; 8 + r on the right) and, on rows DICEROW to DICEROW+4, a die: a white cell
+; of the grid in fill mode with its face, a digit, on it -- red and marked
+; with a ball (sprite 1, which each row band moves down a row) when it is
+; held. The grid's horizontal segments rule the card, under every row. A row's table is the fixed half's page $6 (ROWS), the grid's
 ; GRIDH and GRIDTAB, all written through POKE.
 ; One 256-byte page: these routines read its tables with MOVP. Main program.
 
@@ -170,7 +169,7 @@ dc_ch:
     ret
 dc_free:
     mov r2,#SPR_OFF
-    mov a,#C_WHITE
+    mov a,#C_DGREY
     ret
 dc_none:
     mov a,#' '
@@ -213,16 +212,16 @@ put_cell:
 
     ifdef CARDSCR
 ; The grid (fixed.inc: GRIDH's 9 segments -- bit y line y, bit 0 also line
-; 8, the bottom -- then GRIDTAB's 10 columns, bit r row r). The card: rules
-; under the rows from X 8 to 121, upright ones at X 24, 56, 88 and 120 (the
-; text and the cursor's arrows clear of them all), the dice's boxes at X
-; 136-153 on rows 1-5. The title: the dice's boxes alone.
+; 8, the bottom -- then GRIDTAB's 10 columns, bit r row r). The card: a rule
+; under every row, under each half (X 8-57 and 72-121: segment 3 left out
+; between them); the dice the fill-mode cells of column 8, rows 1-5. The
+; title: the dice alone.
 tg_card:
-    db 0FFh, 0FFh, 0FFh, 0FFh, 0FFh, 0FFh, 0FFh, 0, 7Eh
-    db 0, 0FFh, 0, 0FFh, 0, 0FFh, 0, 0FFh, 3Eh, 3Eh
+    db 0FFh, 0FFh, 0FFh, 0, 0FFh, 0FFh, 0FFh, 0, 0
+    db 0, 0, 0, 0, 0, 0, 0, 0, 3Eh, 0
 tg_dice:
-    db 0, 0, 0, 0, 0, 0, 0, 0, 7Eh
-    db 0, 0, 0, 0, 0, 0, 0, 0, 3Eh, 3Eh
+    db 0, 0, 0, 0, 0, 0, 0, 0, 0
+    db 0, 0, 0, 0, 0, 0, 0, 0, 3Eh, 0
 
 ; scr_card: the card screen -- every row empty, the grid's rules and the
 ; dice's boxes, T0 and T1 blank, the sprites set up and hidden; scr_dice:

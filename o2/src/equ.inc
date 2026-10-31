@@ -90,14 +90,14 @@ GRID_WHITE equ 047h
 COL_TEXT equ BG_BLACK
 COL_CARD equ BG_CARD|GRID_WHITE
 
-; The control register ($A0) on the card. The grid draws the card's rules
-; and the dice's boxes, in line mode: fill mode would make every vertical
-; segment on a line a 16-wide block, and it can't be had for some and not
-; others.
+; The control register ($A0) on the card. The dice are the grid in fill
+; mode: an upright segment is a whole 16 x 24 cell, white. Fill mode makes
+; every upright on a line a cell, so the card's rules are the horizontal
+; segments alone (they are 3 lines in either mode).
 CTL_TOP equ vdc_ctrl_fore                               ; T0: the grid hidden
-CTL_TBL equ vdc_ctrl_fore|vdc_ctrl_grid                 ; the card
-CTL_GON equ vdc_ctrl_grid                               ; a band: the rules on
-CTL_OFF equ 0
+CTL_TBL equ vdc_ctrl_fill|vdc_ctrl_fore|vdc_ctrl_grid   ; the card
+CTL_GON equ vdc_ctrl_fill|vdc_ctrl_grid                 ; a band, the grid on
+CTL_OFF equ 0                                           ; a band, the grid off
 
 ; ---- the screen ----
 ; Characters are 7 rows of 2 lines. Every screen has text line T0 at the top
@@ -154,17 +154,17 @@ Y_T1    equ 228                 ; the card's T1 (MAME draws to line 242)
 LEAD    equ 1                   ; lines a band starts before its line ends
     endif
     ifndef SEPA
-SEPA    equ 99                  ; a row band's grid gap (fixed.inc row_write):
-    endif                       ; none -- the rules run through the bands
+SEPA    equ 0                   ; a row band: the grid off at this single
+    endif                       ; (2 lines before the grid's row boundary),
     ifndef SEPAF
-SEPAF   equ 1
-    endif
+SEPAF   equ 1                   ; ... after its pointer, so two dice don't
+    endif                       ; touch (fixed.inc row_write) ...
     ifndef SEPB
-SEPB    equ 99
-    endif
+SEPB    equ 3                   ; ... and on again at this one, after its Y:
+    endif                       ; at the boundary, where the rule starts
     ifndef SEPBF
-SEPBF   equ 1
-    endif
+SEPBF   equ 0                   ; (measured: 0/1 + 3/0 steady, the rule whole;
+    endif                       ; 0/1 + 2/2 or 1/0 + 3/1 jitter)
     ifndef GRIDNOP
 GRIDNOP equ 0                   ; h_grid: nops to put its write in the blank
     endif
