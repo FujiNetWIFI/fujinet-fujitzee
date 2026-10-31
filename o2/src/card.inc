@@ -1,10 +1,11 @@
 ; card.inc -- the card screen: eight rows between T0 and T1 on blue, each
 ; two cells of the scorecard (a label and a value: slot r on the left, slot
-; 8 + r on the right) and, on rows DICEROW to DICEROW+4, a die: a white cell
-; of the grid in fill mode with its face, a digit, on it -- red and marked
-; with a ball (sprite 1, which each row band moves down a row) when it is
-; held. A row's table is the fixed half's page $6 (ROWS), the dice's cells
-; the grid's (GRIDTAB), both written through POKE.
+; 8 + r on the right) and, on rows DICEROW to DICEROW+4, a die: its face, a
+; digit, in a box of the grid -- red and marked with a ball (sprite 1, which
+; each row band moves down a row) when it is held. The grid in line mode
+; rules the card: under every row, and between each label and value and
+; each cell. A row's table is the fixed half's page $6 (ROWS), the grid's
+; GRIDH and GRIDTAB, all written through POKE.
 ; One 256-byte page: these routines read its tables with MOVP. Main program.
 
 ; The tables first: the routines read them with MOVP, and run past the page.
@@ -169,7 +170,7 @@ dc_ch:
     ret
 dc_free:
     mov r2,#SPR_OFF
-    mov a,#C_DGREY
+    mov a,#C_WHITE
     ret
 dc_none:
     mov a,#' '
@@ -210,35 +211,32 @@ put_cell:
     orl a,r1
     jmp poke_b
 
-; grid_flush: GRIDS onto the grid (GRIDTAB, page $6): the dice's column.
-; h_top writes it. Clobbers A, r0-r2, r6.
-grid_flush:
-    mov r2,#GRIDTAB>>8
-    mov a,#GRIDTAB&0FFh
-    call poke_at
-    mov r6,#0
-gf_l:
-    mov a,r6
-    xrl a,#DICECOL
-    jz gf_dice
-    clr a
-    jmp gf_put
-gf_dice:
-    mov r0,#GRIDS
-    movx a,@r0
-gf_put:
-    call poke_b
-    inc r6
-    mov a,r6
-    xrl a,#10
-    jnz gf_l
-    ret
-
     ifdef CARDSCR
-; scr_card: the card screen -- every row empty, the dice's cells on, T0
-; and T1 blank, the sprites set up and hidden. Rows first, then the band
-; list: a frame between them draws the old screen. Clobbers A, r0-r7.
+; The grid (fixed.inc: GRIDH's 9 segments -- bit y line y, bit 0 also line
+; 8, the bottom -- then GRIDTAB's 10 columns, bit r row r). The card: rules
+; under the rows from X 8 to 121, upright ones at X 24, 56, 88 and 120 (the
+; text and the cursor's arrows clear of them all), the dice's boxes at X
+; 136-153 on rows 1-5. The title: the dice's boxes alone.
+tg_card:
+    db 0FFh, 0FFh, 0FFh, 0FFh, 0FFh, 0FFh, 0FFh, 0, 7Eh
+    db 0, 0FFh, 0, 0FFh, 0, 0FFh, 0, 0FFh, 3Eh, 3Eh
+tg_dice:
+    db 0, 0, 0, 0, 0, 0, 0, 0, 7Eh
+    db 0, 0, 0, 0, 0, 0, 0, 0, 3Eh, 3Eh
+
+; scr_card: the card screen -- every row empty, the grid's rules and the
+; dice's boxes, T0 and T1 blank, the sprites set up and hidden; scr_dice:
+; the same with the dice's boxes alone (the title). Rows first, then the
+; grid and the band list: a frame between them draws the old screen.
+; Clobbers A, r0-r7.
+scr_dice:
+    mov a,#1
+    jmp sc_go
 scr_card:
+    clr a
+sc_go:
+    mov r0,#TMP1                ; (which grid)
+    movx @r0,a
     call lb_clear
     clr a
     mov r0,#ROWN
@@ -253,10 +251,22 @@ sc_r:
     xrl a,#NROWS
     jmp sc_r
 sc_b:
-    mov r0,#GRIDS
-    mov a,#((1<<NDICE)-1)<<DICEROW
-    movx @r0,a
-    call grid_flush
+    mov r2,#GRIDH>>8            ; the grid: obj_setup writes GRIDH (the
+    mov a,#GRIDH&0FFh           ; screen's MODE_SETUP), h_top GRIDTAB
+    call poke_at
+    mov r1,#tg_card&0FFh
+    mov r0,#TMP1
+    movx a,@r0
+    jz sc_gt
+    mov r1,#tg_dice&0FFh
+sc_gt:
+    mov r6,#19
+sc_g:
+    mov a,r1
+    movp a,@a
+    call poke_b
+    inc r1
+    djnz r6,sc_g
     call bands_card             ; the colour and the band list
     call spr_card
     mov r1,#MODE

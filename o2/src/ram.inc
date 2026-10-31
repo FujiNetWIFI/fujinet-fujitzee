@@ -50,7 +50,6 @@ LROLLS  equ 028h                ; ... at the last state (0FFh: none)
 VIEWNG  equ 029h                ; we are a spectator
 VIEW    equ 02Ah                ; the seat whose card is shown
 CUR     equ 02Bh                ; the cursor (CU_*)
-GRIDS   equ 02Ch                ; the dice column's cells: bit r, row r
 FILLED  equ 02Dh                ; 2: the slots the seat to move has filled
 REVSL   equ 02Fh                ; a slot somebody just took (0FFh: none) ...
 REVTK   equ 030h                ; ... and the frames it stays lit

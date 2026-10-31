@@ -179,14 +179,35 @@ K   set K+1
 h_top_b:
     ISR_CTL CTL_OFF
     mov r4,#Y_ROW0
-    mov r3,#CTL_OFF
-    mov r2,#CTL_OFF
     call row_write
     ISR_CTL CTL_TOP
     call grid_write
     call band_arg
     call row_copy
     ISR_OUT
+
+; h_grid_b: T0 has ended: the cards on (h_grid). GRIDNOP pads the write
+; into the horizontal blank: mid-line it would split a line, jittering.
+h_grid_b:
+    rept GRIDNOP
+    nop
+    endm
+    ISR_CTL CTL_TBL
+    call band_arg
+    ISR_OUT
+
+; snd_vbl: the vblank's sound, A = SNDCNT (nonzero), r1 at it. A queued one
+; waits for the main loop; a playing one counts down and stops at 0. VDC
+; selected. Clobbers A, r0.
+snd_vbl:
+    jb7 sv_x
+    dec a
+    mov @r1,a
+    jnz sv_x
+    mov r0,#vdc_soundctrl
+    movx @r0,a
+sv_x:
+    ret
 
     if $ > 500h
     error "page $4 has left the page"
@@ -287,14 +308,7 @@ os_l:
     mov r0,#vdc_quad3+1
     mov a,#X_TEXT+72
     movx @r0,a
-    mov r0,#vdc_gridv0
-    mov r2,#10
-    clr a
-os_g:
-    movx @r0,a
-    inc r0
-    djnz r2,os_g
-    ret
+    jmp hg_write                ; the grid's horizontal lines (page $6)
 oxtab:                          ; the card's X: the left cell (label, value),
     db LBLX, LBLX+8             ; the right, the die
     db VALX, VALX+8, VALX+16
@@ -357,31 +371,33 @@ gw_l:
     djnz r2,gw_l
     ret
 
-; h_grid_b: T0 has ended: the cards on (h_grid). GRIDNOP pads the write
-; into the horizontal blank: mid-line it would split a line, jittering.
-h_grid_b:
-    rept GRIDNOP
-    nop
-    endm
-    ISR_CTL CTL_TBL
-    call band_arg
-    ISR_OUT
-
-; snd_vbl: the vblank's sound, A = SNDCNT (nonzero), r1 at it. A queued one
-; waits for the main loop; a playing one counts down and stops at 0. VDC
-; selected. Clobbers A, r0.
-snd_vbl:
-    jb7 sv_x
-    dec a
-    mov @r1,a
-    jnz sv_x
-    mov r0,#vdc_soundctrl
+; hg_write: the grid's horizontal lines from GRIDH, segment i's byte both
+; to $C0+i (bit y: line y) and to $D0+i (bit 0 only: line 8, the bottom --
+; bit 0's line 0 never shows: the grid is off until T0 has ended). Once a
+; screen: obj_setup's tail (the vblank, the grid off). Clobbers A, r0, r1.
+hg_write:
+    mov r1,#GRIDH&0FFh
+    mov r0,#vdc_gridh0
+hg_l:
+    mov a,r1
+    movp a,@a
     movx @r0,a
-sv_x:
+    xch a,r0
+    orl a,#vdc_gridi0-vdc_gridh0
+    xch a,r0
+    movx @r0,a
+    mov a,r0                    ; $D0+i -> $C0+i+1
+    add a,#(vdc_gridh0+1-vdc_gridi0)&0FFh
+    mov r0,a
+    inc r1
+    xrl a,#vdc_gridh8+1
+    jnz hg_l
     ret
 
-GRIDTAB:                        ; 10 columns: bit r = a card in row r
-    db 10 dup (0)
+GRIDH:                          ; 9 segments: bit y = line y (0 hidden), and
+    db 9 dup (0)                ; bit 0 line 8 (screen.inc scr_text zeroes
+GRIDTAB:                        ; GRIDH and GRIDTAB: keep them together)
+    db 10 dup (0)               ; 10 columns: bit r = a line in row r
 ROWS:                           ; NROWS x ROW_TAB, row 0 first
     db NROWS*ROW_TAB dup (0)
     if $ > 700h
@@ -485,8 +501,6 @@ J_GRID  equ $&0FFh
     db h_grid&0FFh
 J_ROW   equ $&0FFh
     db h_row&0FFh
-J_ROW2  equ $&0FFh
-    db h_row2&0FFh
 J_TXT   equ $&0FFh
     db h_txt&0FFh
 
@@ -495,18 +509,10 @@ h_top:
 h_grid:
     jmp h_grid_b
 
-; h_row: a row of cards, the next one staged (argument: its table, 0FFh
-; none). h_row2: a card's bottom row (the board's, the hand's), the cards on
-; throughout.
+; h_row: a row, the next one staged (argument: its table, 0FFh none). The
+; grid stays on throughout: its rules run through the bands.
 h_row:
     ISR_CTL CTL_GON
-    mov r3,#CTL_OFF
-    jmp hr_w
-h_row2:
-    ISR_CTL CTL_GON
-    mov r3,#CTL_GON
-hr_w:
-    mov r2,#CTL_GON
     call row_write
     if PADN>0
     mov r2,#PADN

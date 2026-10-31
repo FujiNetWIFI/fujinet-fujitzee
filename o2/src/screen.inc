@@ -118,10 +118,10 @@ st_r:
     mov r4,a
     xrl a,#NROWS
     jnz st_r
-    mov r2,#GRIDTAB>>8          ; the grid empty
-    mov a,#GRIDTAB&0FFh
+    mov r2,#GRIDH>>8            ; the grid empty (GRIDH, then GRIDTAB)
+    mov a,#GRIDH&0FFh
     call poke_at
-    mov r6,#10
+    mov r6,#19
     clr a
     call poke_n
     mov r4,#scr_t&0FFh
@@ -161,7 +161,7 @@ bands_card:
 ; dice off for a few lines across the grid's row boundary (fixed.inc h_row),
 ; so the dice stacked down the right are five cells, not one bar.
 BL_TOP  equ 1                   ; row 0 and the grid, before T0 shows
-BL_GRID equ Y_T0+13-LEAD        ; T0 has ended: the dice on (h_grid_b
+BL_GRID equ Y_T0+15-LEAD        ; T0 has ended, and a line: the rules on (h_grid_b
                                 ; pads its write into the blank)
 BL_ROW1 equ Y_ROW0+ROW_PITCH-10-LEAD
 BL_T1   equ Y_ROW7+14-LEAD

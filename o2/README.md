@@ -43,13 +43,15 @@ sixes, the upper total, the bonus), the lower down the right (set of 3, set
 of 4, full house, the straights, chance, Fujitzee, the total) -- the wire's
 own slot order, left column slots 0-7, right 8-15. Each cell is a 2-letter
 label (cyan) and a value: white once it's filled, green on your turn for
-what it would score (a 0 is left off the card), tan for a slot somebody
+what it would score (a 0 is left off the card), yellow for a slot somebody
 just took. The total is summed on the client: the server fills slot 15
-only at game over.
+only at game over. The VDC's grid rules the card like a ledger: a line
+under every row, and upright ones between each label and its value and
+between the two halves.
 
-The dice stand down the right: white cells of the VDC grid in fill mode,
-the face a digit on each. A held die is red, with a red ball beside it. The
-cursor is a yellow arrow. T0 at the top is whose card it is (an arrow when
+The dice stand down the right, each a digit in a box of the grid: white,
+or red with a red ball beside it when it's held. The cursor is a yellow
+arrow. T0 at the top is whose card it is (an arrow when
 they're to move), in that player's colour, and the round in yellow; T1 at
 the bottom, on your turn, is what's under the cursor -- the slot's name and
 what it would score (green, 0 included), or ROLL and the rolls left -- and
@@ -93,10 +95,19 @@ line-counter interrupt (Hold'em's engine, its code unchanged). Every screen
 is T0 (the four quads, written in the vblank), eight rows of 11 singles at
 Y 30 + 24r, and T1 (the quads again). A row here is the left cell (5
 singles), the right cell (5) and a die (1), all at the same X on every row.
-Each row band switches the grid off for 3 lines across the grid's row
-boundary (`SEPA`, `SEPB`), so the dice stacked down column 8 are five
-cells, not one bar. Sprite 0 is the cursor; sprite 1, which every row band
-moves down a row, is a held die's ball.
+The grid is in line mode. Fill mode, which 5 Card Stud and Hold'em use
+for their cards, makes every upright segment on a scanline a 16-wide block,
+so filled cells and thin rules can't share a line, and the dice are boxes
+instead. The uprights stand at X 24, 56, 88 and 120 (the grid's lines are
+X 8 + 16i), clear of every character and of the cursor's arrows at X 0, 64
+and 126; the dice's boxes are X 136-153 on rows 1-5. The rules under the
+rows are the grid's lines 1-7 and 8 (the bottom); line 0 can't show,
+because the grid stays off until T0 has ended. The horizontal segments
+(GRIDH) are written once a screen in the vblank (`obj_setup`, then
+`hg_write`); the uprights (GRIDTAB) every frame in `h_top`, as before. The
+rules run through the row bands, which no longer switch the grid off.
+Sprite 0 is the cursor; sprite 1, which every row band moves down a row, is
+a held die's ball.
 
 Measured in MAME: `make shot` (every row full, two dice held, the cursor)
 and a burst during live play both find no frame that loses a line

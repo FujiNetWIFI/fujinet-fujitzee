@@ -32,17 +32,17 @@ until 7A 1 900
 wait 30
 snap turn2
 burst live 60
-key S
+key S 8
 wait 120
 snap stand
-key S
+key S 8
 wait 120
 snap back
-key H
+key H 8
 wait 40
 snap help
 key SPACE
 wait 120
-key L
+key L 8
 wait 300
 snap left

@@ -33,12 +33,12 @@ until 30 60 900
 snap 06_their_turn
 until 7A 1 900
 wait 30
-key S
+key S 8
 wait 120
 snap 07_standings
-key S
+key S 8
 wait 60
-key H
+key H 8
 wait 60
 snap 08_help
 key SPACE

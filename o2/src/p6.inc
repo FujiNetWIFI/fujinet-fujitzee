@@ -188,7 +188,7 @@ tt_d:
     movx @r0,a
     mov r0,#ANIM
     movx @r0,a
-    call scr_card               ; (its rows blank, the dice 5s)
+    call scr_dice               ; (its rows blank, the dice 5s in their boxes)
     mov r1,#tt_t0&0FFh
     mov r4,#L_TOP
     call tt_line

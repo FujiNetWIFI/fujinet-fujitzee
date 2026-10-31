@@ -90,12 +90,14 @@ GRID_WHITE equ 047h
 COL_TEXT equ BG_BLACK
 COL_CARD equ BG_CARD|GRID_WHITE
 
-; The control register ($A0) on the card. The dice are the grid in fill
-; mode: a vertical segment is a whole 16 x 24 cell, white.
+; The control register ($A0) on the card. The grid draws the card's rules
+; and the dice's boxes, in line mode: fill mode would make every vertical
+; segment on a line a 16-wide block, and it can't be had for some and not
+; others.
 CTL_TOP equ vdc_ctrl_fore                               ; T0: the grid hidden
-CTL_TBL equ vdc_ctrl_fill|vdc_ctrl_fore|vdc_ctrl_grid   ; the card
-CTL_GON equ vdc_ctrl_fill|vdc_ctrl_grid                 ; a band, dice on
-CTL_OFF equ 0                                           ; a band, dice off
+CTL_TBL equ vdc_ctrl_fore|vdc_ctrl_grid                 ; the card
+CTL_GON equ vdc_ctrl_grid                               ; a band: the rules on
+CTL_OFF equ 0
 
 ; ---- the screen ----
 ; Characters are 7 rows of 2 lines. Every screen has text line T0 at the top
@@ -152,13 +154,13 @@ Y_T1    equ 228                 ; the card's T1 (MAME draws to line 242)
 LEAD    equ 1                   ; lines a band starts before its line ends
     endif
     ifndef SEPA
-SEPA    equ 3                   ; a row band: the dice go off at this single
-    endif
+SEPA    equ 99                  ; a row band's grid gap (fixed.inc row_write):
+    endif                       ; none -- the rules run through the bands
     ifndef SEPAF
-SEPAF   equ 1                   ; ... after its pointer (fixed.inc row_write)
+SEPAF   equ 1
     endif
     ifndef SEPB
-SEPB    equ 7                   ; ... and on again at this one
+SEPB    equ 99
     endif
     ifndef SEPBF
 SEPBF   equ 1
