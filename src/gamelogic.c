@@ -7,13 +7,42 @@
 #include "misc.h"
 #include "stateclient.h"
 #include "screens.h"
-#if !defined(__WATCOMC__) && !defined(__ADAM__)
+#if !defined(__WATCOMC__) && !defined(__ADAM__) && !defined(BUILD_SMS) && !defined(__H89__)
 #include <peekpoke.h>
 #endif
 
 #define PLAYER_LIST_Y_OFFSET 5
 #define BOTTOM_PANEL_Y HEIGHT-BOTTOM_HEIGHT
+#ifndef HELP_X
 #define HELP_X WIDTH-18
+#endif
+
+// Board layout. A platform whose board is not the 40 column one (the H89's
+// 80 column H19) sets these in its vars.h. The defaults are the original
+// expressions, unparenthesised, so the other platforms compile exactly as
+// they did.
+#ifndef SCORE_COL_X
+#define SCORE_COL_X(i)   SCORES_X+6+i*4       // a player's 3 wide score field
+#endif
+#ifndef INITIAL_X
+#define INITIAL_X(i)     SCORES_X+3+i*4       // player i's initial (i from 1)
+#endif
+#ifndef DIE_X
+#define DIE_X(i)         WIDTH-20+4*i         // die i (from 0)
+#endif
+#ifndef KEPT_DIE_X
+#define KEPT_DIE_X(p)    WIDTH-24+p*4         // die at cursor position p (from 1)
+#endif
+#ifndef DICE_CURSOR_X
+#define DICE_CURSOR_X(p) 4*p-(p==0)+WIDTH-24  // cursor position p (0 is roll)
+#endif
+#ifndef HELP_CLEAR_X
+#define HELP_CLEAR_X     SCORES_X+10          // what the in-game help covers
+#define HELP_CLEAR_W     WIDTH-SCORES_X-10
+#endif
+#ifndef CENTER_SERVER_TEXT
+#define CENTER_SERVER_TEXT centerTextAlt      // server names are mixed case
+#endif
 
 uint8_t scoreY[] =   {3,4,5,6,7,8,10,11,13,14,15,16,17,18,19,21};
 char* scores[]={"one","two","three","four","five","six","total","bonus","set 3","set 4","house","s run","l run","count"};
@@ -109,7 +138,7 @@ void renderBoardNamesMessages() {
     } else {
       // Round 0 - Ready Up screen
       drawLogo(WIDTH/2-5,1);
-      centerTextAlt(6, clientState.game.serverName);
+      CENTER_SERVER_TEXT(6, clientState.game.serverName);
 
       drawLine(READY_LEFT,7,16);
       centerTextAlt(18,"press " ESCAPE " for menu");  
@@ -126,7 +155,7 @@ void renderBoardNamesMessages() {
   if (clientState.game.round>0) {
     for(i=1;i<=PLAYER_MAX;i++) {
       y=i+PLAYER_LIST_Y_OFFSET;
-      x=SCORES_X+3+i*4;
+      x=INITIAL_X(i);
       
       if (i<=clientState.game.playerCount) {
         
@@ -273,7 +302,7 @@ void renderBoardNamesMessages() {
       // Skip spectators or going beyond 6 players
       if (i>5 || clientState.game.players[i].scores[0]==-2 || (currentlyShowingHelp && i>0))
         continue;
-      h=SCORES_X+6+i*4;
+      h=SCORE_COL_X(i);
       i4=h+3;
       maxScoreY= clientState.game.round<99 ? 15 : 16;
       for (j=0;j<maxScoreY;j++) {
@@ -324,7 +353,7 @@ void renderBoardNamesMessages() {
       if (fullWidth)
         drawIcon(0,clientState.game.activePlayer+PLAYER_LIST_Y_OFFSET+1, ICON_MARK);
       else
-        drawIcon(SCORES_X+6+clientState.game.activePlayer*4,1, ICON_MARK);
+        drawIcon(SCORE_COL_X(clientState.game.activePlayer),1, ICON_MARK);
         
       setHighlight(clientState.game.activePlayer, state.localPlayerIsActive, 0);
     } else {
@@ -337,13 +366,15 @@ void renderBoardNamesMessages() {
       if (clientState.game.round>0 && clientState.game.round< 14) {
         // Display static round details
         itoa(clientState.game.round, tempBuffer, 10);
+        // A ternary, not 8-(round>9): z88dk's sccz80 (Adam, SMS) drops the
+        // 0/1 of a > comparison that feeds arithmetic, and draws round n at x-n
         if (fullWidth) {
           drawTextAlt(1,3,"round ");
           drawTextAlt(1,4,"   of ");
           drawText(7,4,"13"); 
-          drawText(8-(clientState.game.round>9),3,tempBuffer);
+          drawText(clientState.game.round>9 ? 7 : 8,3,tempBuffer);
         } else {
-          drawText(3-(clientState.game.round>9),1,tempBuffer);
+          drawText(clientState.game.round>9 ? 2 : 3,1,tempBuffer);
           drawTextAlt(4,1,"/");
           drawText(5,1,"13");
           
@@ -456,7 +487,7 @@ void handleAnimation() {
       state.playerMadeMove=false;
       prevCursorPos=5;
       cursorPos=1;
-      validX=SCORES_X+6+clientState.game.activePlayer*4;
+      validX=SCORE_COL_X(clientState.game.activePlayer);
 
 
       // If no rolls are remaining, default the cursorPos on the highest score
@@ -504,7 +535,7 @@ void handleAnimation() {
       isFujitzee=0;
     }
     for(i=0;i<5;i++) {
-      i4=WIDTH-20+4*i;
+      i4=DIE_X(i);
       if (state.rollFrames && clientState.game.keepRoll[i]=='1' ) {
         // Draw a random die after the first frame
         drawDie(i4,HEIGHT-4,state.rollFrames < ROLL_FRAMES-1 ? rand()%6+1 : state.prevDice[i]-48,0,isFujitzee);
@@ -612,7 +643,7 @@ void showInGameHelp() {
   saveScreen();
   
   for(y=1;y<20 ;y++) {
-    drawSpace(SCORES_X+10,y,WIDTH-SCORES_X-10);
+    drawSpace(HELP_CLEAR_X,y,HELP_CLEAR_W);
   }
   
   drawBox(HELP_X-1,1,17, 17);
@@ -692,7 +723,7 @@ void waitOnPlayerMove() {
       } else if (cursorPos>0) {
         // Toggle kept state of die
         i = clientState.game.keepRoll[cursorPos-1]= clientState.game.keepRoll[cursorPos-1]=='1' ? '0' : '1';
-        drawDie(WIDTH-24+cursorPos*4,HEIGHT-4,clientState.game.dice[cursorPos-1]-48,i == '0', 0);
+        drawDie(KEPT_DIE_X(cursorPos),HEIGHT-4,clientState.game.dice[cursorPos-1]-48,i == '0', 0);
         if (i=='0')
           soundKeep();
         else 
@@ -711,7 +742,7 @@ void waitOnPlayerMove() {
           sendMove(tempBuffer);
 
           state.playerMadeMove = true;
-          hideDiceCursor(4*prevCursorPos-(prevCursorPos==0)+WIDTH-24);
+          hideDiceCursor(DICE_CURSOR_X(prevCursorPos));
           // Clear clock
           drawSpace(TIMER_X,BOTTOM_PANEL_Y,2);
           drawSpace(TIMER_X+TIMER_NUM_OFFSET_X-2,BOTTOM_PANEL_Y+TIMER_NUM_OFFSET_Y,2);
@@ -722,7 +753,7 @@ void waitOnPlayerMove() {
           for (j=1;j<255;j--) {
             drawDie(ROLL_X,HEIGHT-4,16,0,j);
             for(i=0;i<6;i++) {
-              drawDie(WIDTH-20+4*i,HEIGHT-4,clientState.game.dice[i]-48,1,j);
+              drawDie(DIE_X(i),HEIGHT-4,clientState.game.dice[i]-48,1,j);
             }
             soundRelease();
             pause(6);
@@ -784,7 +815,7 @@ void waitOnPlayerMove() {
       
       // Hide cursorPos 
       if (prevCursorPos < 6)
-        hideDiceCursor(4*prevCursorPos-(prevCursorPos==0)+WIDTH-24);
+        hideDiceCursor(DICE_CURSOR_X(prevCursorPos));
       else {
         h=prevCursorPos-10;
         drawBlank(validX,scoreY[h]);
@@ -795,7 +826,7 @@ void waitOnPlayerMove() {
 
       // Draw cursorPos
       if (cursorPos < 6) {
-        drawDiceCursor(4*cursorPos-(cursorPos==0)+WIDTH-24);
+        drawDiceCursor(DICE_CURSOR_X(cursorPos));
         soundCursor();
       } else {
         h=cursorPos-10;

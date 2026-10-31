@@ -1,12 +1,15 @@
 #ifndef MISC_H
 #define MISC_H
 
-#if defined(__ADAM__)
+#if defined(__ADAM__) || defined(BUILD_SMS) || defined(__H89__)
 /* z88dk's conio.h maps cgetc() onto getk(), a dead stub on the Adam
  * target - kbhit/cgetc are implemented over EOS in src/adam/input.c.
  * cgetc must return unsigned: sccz80 chars are signed and the Adam's
  * arrow/SmartKeys codes are 0x81-0xA8 - a plain char return would
- * sign-extend them and no KEY_* case in the input switch would match. */
+ * sign-extend them and no KEY_* case in the input switch would match.
+ * The Master System is z88dk too, with no keyboard: src/sms/input.c
+ * reports its buttons as these key codes. So is the Heathkit H89, whose
+ * src/h89/input.c decodes the H19's escape sequences itself. */
 unsigned char kbhit(void);
 unsigned char cgetc(void);
 #elif !defined(__WATCOMC__)
