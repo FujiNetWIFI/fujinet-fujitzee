@@ -1,0 +1,79 @@
+# the README's screenshots: tables, lobby, your turn, their turn, standings,
+# help, game over.
+wait 600
+snap 03_tables
+press 2
+wait 500
+snap 04_lobby
+press 5
+until V_ME 1 6000
+wait 90
+snap 05_your_turn
+press 5
+wait 100
+snap 06_their_turn
+press 7
+wait 30
+snap 07_standings
+press 5
+wait 30
+press 0
+wait 30
+press 5
+wait 30
+snap 08_help
+press 5
+wait 30
+press 1
+wait 200
+until V_ME 1 9000
+wait 20
+press 5
+wait 150
+until V_ME 1 9000
+wait 20
+press 5
+wait 150
+until V_ME 1 9000
+wait 20
+press 5
+wait 150
+until V_ME 1 9000
+wait 20
+press 5
+wait 150
+until V_ME 1 9000
+wait 20
+press 5
+wait 150
+until V_ME 1 9000
+wait 20
+press 5
+wait 150
+until V_ME 1 9000
+wait 20
+press 5
+wait 150
+until V_ME 1 9000
+wait 20
+press 5
+wait 150
+until V_ME 1 9000
+wait 20
+press 5
+wait 150
+until V_ME 1 9000
+wait 20
+press 5
+wait 150
+until V_ME 1 9000
+wait 20
+press 5
+wait 150
+until V_ME 1 9000
+wait 20
+press 5
+wait 150
+until V_RND 99 6000
+wait 90
+snap 09_game_over

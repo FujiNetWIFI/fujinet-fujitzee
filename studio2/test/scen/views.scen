@@ -1,0 +1,27 @@
+# other cards (9, 3) and the standings (7) during a game.
+wait 600
+press 2
+wait 500
+press 5
+until V_ME 1 6000
+wait 20
+press 5
+wait 150
+press 9
+wait 30
+text
+press 9
+wait 30
+text
+press 3
+wait 30
+press 3
+wait 30
+text
+press 7
+wait 30
+text
+snap standings
+press 5
+wait 30
+text

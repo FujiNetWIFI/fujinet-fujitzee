@@ -1,0 +1,64 @@
+# a whole game: score the parked (best) slot every turn.
+wait 600
+press 2
+wait 500
+press 5
+until V_ME 1 9000
+wait 20
+press 5
+wait 150
+until V_ME 1 9000
+wait 20
+press 5
+wait 150
+until V_ME 1 9000
+wait 20
+press 5
+wait 150
+until V_ME 1 9000
+wait 20
+press 5
+wait 150
+until V_ME 1 9000
+wait 20
+press 5
+wait 150
+until V_ME 1 9000
+wait 20
+press 5
+wait 150
+until V_ME 1 9000
+wait 20
+press 5
+wait 150
+until V_ME 1 9000
+wait 20
+press 5
+wait 150
+until V_ME 1 9000
+wait 20
+press 5
+wait 150
+until V_ME 1 9000
+wait 20
+press 5
+wait 150
+until V_ME 1 9000
+wait 20
+press 5
+wait 150
+until V_ME 1 9000
+wait 20
+press 5
+wait 150
+until V_ME 1 9000
+wait 20
+press 5
+wait 150
+until V_RND 99 6000
+wait 90
+text
+snap over
+wait 600
+text
+snap after
