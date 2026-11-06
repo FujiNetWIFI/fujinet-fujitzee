@@ -1,0 +1,4 @@
+# boot: the name is seeded, so we land on the table list.
+wait 600
+text
+snap lobby

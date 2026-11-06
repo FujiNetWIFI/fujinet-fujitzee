@@ -10,6 +10,7 @@ Fujitzee is a clone of the popular Yahtzee dice game.
 * **ColecoVision** *(cartridge, over the FujiNet cart mailbox)*
 * **Fairchild Channel F** *(cartridge, over the FujiNet cart mailbox)*
 * **Magnavox Odyssey 2** *(cartridge, over the FujiNet cart mailbox)*
+* **RCA Studio II** *(cartridge, over the FujiNet cart mailbox)*
 * **NES** *(cartridge, over the FujiNet cart mailbox)*
 * **Atari 7800** *(cartridge, over the FujiNet cart mailbox)*
 * **Atari 5200** *(cartridge, over the FujiNet cart mailbox)*
@@ -99,6 +100,24 @@ cd o2 && make test               # MAME against a private server (test/rig.sh)
 Needs Macroassembler AS (`asl`/`p2bin`) and, to run, a MAME tree with the
 FujiNet cart device grafted in. See `o2/README.md` for the screen, the
 controls, the pages and the tests.
+
+### To build: *RCA Studio II*
+
+A standalone CDP1802 client in the `studio2/` directory, not part of the
+mekkogx build (the console has 512 bytes of RAM). The cart's text engine draws
+everything; the dice are app glyphs, so it needs only the cart's protocol 1.
+The whole card is one screen, the dice down its right edge. Its hardware and
+network layers are the Studio II 5 Card Stud's, from `fujinet-firmware/pico/studio2`.
+
+```
+cd studio2 && make               # -> build/fz.st2, 6.8K
+cd studio2 && make run           # MAME, against a fujinet-pc BoIP listener
+cd studio2 && make test          # MAME against a private server (test/rig.sh)
+```
+
+Needs Macroassembler AS (`asl`) and, to run, a MAME tree with the FujiNet cart
+device grafted in. See `studio2/README.md` for the screen, the controls and
+the tests.
 
 ### To build: *NES*
 

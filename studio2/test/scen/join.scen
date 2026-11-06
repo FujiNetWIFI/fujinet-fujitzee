@@ -1,0 +1,10 @@
+# join the 2-bot room, ready up, watch the game start.
+wait 600
+press 2
+wait 600
+text
+snap seated
+press 5
+wait 1500
+text
+snap play

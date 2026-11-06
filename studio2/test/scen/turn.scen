@@ -1,0 +1,29 @@
+# a turn: roll, move to the dice, hold one, roll again, go back, score.
+wait 600
+press 2
+wait 600
+press 5
+wait 1500
+text
+press 1
+wait 400
+text
+snap rolled
+press 6
+wait 20
+press 5
+wait 20
+text
+snap held
+press 1
+wait 400
+text
+press 4
+wait 20
+press 5
+wait 600
+text
+snap scored
+wait 900
+text
+snap bots

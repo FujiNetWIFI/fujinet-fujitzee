@@ -1,0 +1,22 @@
+# lobby: ready, unready, the menu and the help screen.
+wait 600
+press 2
+wait 500
+text
+press 5
+wait 200
+text
+press 5
+wait 200
+text
+press 0
+wait 60
+text
+press 5
+wait 60
+text
+press 0
+wait 60
+press 1
+wait 400
+text
