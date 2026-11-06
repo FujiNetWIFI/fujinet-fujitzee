@@ -33,8 +33,7 @@ FC_AKOPN EQU 0DCH		; OPEN_APPKEY
 FC_AKRD	EQU 0DDH		; READ_APPKEY
 FC_AKWR	EQU 0DEH		; WRITE_APPKEY
 ; The OPEN struct is SIX bytes -- creator lo, creator hi, app, key, mode,
-; reserved. Sending five blocks the firmware and reads back as a TIMEOUT
-; rather than a protocol error, which is a long way from the real cause.
+; reserved -- sent as the payload, not as parameters (see AKOPEN).
 AKCREAT	EQU 1			; the shared lobby username every client reads
 AKCREAH	EQU 0
 AKAPP	EQU 1

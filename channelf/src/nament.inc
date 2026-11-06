@@ -13,10 +13,10 @@
 ; is cleared on a deliberate leave, and a malformed value is simply ignored --
 ; the table screen is always a correct fallback.
 ;
-; TWO GOTCHAS, both of which cost other ports real time. The OPEN struct is SIX
-; bytes -- creator lo, creator hi, app, key, mode, reserved -- and sending five
-; blocks the firmware, which then reads back as a TIMEOUT rather than as a
-; protocol error. And an appkey READ reply is PREFIXED WITH A 2-BYTE LENGTH; a
+; TWO GOTCHAS, both of which cost other ports real time. OPEN_APPKEY takes NO
+; parameters: its six bytes (creator lo, creator hi, app, key, mode, reserved)
+; are the PAYLOAD, and sent as parameters they arrive as an empty payload and
+; are refused. And an appkey READ reply is PREFIXED WITH A 2-BYTE LENGTH; a
 ; network read is not.
 ;
 ; THE KEYBOARD. Three rows of thirteen, driven by the stick, with the plunger
@@ -165,9 +165,11 @@ SNRNO:	LI ST_TABLE
 	JMP GOTO
 
 ; ---------------------------------------------------------------------------
-; AKOPEN -- OPEN_APPKEY(creator, app, key r0, mode r1). SIX one-byte params:
-;   the creator is a 16-bit value split across two of them, and the sixth is
-;   reserved. Five parameters block the firmware outright.
+; AKOPEN -- OPEN_APPKEY(creator, app, key r0, mode r1). No parameters: the
+;   request is a SIX-BYTE PACKED STRUCT in the payload -- creator lo, creator
+;   hi, app, key, mode, reserved. AppKeyMixin::appkey_open() reads it with one
+;   transaction_get_length() and refuses anything but exactly six bytes, so
+;   sent as six parameters it arrives as an empty payload and fails.
 ;   Reached by PI; calls one level down.
 ; ---------------------------------------------------------------------------
 AKOPEN:	ENTER
@@ -179,27 +181,21 @@ AKOPEN:	ENTER
 	LR 0,A
 	LI FC_AKOPN
 	LR 1,A
-	LIS 6
-	LR 2,A
-	PI FNBEG
-	LI AKCREAT
-	LR 0,A
-	PI FNPB
-	LI AKCREAH
-	LR 0,A
-	PI FNPB
-	LI AKAPP
-	LR 0,A
-	PI FNPB
-	LR A,9
-	LR 0,A
-	PI FNPB
-	LR A,10
-	LR 0,A
-	PI FNPB
 	CLR
-	LR 0,A
-	PI FNPB			; reserved
+	LR 2,A
+	PI FNBEG		; leaves DC0 on the TX page: bytes stored there append
+	LI AKCREAT
+	ST
+	LI AKCREAH
+	ST
+	LI AKAPP
+	ST
+	LR A,9
+	ST
+	LR A,10
+	ST
+	CLR
+	ST			; reserved, and not optional
 	PI FNGO
 	PI FNACK
 	LEAVE
