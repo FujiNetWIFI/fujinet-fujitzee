@@ -13,13 +13,14 @@
 
 #define PLAYER_LIST_Y_OFFSET 5
 #define BOTTOM_PANEL_Y HEIGHT-BOTTOM_HEIGHT
+#define FULL_WIDTH (WIDTH >= 40)
 #ifndef HELP_X
 #define HELP_X WIDTH-18
 #endif
 
 // Board layout. A platform whose board is not the 40 column one (the H89's
 // 80 column H19) sets these in its vars.h. The defaults are the original
-// expressions, unparenthesised, so the other platforms compile exactly as
+// expressions, unparenthesized, so the other platforms compile exactly as
 // they did.
 #ifndef SCORE_COL_X
 #define SCORE_COL_X(i)   SCORES_X+6+i*4       // a player's 3 wide score field
@@ -78,13 +79,10 @@ void clearScores(uint8_t x) {
 #define READY_LEFT WIDTH/2-8
 
 void renderBoardNamesMessages() {
-  static bool redraw, fullWidth;
+  static bool redraw;
   static uint8_t scoreCursorX, scoreCursorY, c, len,maxScoreY, newScoreFound, ignoreNewScore, mostRecentPlayer, i4;
-  static Player *player; 
+  static Player *player;
   static int16_t score;
-  
-  // Could move this to a define to save space if runtime check is not needed
-  fullWidth = WIDTH>=40;
 
   // If player is waiting on end game screen, auto-ready up if the game is starting
   
@@ -124,17 +122,17 @@ void renderBoardNamesMessages() {
     if (clientState.game.round>0) {
       // Round 1+
       drawBoard();
-      if (fullWidth) {
-        drawLogo(0,0);
-        drawTextAlt(1,4,"players");
+#if FULL_WIDTH
+      drawLogo(0,0);
+      drawTextAlt(1,4,"players");
 #if defined(__WATCOMC__) || defined(COCO3)
-        /* FUJITZEE-box bottom-right corner and score-box top-left corner
-         * land on the same cell on msdos / CoCo 3. Replace it with a thick
-         * cross so both boxes' edges visually connect through the joint. */
-        drawIcon(9, 2, 0x50);
+      /* FUJITZEE-box bottom-right corner and score-box top-left corner
+       * land on the same cell on msdos / CoCo 3. Replace it with a thick
+       * cross so both boxes' edges visually connect through the joint. */
+      drawIcon(9, 2, 0x50);
 #endif
-      }
-      
+#endif
+
     } else {
       // Round 0 - Ready Up screen
       drawLogo(WIDTH/2-5,1);
@@ -164,10 +162,11 @@ void renderBoardNamesMessages() {
         len = (uint8_t)strlen(player->name);
         
         if (player->scores[0]==-2) {
-          // Draw spec icon in front of name 
-          if (fullWidth)
-            drawIcon(0,y, ICON_SPEC); 
-            
+          // Draw spec icon in front of name
+#if FULL_WIDTH
+          drawIcon(0,y, ICON_SPEC);
+#endif
+
           spectators++;
           // Clear initial/scoreboard for this player index if they were not previously viewing
           if (i<7 && !state.isViewing[i]) {
@@ -180,34 +179,37 @@ void renderBoardNamesMessages() {
           state.isViewing[i]=false;
           // Clear player indicator
           if (clientState.game.round>0 && clientState.game.activePlayer != i-1) {
-            if (fullWidth)
-              drawBlank(0,y);
-            else if (!currentlyShowingHelp)
+#if FULL_WIDTH
+            drawBlank(0,y);
+#else
+            if (!currentlyShowingHelp)
               drawBlank(x-1,1);
-          } 
+#endif
+          }
           
           // Player initials across top of screen
           if (!currentlyShowingHelp)
             drawChar(x,1,c,1);
         }
         
+#if FULL_WIDTH
         // Draw player's name, highlighting the alias as green
-        if (fullWidth) {
-          for (j=0;j<player->alias;j++) {
-            drawChar(1+j,y,player->name[j], 0);
-          }
-          drawChar(1+j,y,player->name[j], 1);
-          drawText(2+player->alias,y,player->name+player->alias+1);
-          if (len<8) {
-            drawSpace(1+len, y, 8-len);
-          }
+        for (j=0;j<player->alias;j++) {
+          drawChar(1+j,y,player->name[j], 0);
         }
+        drawChar(1+j,y,player->name[j], 1);
+        drawText(2+player->alias,y,player->name+player->alias+1);
+        if (len<8) {
+          drawSpace(1+len, y, 8-len);
+        }
+#endif
 
       } else if (i<=state.prevPlayerCount || state.prevPlayerCount==0) {
+#if FULL_WIDTH
         // Blank out entries for this player
-        if (fullWidth)
-          drawSpace(0,y,9);
-        
+        drawSpace(0,y,9);
+#endif
+
         // Blank scoreboard
         if (i<7) {
           drawBlank(x,1);
@@ -344,17 +346,20 @@ void renderBoardNamesMessages() {
     }
 
 
-     // Clear old turn indicator
-    if (fullWidth && state.prevActivePlayer>-1)
+#if FULL_WIDTH
+    // Clear old turn indicator
+    if (state.prevActivePlayer>-1)
       drawBlank(0,state.prevActivePlayer+PLAYER_LIST_Y_OFFSET+1);
-    
+#endif
+
     // Draw active player indicator
     if (clientState.game.activePlayer>-1) {
-      if (fullWidth)
-        drawIcon(0,clientState.game.activePlayer+PLAYER_LIST_Y_OFFSET+1, ICON_MARK);
-      else
-        drawIcon(SCORE_COL_X(clientState.game.activePlayer),1, ICON_MARK);
-        
+#if FULL_WIDTH
+      drawIcon(0,clientState.game.activePlayer+PLAYER_LIST_Y_OFFSET+1, ICON_MARK);
+#else
+      drawIcon(SCORE_COL_X(clientState.game.activePlayer),1, ICON_MARK);
+#endif
+
       setHighlight(clientState.game.activePlayer, state.localPlayerIsActive, 0);
     } else {
       setHighlight(-1,0,0);
@@ -368,21 +373,23 @@ void renderBoardNamesMessages() {
         itoa(clientState.game.round, tempBuffer, 10);
         // A ternary, not 8-(round>9): z88dk's sccz80 (Adam, SMS) drops the
         // 0/1 of a > comparison that feeds arithmetic, and draws round n at x-n
-        if (fullWidth) {
-          drawTextAlt(1,3,"round ");
-          drawTextAlt(1,4,"   of ");
-          drawText(7,4,"13"); 
-          drawText(clientState.game.round>9 ? 7 : 8,3,tempBuffer);
-        } else {
-          drawText(clientState.game.round>9 ? 2 : 3,1,tempBuffer);
-          drawTextAlt(4,1,"/");
-          drawText(5,1,"13");
-          
-        }
-      } else if (fullWidth) {
+#if FULL_WIDTH
+        drawTextAlt(1,3,"round ");
+        drawTextAlt(1,4,"   of ");
+        drawText(7,4,"13");
+        drawText(clientState.game.round>9 ? 7 : 8,3,tempBuffer);
+#else
+        drawText(clientState.game.round>9 ? 2 : 3,1,tempBuffer);
+        drawTextAlt(4,1,"/");
+        drawText(5,1,"13");
+#endif
+      }
+#if FULL_WIDTH
+      else {
         drawSpace(1,3,8);
         drawTextAlt(1,4,"players ");
       }
+#endif
     }
 
    
@@ -396,35 +403,34 @@ void renderBoardNamesMessages() {
         itoa(spectators, tempBuffer, 10);
         
         
-        if (fullWidth) {
-          drawIcon(0,HEIGHT-1, ICON_SPEC);
-          strcat(tempBuffer," watching");
-        } else {
-          strcat(tempBuffer," spec");
-          if (spectators>1)
-            strcat(tempBuffer,"s");
-        }
-        drawTextAlt(1+fullWidth,HEIGHT-1, tempBuffer);
-      } 
+#if FULL_WIDTH
+        drawIcon(0,HEIGHT-1, ICON_SPEC);
+        strcat(tempBuffer," watching");
+        drawTextAlt(2,HEIGHT-1, tempBuffer);
+#else
+        strcat(tempBuffer," spec");
+        if (spectators>1)
+          strcat(tempBuffer,"s");
+        drawTextAlt(1,HEIGHT-1, tempBuffer);
+#endif
+      }
 
       // Visual override - when playing multiple local players, put player's name + your turn
       if (state.localPlayerIsActive) {
-        if (fullWidth) {
+#if FULL_WIDTH
         drawText(0,BOTTOM_PANEL_Y,"your turn");
         drawText(0,BOTTOM_PANEL_Y+1,clientState.game.players[clientState.game.activePlayer].name);
-        } else {
-          drawText(1,BOTTOM_PANEL_Y,"your");
-          drawText(1,BOTTOM_PANEL_Y+1,"turn");
-          //drawText(0,BOTTOM_PANEL_Y+2,clientState.game.players[clientState.game.activePlayer].name); 
-        }
+#else
+        drawText(1,BOTTOM_PANEL_Y,"your");
+        drawText(1,BOTTOM_PANEL_Y+1,"turn");
+#endif
       } else {
-        if (fullWidth) {
-          drawText(0,BOTTOM_PANEL_Y, clientState.game.prompt); 
-        } else {
-          drawText(1,BOTTOM_PANEL_Y,"waiting on");
-          drawText(1,BOTTOM_PANEL_Y+1,clientState.game.players[clientState.game.activePlayer].name);
-          
-        }
+#if FULL_WIDTH
+        drawText(0,BOTTOM_PANEL_Y, clientState.game.prompt);
+#else
+        drawText(1,BOTTOM_PANEL_Y,"waiting on");
+        drawText(1,BOTTOM_PANEL_Y+1,clientState.game.players[clientState.game.activePlayer].name);
+#endif
       }
       
       pause(30);
@@ -432,10 +438,12 @@ void renderBoardNamesMessages() {
     } else {
        // Handle end of game
 
+#if FULL_WIDTH
       // Clear active indicator
-      if (fullWidth && state.prevActivePlayer>-1) {
+      if (state.prevActivePlayer>-1) {
         drawBlank(0,state.prevActivePlayer+PLAYER_LIST_Y_OFFSET+1);
       }
+#endif
 
       centerText(GAMEOVER_PROMPT_Y, clientState.game.prompt);
 
@@ -671,7 +679,7 @@ void waitOnPlayerMove() {
   static uint16_t jifsPerSecond;
   resetTimer();
 
-  // Determine max jiffies for PAL and NTS
+  // Determine max jiffies for PAL and NTSC
   jifsPerSecond=getJiffiesPerSecond();
   maxJifs = jifsPerSecond*clientState.game.moveTime;
   waitCount=frames=0;
@@ -731,7 +739,7 @@ void waitOnPlayerMove() {
         
         drawDie(ROLL_X,HEIGHT-4,13+ (strcmp(clientState.game.keepRoll,"00000") ? clientState.game.rollsLeft : 3),0,0);
       } else {
-        // Request another roll, assuming at least one dice is not kept
+        // Request another roll, assuming at least one die is not kept
         if (strcmp(clientState.game.keepRoll,"00000")) {
           // Highlight the roll die in green
           drawDie(ROLL_X,HEIGHT-4,clientState.game.rollsLeft+13,0,1);

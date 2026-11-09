@@ -5,7 +5,8 @@ Fujitzee is a clone of the popular Yahtzee dice game.
 ### Supported Platforms
 * **Atari**
 * **Apple II**
-* **CoCo** *(WIP)*
+* **CoCo** *(WIP)* and **Dragon**
+* **MS-DOS**
 * **Coleco Adam**
 * **ColecoVision** *(cartridge, over the FujiNet cart mailbox)*
 * **Fairchild Channel F** *(cartridge, over the FujiNet cart mailbox)*
@@ -16,34 +17,26 @@ Fujitzee is a clone of the popular Yahtzee dice game.
 * **Atari 5200** *(cartridge, over the FujiNet cart mailbox)*
 * **Sega Master System** *(cartridge, over the FujiNet cart mailbox)*
 * **Heathkit H89** *(HDOS and CP/M, on the H19 terminal, over the H89 FujiNet card)*
-* **C64** *(planned)*
 * *Please contribute to add more!*
 
-### To Test/Run
-1. Start Fujinet-PC for your appropriate platform
-2. Tweak the emulator start commands in makefile / Makefile.coco, and for CoCo, the cp command that copies the dsk to the Fujinet-PC SD directory
-3. Build/run per below
+### To build
+
+`make` builds Atari, Apple II, CoCo 1/2, MS-DOS, Dragon, Adam, NES and both
+H89 programs into `r2r/<platform>/`, against fujinet-lib's main branch,
+which it clones into `_cache/`. `make <platform>` builds one.
 
 ### To build: *CoCo*
 
-*NOTE:* The latest fujinet-lib release (4.7.3) does not work with CoCo, so the latest fujinet-lib needs to cloned and built to work.
-
-`make -f Makefile.coco`
-
+```
+make coco          # -> r2r/coco/fujitzee.dsk, CoCo 1/2
+make coco3         # -> r2r/coco/fujitzee.dsk, CoCo 3
+make coco-dist     # -> r2r/coco/fujitzee.dsk, both, with a loader that picks one
+```
 
 ### To build: *Coleco Adam*
 
-There is no published Adam fujinet-lib release yet, so build the sibling
-checkout first, then build the game inside the z88dk container (run from the
-directory that holds both checkouts so `../fujinet-lib/build` resolves):
-
-```
-defoogi make -C fujinet-lib TARGETS=adam
-defoogi make -C fujinet-fujitzee adam
-```
-
-The bootable tape image lands at `r2r/adam/fujitzee.ddp` (and is copied to
-`~/tnfs/` if that directory exists).
+`make adam` builds the bootable tape image `r2r/adam/fujitzee.ddp` (copied
+to `~/tnfs/` if that directory exists).
 
 ### To build: *ColecoVision*
 
@@ -59,7 +52,7 @@ cd coleco && ./run.sh            # MAME, against a fujinet-pc BoIP listener
 ```
 
 Needs `zmac` and, to run, a MAME tree with the FujiNet cart device grafted in.
-See `coleco/README.md` for the design, the colour scheme and the harnesses.
+See `coleco/README.md` for the design, the color scheme and the harnesses.
 
 ### To build: *Fairchild Channel F*
 
@@ -134,10 +127,8 @@ make nes-smoke EXPECT="..."      # headless MAME, screen read out of the nametab
 make nes-play                    # MAME in a window
 ```
 
-Needs cc65 and the `add-nes` branch of `fujinet-lib-experimental` checked out
-(and built for nes) at `~/Workspace/fujinet-lib-experimental`, or pass
-`FUJINET_LIB=<path>`. To run, a MAME tree with the cartridge device grafted in
-by `fujinet-firmware/pico/nes/emu/apply.sh`, and fujinet-pc listening on
+To run, a MAME tree with the cartridge device grafted in by
+`fujinet-firmware/pico/nes/emu/apply.sh`, and fujinet-pc listening on
 `127.0.0.1:9995`.
 
 Buttons: **A** is the trigger, **B** help, **START** the menu, **SELECT**
@@ -187,10 +178,9 @@ make atari5200-smoke EXPECT="..." # headless MAME, screen read out of the consol
 make atari5200-play              # MAME in a window
 ```
 
-Needs cc65 and the `add-atari5200` branch of `fujinet-lib-experimental`
-checked out (and built for atari5200) at `~/Workspace/fnlib-5200`, or pass
-`FUJINET_LIB=<path>`. To run, a MAME tree with the cartridge device grafted
-in by `fujinet-firmware/pico/atari-5200/emu/apply.sh`, the 5200 BIOS, and
+Does not currently build against fujinet-lib main. To run, a MAME tree with
+the cartridge device grafted in by
+`fujinet-firmware/pico/atari-5200/emu/apply.sh`, the 5200 BIOS, and
 fujinet-pc listening on `127.0.0.1:9995` (`FUJINET_TCP=` to change it).
 
 Controls: the stick (or keypad **2 4 6 8**) moves, top **FIRE** (or **#**)
@@ -238,7 +228,7 @@ the table list, **2+Up** help, **2+Down** toggles sound and **2+1** quits.
 The shared C core, built by mekkogx with z88dk twice from one tree: `+hdos`
 (`FUJITZEE.ABS`) and `+cpm` (`FUJITZEE.COM`), both from `src/h89/` through
 `PLATFORM_COMBOS`, guarded by `__H89__`. They talk to the H89 FujiNet card
-(the 82C55 at 0xD0) through fujinet-lib's `h89-support` branch.
+(the 82C55 at 0xD0) through fujinet-lib.
 
 The game is drawn on the H19 terminal in 80 columns, with nothing but the
 terminal's own character set: the line drawing and edge bar characters, the
@@ -264,26 +254,14 @@ Each `.h8d` is a 100K H17 data disk. The HDOS build loads at z88dk's
 build fails if the program would reach that. The CP/M build runs in the
 64K CP/M 2.2.04 that FujiNet Go H89 ships.
 
-Needs z88dk (from `~/Workspace/z88dk` when `zcc` is not on `PATH`) and
-fujinet-lib's `h89-support` branch checked out (with `r2r/h89-cpm` and
-`r2r/h89-hdos` built) at `~/Workspace/fujinet-lib`. `make h89-smoke` runs the
-game headless in FujiNet Go H89 (`~/Workspace/fujinet-go-h89-desktop`, built)
-against the live server; see `support/h89/smoke.sh`.
+Needs z88dk (from `~/Workspace/z88dk` when `zcc` is not on `PATH`).
+`make h89-smoke` runs the game headless in FujiNet Go H89
+(`~/Workspace/fujinet-go-h89-desktop`, built) against the live server; see
+`support/h89/smoke.sh`.
 
 Keys: the keypad arrows (or `, . - =`) move, **SPACE** or **RETURN** selects,
 **ESC** (or f1-f5) opens the menu, and **H** toggles help on your turn. There
 is no H89 lobby: **Q** at the table list returns to HDOS or CP/M.
-
-### To build: *Atari | Apple ][ | C64*
-
-1. Set the appropriate target(s) to build in the **makefile**.
-2. running `make` or `make clean` will download large dependencies like fujinet-lib/apple ii disk files.
-
-### Typical make command
-
-I normally run the following, which *cleans*, downloads dependencies, *builds*, prints the program size, and runs in the emulator.
-
-`make clean test`
 
 # Server / Api details
 
