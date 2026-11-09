@@ -18,10 +18,13 @@ uint16_t getTime() {
 }
 
 void quit() {
-  // Possible to revert screen to boot normals
   joy_uninstall();
   resetGraphics();
-  exit(0);
+  fuji_set_boot_mode(FUJI_BOOT_MODE_LOBBY);
+  // ROM in, then spoil the reset vector's checksum so the reset is a cold boot
+  __asm__ ("bit $c082");
+  __asm__ ("dec $03f4");
+  __asm__ ("jmp ($fffc)");
 }
 
 

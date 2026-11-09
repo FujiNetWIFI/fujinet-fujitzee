@@ -1,6 +1,9 @@
 PRODUCT = fujitzee
 PRODUCT_UPPER = FUJITZEE
-PLATFORMS = atari apple2 coco msdos dragon adam
+PLATFORMS = atari apple2 coco msdos dragon adam nes h89-cpm h89-hdos
+
+# Otherwise coco3 below is the default goal
+.DEFAULT_GOAL := all
 
 PLATFORM_COMBOS = \
   dragon+=coco
@@ -22,38 +25,20 @@ INCLUDE_DIRS = src/platform-specific
 EXTRA_INCLUDE_COCO  = src/include
 EXTRA_INCLUDE_DRAGON = src/include
 
-# Default fujinet-lib version. msdos requires fujinet-lib-experimental for
-# RS232 support; override at build time so it doesn't drag the experimental
-# branch into other platforms.
-FUJINET_LIB =
-ifeq ($(PLATFORM),msdos)
-  FUJINET_LIB = https://github.com/FozzTexx/fujinet-lib-experimental.git
-endif
-
-# Adam (z88dk): no published Adam release zip yet, so build against the
-# sibling fujinet-lib checkout (make -C ../fujinet-lib TARGETS=adam first).
-ifeq ($(PLATFORM),adam)
-  FUJINET_LIB = ../fujinet-lib/build
-endif
+FUJINET_LIB = https://github.com/FujiNetWIFI/fujinet-lib.git
 LDFLAGS_EXTRA_ADAM = -m
 
-# NES (cc65, FujiNet mailbox cartridge). Not in PLATFORMS: the nes bus exists
-# only on the add-nes branch of fujinet-lib-experimental, so it builds against
-# that checkout:  make nes   (or FUJINET_LIB=<path> to point elsewhere).
-# src/nes is guarded by BUILD_NES; CUSTOM_FUJINET_CALLS routes the network and
-# AppKey calls through src/nes/fujinet.c, the one file that can see the
-# library's own headers. The linker config is the lib's FujiNet layout with
-# the CHR-ROM split so the game's pattern table (src/nes/chr.s, from the
-# msdos art) sits at $1000 beside the cc65 font the runtime insists on.
-ifeq ($(PLATFORM),nes)
-  FUJINET_LIB = $(HOME)/Workspace/fujinet-lib-experimental
-endif
+# NES (cc65, FujiNet mailbox cartridge). src/nes is guarded by BUILD_NES;
+# CUSTOM_FUJINET_CALLS routes the network and AppKey calls through
+# src/nes/fujinet.c. The linker config is the lib's FujiNet layout with the
+# CHR-ROM split so the game's pattern table (src/nes/chr.s, from the msdos
+# art) sits at $1000 beside the cc65 font the runtime insists on.
 CFLAGS_EXTRA_NES = -DBUILD_NES -DCUSTOM_FUJINET_CALLS -Os
 NES_CFG = src/nes/nes.cfg
 
-# Atari 7800 (cc65, FujiNet cartridge). Not in PLATFORMS, for the same
-# reason: the atari7800 bus exists only on the add-atari7800 branch of
-# fujinet-lib-experimental, so it builds against a checkout of that branch:
+# Atari 7800 (cc65, FujiNet cartridge). Not in PLATFORMS: the atari7800 bus
+# exists only on the add-atari7800 branch of fujinet-lib-experimental, so it
+# builds against a checkout of that branch:
 # make atari7800 looks in ~/Workspace/fnlib-7800 (or FUJINET_LIB=<path>).
 # src/atari7800 is guarded by BUILD_ATARI7800 and routes its cartridge calls
 # through src/atari7800/fujinet.c, as the NES does. The image is the lib's
@@ -64,18 +49,13 @@ ifeq ($(PLATFORM),atari7800)
 endif
 CFLAGS_EXTRA_ATARI7800 = -DBUILD_ATARI7800 -DCUSTOM_FUJINET_CALLS -Os
 
-# Atari 5200 (cc65, FujiNet cartridge). Not in PLATFORMS either: the
-# atari5200 bus exists only on the add-atari5200 branch of
-# fujinet-lib-experimental, so make atari5200 looks in ~/Workspace/fnlib-5200
-# (or FUJINET_LIB=<path>). src/atari5200 is guarded by BUILD_ATARI5200 and
-# routes its cartridge calls through src/atari5200/fujinet.c, as the 7800
-# does. The image is the lib's layout (mekkogx/atari5200-fujinet.cfg): 32K
-# of ROM at $4000 around the cart's mailbox, and the console's 16K of RAM,
-# whose top 4K is kept from the linker for the screen and player/missile
-# graphics (src/atari5200/antic.s).
-ifeq ($(PLATFORM),atari5200)
-  FUJINET_LIB = $(HOME)/Workspace/fnlib-5200
-endif
+# Atari 5200 (cc65, FujiNet cartridge). Not in PLATFORMS: cannot currently
+# build against fujinet-lib main. src/atari5200 is guarded by BUILD_ATARI5200
+# and routes its cartridge calls through src/atari5200/fujinet.c, as the 7800
+# does. The image is the lib's layout (mekkogx/atari5200-fujinet.cfg): 32K of
+# ROM at $4000 around the cart's mailbox, and the console's 16K of RAM, whose
+# top 4K is kept from the linker for the screen and player/missile graphics
+# (src/atari5200/antic.s).
 CFLAGS_EXTRA_ATARI5200 = -DBUILD_ATARI5200 -DCUSTOM_FUJINET_CALLS -Os
 LDFLAGS_EXTRA_ATARI5200 = -Wl -D,__RESERVED_MEMORY__=0x1000
 # Sega Master System (z88dk +sms, FujiNet mailbox cartridge). Not in
@@ -106,19 +86,16 @@ LDFLAGS_EXTRA_SMS += -m \
   -pragma-define:CLIB_EXIT_STACK_SIZE=0
 
 # Heathkit H89 (z88dk +cpm / +hdos, the H89 FujiNet card's 82C55 at 0xD0).
-# Not in PLATFORMS: the h89 bus is fujinet-lib's h89-support branch, checked
-# out at ~/Workspace/fujinet-lib with r2r/h89-{cpm,hdos} prebuilt. One tree,
-# two programs: both share src/h89 through the combos below, guarded by
-# __H89__ (which both platform .mk files define; the lib keys on it too). The
-# game draws on the H19 terminal in 80 columns with its graphics characters
-# and escape codes, and CUSTOM_FUJINET_CALLS routes the network and AppKey
-# calls through src/h89/fujinet.c, which sends the screen first. Each r2r-post
-# packs the program onto a 100K H17 disk:
+# One tree, two programs: both share src/h89 through the combos below, guarded
+# by __H89__ (which both platform .mk files define; the lib keys on it too).
+# The game draws on the H19 terminal in 80 columns with its graphics
+# characters and escape codes, and CUSTOM_FUJINET_CALLS routes the network and
+# AppKey calls through src/h89/fujinet.c, which sends the screen first. Each
+# r2r-post packs the program onto a 100K H17 disk:
 #   make h89-hdos   r2r/h89-hdos/fujitzee.h8d: MOUNT SY1: then RUN SY1:FUJITZEE.ABS
 #   make h89-cpm    r2r/h89-cpm/fujitzee.h8d:  B:FUJITZEE
 PLATFORM_COMBOS += h89-cpm+=h89 h89-hdos+=h89
 ifneq ($(filter h89-cpm h89-hdos,$(PLATFORM)),)
-  FUJINET_LIB = $(HOME)/Workspace/fujinet-lib
   # z88dk from its checkout when it is not on PATH
   Z88DK ?= $(HOME)/Workspace/z88dk
   ifeq ($(shell command -v zcc),)
@@ -229,16 +206,12 @@ adam/r2r-post::
 
 include mekkogx/toplevel-rules.mk
 
-# NES, Atari 7800, Atari 5200, SMS and the H89 are not in PLATFORMS (see above), so
-# `make nes`, `make atari7800`, `make atari5200`, `make sms`, `make h89-cpm` and
-# `make h89-hdos` need spelling out
-.PHONY: nes atari7800 atari5200 sms h89-cpm h89-hdos
-nes: $(R2R_DIR)/nes/$(PRODUCT)
+# Atari 7800, Atari 5200 and SMS are not in PLATFORMS (see above), so
+# `make atari7800`, `make atari5200` and `make sms` need spelling out
+.PHONY: atari7800 atari5200 sms
 atari7800: $(R2R_DIR)/atari7800/$(PRODUCT)
 atari5200: $(R2R_DIR)/atari5200/$(PRODUCT)
 sms: $(R2R_DIR)/sms/$(PRODUCT)
-h89-cpm: $(R2R_DIR)/h89-cpm/$(PRODUCT)
-h89-hdos: $(R2R_DIR)/h89-hdos/$(PRODUCT)
 
 # H89: headless smoke test in FujiNet Go H89's session runner
 # (~/Workspace/fujinet-go-h89-desktop, built), booting 64K CP/M or HDOS 2.0

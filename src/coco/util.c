@@ -20,7 +20,7 @@ void quit() {
 
   // Tell FujiNet to serve the game lobby on the next boot, then reset the
   // CoCo so the FujiNet cartridge boots straight into the lobby.
-  fuji_set_boot_mode(2);
+  fuji_set_boot_mode(FUJI_BOOT_MODE_LOBBY);
   coldStart();
 }
 
