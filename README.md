@@ -17,13 +17,14 @@ Fujitzee is a clone of the popular Yahtzee dice game.
 * **Atari 5200** *(cartridge, over the FujiNet cart mailbox)*
 * **Sega Master System** *(cartridge, over the FujiNet cart mailbox)*
 * **Heathkit H89** *(HDOS and CP/M, on the H19 terminal, over the H89 FujiNet card)*
+* **TRS-80 Model II** *(Pickles & Trout CP/M)*
 * *Please contribute to add more!*
 
 ### To build
 
-`make` builds Atari, Apple II, CoCo 1/2, MS-DOS, Dragon, Adam, NES and both
-H89 programs into `r2r/<platform>/`, against fujinet-lib's main branch,
-which it clones into `_cache/`. `make <platform>` builds one.
+`make` builds Atari, Apple II, CoCo 1/2, MS-DOS, Dragon, Adam, NES, both
+H89 programs and the Model II into `r2r/<platform>/`, against fujinet-lib's
+main branch, which it clones into `_cache/`. `make <platform>` builds one.
 
 ### To build: *CoCo*
 
@@ -262,6 +263,22 @@ Needs z88dk (from `~/Workspace/z88dk` when `zcc` is not on `PATH`).
 Keys: the keypad arrows (or `, . - =`) move, **SPACE** or **RETURN** selects,
 **ESC** (or f1-f5) opens the menu, and **H** toggles help on your turn. There
 is no H89 lobby: **Q** at the table list returns to HDOS or CP/M.
+
+### To build: *TRS-80 Model II*
+
+The shared C core, built by mekkogx with z88dk (`+cpm`) for Pickles & Trout
+CP/M, with the platform layer in `src/model2/`. It is the H89's board, drawn
+with the Model II's line characters and reverse video through the P&T video
+driver, which is sent only the cells that change. With 24 rows, the dice sit
+below the score sheet.
+
+```
+make model2      # -> r2r/model2/fujitzee.imd: FUJITZEE
+```
+
+Keys: the arrows (or `, . - =`, and F1/F2 for up/down) move, **SPACE** or
+**ENTER** selects, and **ESC** or **BREAK** opens the menu. **Q** at the
+table list loads the Model II lobby from `fujinet.online`.
 
 # Server / Api details
 
