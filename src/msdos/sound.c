@@ -13,11 +13,26 @@
 _WCIRTLINK extern unsigned inp(unsigned __port);
 _WCIRTLINK extern unsigned outp(unsigned __port, unsigned __value);
 
+/* Never time off the VGA retrace at 0x3DA: QEMU toggles it on every read, so
+ * the wait falls through and the tone is gated off before it can be heard. */
+extern unsigned int pitTicksPerMs;
+extern unsigned int pitRead(void);
+extern void calibratePit(void);
+
+/* An absolute wait, one frame per pass so counter 0 cannot wrap mid wait */
 static void wait_frames(unsigned int frames)
 {
+    unsigned int start, frame;
+
+    if (!pitTicksPerMs)
+        calibratePit();
+
+    frame = (unsigned int)(((unsigned long)pitTicksPerMs * 50UL) / 3UL);  /* 16.67ms */
+
     while (frames--) {
-        while (!(inp(0x3DA) & 0x08));
-        while (inp(0x3DA) & 0x08);
+        start = pitRead();
+        while ((unsigned int)(start - pitRead()) < frame)
+            ;                                /* PIT counts down */
     }
 }
 
