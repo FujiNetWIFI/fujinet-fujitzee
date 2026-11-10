@@ -130,9 +130,8 @@ static void plot_raw(unsigned char x, unsigned char y, const unsigned char *tile
 }
 
 /* Plot a charset glyph with optional color mask.
- *  mask = 0xFF -> as-stored (white on black for letters, full-color for tiles)
- *  mask = 0xAA -> render in alt color (red)
- *  mask = 0x55 -> render in cyan
+ *  mask = 0xFF -> as stored
+ *  mask = 0x55 -> white pixels in cyan (MASK_ALT)
  */
 static void plot_glyph(unsigned char x, unsigned char y, unsigned char idx, unsigned char mask)
 {
@@ -147,21 +146,66 @@ static void plot_glyph(unsigned char x, unsigned char y, unsigned char idx, unsi
     plot_raw(x, y, tile);
 }
 
-/* PIT-based ~60Hz frame pacing. The straight CGA retrace poll is
- * unreliable on qemu (the status-port retrace bit isn't always emulated
- * at the correct duty cycle), so animations either freeze or run wild.
- * Reading PIT counter 0 directly gives accurate ~838ns ticks; 19886
- * ticks ~= 16.67ms = one 60Hz frame. */
+/* PIT based frame pacing. The CGA retrace poll is unreliable under qemu, which
+ * does not emulate the status port duty cycle, so animations freeze or run
+ * wild. Counter 0 is dependable there and on real hardware. */
+unsigned int pitTicksPerMs = 0;
+
+unsigned int pitRead(void)
+{
+    unsigned int t;
+
+    outp(0x43, 0x00);                /* latch counter 0 */
+    t  = (unsigned int)inp(0x40);
+    t |= (unsigned int)inp(0x40) << 8;
+    return t;
+}
+
+/* Counter 0 is crystal driven, so waits off it need no cpu speed scaling. The
+ * BIOS mode does vary though: mode 3 drops the count by two per clock, halving
+ * every interval. QEMU leaves mode 2, real BIOSes usually mode 3. Measured
+ * against the BIOS tick at 0040:006C, which is 18.2Hz whatever the mode. */
+void calibratePit(void)
+{
+    volatile unsigned long far *biosTick;
+    unsigned long units, mark;
+    unsigned int prev, now, perMs;
+
+    biosTick = (volatile unsigned long far *)MK_FP(0x40, 0x6C);
+
+    mark = *biosTick;
+    while (*biosTick == mark)        /* start on a fresh tick */
+        ;
+
+    mark = *biosTick;
+    units = 0;
+    prev = pitRead();
+    while (*biosTick == mark) {
+        now = pitRead();
+        units += (unsigned int)(prev - now);
+        prev = now;
+    }
+
+    perMs = (unsigned int)((units * 1000UL) / 54925UL);
+
+    /* ~1193 in mode 2, ~2386 in mode 3; anything else means it went wrong */
+    pitTicksPerMs = (perMs >= 900 && perMs <= 3000) ? perMs : 1193;
+}
+
 void waitvsync()
 {
     static unsigned int last_pit = 0;
-    unsigned int now, elapsed;
+    unsigned int now, elapsed, frame;
+
+    if (!pitTicksPerMs)
+        calibratePit();
+
+    frame = (unsigned int)(((unsigned long)pitTicksPerMs * 50UL) / 3UL);  /* 16.67ms */
+
     do {
-        outp(0x43, 0x00);            /* latch counter 0 */
-        now  = (unsigned int)inp(0x40);
-        now |= (unsigned int)inp(0x40) << 8;
-        elapsed = (unsigned int)(last_pit - now);   /* PIT counts down */
-    } while (elapsed < 19886);
+        now = pitRead();
+        elapsed = (unsigned int)(last_pit - now);
+    } while (elapsed < frame);
     last_pit = now;
 }
 
@@ -173,13 +217,12 @@ void initGraphics()
     int86(0x10, &r, &r);
     prevVideoMode = r.h.al;
 
-    /* CGA mode 5 320x200, palette remapped via VGA so we render the
-     * Atari-style 4-color set against a black table background. */
+    /* CGA mode 5 320x200, colors set by the VGA remap below. */
     r.h.ah = 0x00;
     r.h.al = 0x05;
     int86(0x10, &r, &r);
 
-    /* Background = black via the CGA color-select port. */
+    /* Bright CGA palette 1; the VGA remap below overrides its colors. */
     outp(0x3D9, 0x30);
 
     /* VGA palette remap (color 0 and 2 swapped from the original Atari
@@ -240,8 +283,8 @@ void resetScreen(bool forBorderScreen)
     }
 }
 
-/* drawText: lowercase strings render in white. Atari shifts '0'-'9' down
- * by 32 to land on the digit slots at 0x10-0x19 - we follow that. */
+/* drawText: lowercase strings render in white. As on the Atari, codes 32-64
+ * shift down by 32, which puts the digits at 0x10-0x19. */
 void drawText(unsigned char x, unsigned char y, char *s)
 {
     unsigned char c;
@@ -368,7 +411,7 @@ void drawDie(unsigned char x, unsigned char y, unsigned char s, bool isSelected,
 }
 
 /* Direct port of the Atari drawBoard. Uses dedicated T-junction and
- * cross tiles (0x53/0x56/0x58) at every line intersection so the score
+ * cross tiles (0x4F/0x50/0x53/0x58) at every line intersection so the score
  * grid renders as a connected lattice instead of stacked segments. */
 void drawBoard()
 {
@@ -395,8 +438,8 @@ void drawBoard()
     }
 
     /* Cross/T tiles at every intersection of horizontal rules with the
-     * vertical dividers. Crosses for each player column live at cols 15,
-     * 19, 23, 27, 31, 35, 39 (= SCORES_X+5+player*4 for player=0..5). */
+     * vertical dividers, at cols 15, 19, 23, 27, 31, 35, 39
+     * (SCORES_X+5+4*i for i=0..6). */
     plot_glyph(9, 9,  0x53, MASK_WHITE);     /* score-box right edge meets thin horiz */
     plot_glyph(9, 12, 0x53, MASK_WHITE);
     for (x = 15; x <= 39; x += 4) {
@@ -410,10 +453,9 @@ void drawBoard()
     plot_glyph(15, 0, 0x51, MASK_WHITE);
 
     /* Right corners and right-tees for the rightmost vertical at col 39.
-     * The default 0x5B/0x53/0x56/0x58 tiles all have horizontal stubs
-     * extending past the rightmost vertical. 0x55 and 0x5A are the
-     * existing top/bottom-right corners; 0x5F and 0x60 are custom
-     * right-tees (mirrors of 0x53 and 0x56) added for the rule rows. */
+     * The 0x5B/0x50/0x4F/0x58 tiles have horizontal stubs extending past
+     * it. 0x55 and 0x5A are the top/bottom-right corners; 0x5F and 0x60
+     * are custom right-tees for the thin and thick rule rows. */
     plot_glyph(39, 0,  0x55, MASK_WHITE);
     plot_glyph(39, 2,  0x60, MASK_WHITE);
     plot_glyph(39, 9,  0x5F, MASK_WHITE);
@@ -437,11 +479,11 @@ void clearBelowBoard()
         drawSpace(0, y, WIDTH);
 }
 
-/* 2-pixel-thick checkerboard cyan(1)/blue(2) frame around the die with
+/* 2-pixel-thick checkerboard cyan(1)/black(2) frame around the die with
  * a 1-pixel gap. The 30x30 frame sits one pixel outside the die's 24x24
  * footprint on every side. Outer corners are 1-pixel rounded by
  * skipping the four corner pixels of the outermost row/col. Color at
- * each pixel is ((px + py) & 1) ? blue : cyan, so the two layers of
+ * each pixel is ((px + py) & 1) ? black : cyan, so the two layers of
  * each edge are phase-flipped. The 220 touched pixels' original 2-bit
  * colors are saved at draw time so hideDiceCursor can put the screen
  * back exactly. */
@@ -569,10 +611,9 @@ void restoreScreenBuffer()
 /* Active-column interior highlight: transform color-0 (blue) pixels to
  * color-2 (black) inside the active player's column cells, so the column
  * has a visibly different background while keeping border-color pixels
- * (gold) and white text intact. Reverse transform flips color-2 back to
+ * (cyan) and white text intact. Reverse transform flips color-2 back to
  * color-0. Both transforms are idempotent. Applied directly to VRAM so
- * the tile content (text, dividers) is preserved. Avoids the FUJITZEE
- * row (21) and below — that area is shared with the dice. */
+ * the tile content (text, dividers) is preserved. */
 static void hilite_byte_in_place(unsigned char far *p, bool on)
 {
     unsigned char b = *p;
