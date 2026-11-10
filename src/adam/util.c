@@ -29,6 +29,7 @@ typedef char game_wire_size_check[(sizeof(Game) == 599) ? 1 : -1];
 
 volatile uint16_t jiffyCount = 0;
 volatile uint8_t vsyncFlag = 0;
+volatile uint8_t nmiSeen = 0;
 
 static uint16_t timerBase = 0;
 
@@ -37,6 +38,7 @@ void jiffyTick(void)
     // jiffyCount advances in waitvsync() (which counts frames via either
     // this flag or the polled VDP status bit) - don't double count here.
     vsyncFlag = 1;
+    nmiSeen = 1;
 }
 
 void resetTimer()
@@ -75,8 +77,8 @@ static bool sameHost(const char *a, const char *b)
 static void mountLobby(void)
 {
     static uint8_t i, slot;
-    static const char host[] = "ec.tnfs.io";
-    static const char filename[] = "adam/lobby.ddp";
+    static const char host[] = "tnfs.fujinet.online";
+    static const char filename[] = "ADAM/lobby.ddp";
 
     fuji_get_host_slots(host_slots, FUJI_HOST_SLOT_COUNT);
 

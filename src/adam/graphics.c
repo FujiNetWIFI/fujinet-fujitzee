@@ -28,6 +28,7 @@ extern const uint8_t altColors[];
 // From util.c - 60Hz NMI hook
 extern void jiffyTick(void);
 extern volatile uint8_t vsyncFlag;
+extern volatile uint8_t nmiSeen;
 extern volatile uint16_t jiffyCount;
 
 #define NT_BASE 0x1800
@@ -128,20 +129,26 @@ void setColorMode()
 
 void waitvsync()
 {
-    // The VDP F flag (status bit 7) sets on every vblank regardless of the
-    // interrupt enable, and reading status clears it - so polling works even
-    // where the VDP interrupt is not wired through to the Z80 NMI (as in the
-    // fujinet-go-adam emulator core). The flag is sticky, so a stale F from
-    // an earlier vblank must be consumed FIRST or this returns immediately
-    // and the whole game free-runs at full Z80 speed. When the NMI does fire
-    // (real hardware), the CRT handler consumes the status read and the
-    // installed tick sets vsyncFlag instead - both paths pace to one frame.
+    // Once the NMI has been seen, wait on it alone. Ending on the status poll
+    // returns before ADAMEm samples the sound chip for the frame, so every
+    // volume write is overwritten unheard.
     vsyncFlag = 0;
-    vdp_get_status(0); // clear any stale frame flag
-    while (!vsyncFlag)
+    if (nmiSeen)
     {
-        if (vdp_get_status(0) & 0x80)
-            break;
+        while (!vsyncFlag)
+            ;
+    }
+    else
+    {
+        // No NMI (the fujinet-go-adam core does not wire one): poll the VDP F
+        // flag, which sets on every vblank and clears when read. It is sticky,
+        // so consume a stale one first or this returns at once.
+        vdp_get_status(0);
+        while (!vsyncFlag)
+        {
+            if (vdp_get_status(0) & 0x80)
+                break;
+        }
     }
     ++jiffyCount;
 }
