@@ -16,6 +16,7 @@
 #include "../atari5200/vars.h"
 #include "../sms/vars.h"
 #include "../h89/vars.h"
+#include "../model2/vars.h"
 
 // Default vars (covers most platforms). A platform without a keyboard
 // overrides these with the names of its buttons.

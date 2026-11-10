@@ -1,4 +1,4 @@
-#if !defined(__WATCOMC__) && !defined(__ADAM__) && !defined(BUILD_SMS) && !defined(__H89__)
+#if !defined(__WATCOMC__) && !defined(__ADAM__) && !defined(BUILD_SMS) && !defined(__H89__) && !defined(__TRS80M2__)
 #include <joystick.h>
 #endif
 #include <string.h>

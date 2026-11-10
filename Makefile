@@ -1,6 +1,6 @@
 PRODUCT = fujitzee
 PRODUCT_UPPER = FUJITZEE
-PLATFORMS = atari apple2 coco msdos dragon adam nes h89-cpm h89-hdos
+PLATFORMS = atari apple2 coco msdos dragon adam nes h89-cpm h89-hdos model2
 
 # Otherwise coco3 below is the default goal
 .DEFAULT_GOAL := all
@@ -103,8 +103,8 @@ ifneq ($(filter h89-cpm h89-hdos,$(PLATFORM)),)
     export ZCCCFG := $(Z88DK)/lib/config
   endif
 endif
-CFLAGS_EXTRA_H89-CPM = -O3 -DCUSTOM_FUJINET_CALLS
-CFLAGS_EXTRA_H89-HDOS = -O3 -DCUSTOM_FUJINET_CALLS
+CFLAGS_EXTRA_H89_CPM = -O3 -DCUSTOM_FUJINET_CALLS
+CFLAGS_EXTRA_H89_HDOS = -O3 -DCUSTOM_FUJINET_CALLS
 # No stdio or file handles: the game talks to the console itself
 # (src/h89/console.c). -m leaves the map beside the program, so the end of
 # BSS can be checked against the top of memory.
@@ -114,14 +114,20 @@ H89_LDFLAGS = -m \
   -pragma-define:CLIB_OPEN_MAX=0 \
   -pragma-define:CLIB_EXIT_STACK_SIZE=0 \
   -pragma-define:CRT_ENABLE_COMMANDLINE=0
-LDFLAGS_EXTRA_H89-CPM = $(H89_LDFLAGS)
-LDFLAGS_EXTRA_H89-HDOS = $(H89_LDFLAGS)
+LDFLAGS_EXTRA_H89_CPM = $(H89_LDFLAGS)
+LDFLAGS_EXTRA_H89_HDOS = $(H89_LDFLAGS)
 # z88dk's +hdos loads programs at $4480, with the stack below. The game and
 # its three 80x25 screen buffers then need a 64K H89: HDOS 2.0 there keeps
 # itself above $EDB0 (S.SYSM, at $20D0, reads $EDB1); with 48K it is $ADB1,
 # too low. r2r-post holds the program below H89_HDOS_TOP.
 H89_HDOS_TOP ?= 0xEDB0
 H89_APPMAKE ?= z88dk-appmake
+
+# TRS-80 Model II (z88dk +cpm, Pickles & Trout CP/M): r2r/model2/fujitzee.imd.
+# The H89's board and no-stdio link, drawn through the P&T video driver.
+CFLAGS_EXTRA_MODEL2 = -O3 -DCUSTOM_FUJINET_CALLS
+# CRT_TRIM_BSS leaves BSS out of the .com, so less loads over the bus
+LDFLAGS_EXTRA_MODEL2 = $(H89_LDFLAGS) -pragma-define:CRT_TRIM_BSS=1
 
 # CoCo: optimization + memory layout from old Makefile.coco
 CFLAGS_EXTRA_COCO  += -fomit-frame-pointer -O2 -Wno-const
@@ -253,6 +259,7 @@ coco-dist:
 
 	$(RM) $(COCO_DISK)
 	decb dskini $(COCO_DISK)
+	mkdir -p build/coco
 	echo RUNM\"$(PRODUCT_UPPER)\" > build/coco/autoexec.bas
 	decb copy -t -0 build/coco/autoexec.bas $(COCO_DISK),AUTOEXEC.BAS
 	decb copy -b -2 $(R2R_PRODUCT).bin  $(COCO_DISK),$(PRODUCT_UPPER).BIN
