@@ -1,7 +1,6 @@
 #ifdef __ATARI__
 
 #include<peekpoke.h>
-#include<stdlib.h>
 #include<stdint.h>
 #include<atari.h>
 #include<string.h>
@@ -18,11 +17,12 @@ uint16_t getTime() {
   return (PEEK(0x13)*256)+PEEK(0x14);
 }
 
+// Cold start into the lobby: exit(0) would leave an XL in SELF TEST
 void quit() {
   resetScreen(false);
   resetGraphics();
-  fuji_set_boot_config(1);
-  exit(0);
+  fuji_set_boot_mode(FUJI_BOOT_MODE_LOBBY);
+  asm("jmp $E477"); // COLDSV
 }
 
 void housekeeping() {
